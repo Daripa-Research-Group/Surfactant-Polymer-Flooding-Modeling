@@ -1,4 +1,4 @@
-# Shear-Thinning-Polymer-Flooding
+# Shear-Thinning-Polymer-Flooding (PYTHON VERSION)
 
 # Installing Dependencies for Project:
 1. cd to the location of the repository within your computer
