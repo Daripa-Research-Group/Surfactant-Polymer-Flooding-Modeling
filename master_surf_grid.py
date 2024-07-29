@@ -53,6 +53,7 @@ print("4 = impermeable block inclusion off the center")
 print("5 = Upper Ness from SPE10 model sections")
 print("6 = Tabert from SPE10 model sections")
 permeability_input = input("Enter the corresponding permeability flag for the simulation: ")
+alpha_val = input("Enter value for alpha (range from [0.5 - 5] using 0.5 step increments):")
 
 '''
 #### Initialization    ########################################
@@ -62,6 +63,7 @@ permeability_input = input("Enter the corresponding permeability flag for the si
 ### g0iter = injection concentration of surfactant for each run
 ###############################################################
 '''
+
 nsim = 1
 sog = 29
 sizeofgrid = [sog, sog, sog, sog]
