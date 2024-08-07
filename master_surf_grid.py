@@ -148,15 +148,15 @@ for counter in range(1, nsim + 1):
         # 2 = Sourav's Model
         # 1 = Original model from JCP paper SHEAR THINNING OFF
 
-    polymerType = polymer_input; #Flag to initialize with a particular polymer
+    polymerType = polymer_input #Flag to initialize with a particular polymer
         # 0 = Xanthane
         # 1 = Schizophyllan
 
-    TLmixingFlag = 0; #Flag to enable Todd-Longstaff mixing parameter
+    TLmixingFlag = 0 #Flag to enable Todd-Longstaff mixing parameter
     # 1 = TL mixing model ON
     # 0 = TL mixing model OFF
    
-    shearFlag = 0; #Flag to enable shear effects with ad-hoc model from Eclipse code
+    shearFlag = 0 #Flag to enable shear effects with ad-hoc model from Eclipse code
     # 1 = Shear effects ON
     # 0 = Shear effects OFF
     
@@ -202,5 +202,30 @@ for counter in range(1, nsim + 1):
         miup_array = miup * np.ones((sog + 1, sog + 1))
         if TLmixingFlag:
             u_w_eff, m_mu = TLmixing(miua, CC)
-            miua = mu_w_eff           
-        
+            miua = mu_w_eff
+    
+    mShear, nShear = size(shear)
+
+    #re-calculating the residual saturations
+    swr, sor = compres(sigma, u,v,miua)
+
+    lambdaA = compmob(UU,miua, CC, sor, swr, 1,1)
+    lambdaO = compmob(UU,miua,CC,sor,swr,0,1)
+
+    lambdaTotal = lambdaA + lambdaO
+
+    beta = KK. * lambda
+    #     beta=KK.*((UU.^3)./(miuw)+((1-UU).^3)./miuo);  <--- for non-polymer
+
+    U, L = setTri(para)
+
+    gridSize = setGrid(para, U, L, beta)
+    rh = setRightHand(para, f, U, L)
+    A = spconvert(setA(para, gridSize))
+    B = setB(para, gridSize, rh)
+    uOld = u
+    vOld = v
+    u = getu(A,B)
+    vn = get_vn(u,para)
+
+
