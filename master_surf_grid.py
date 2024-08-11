@@ -82,8 +82,9 @@ def simulation_parameters():
     print("6 = Tabert from SPE10 model sections")
     permeability_input = input("Enter the corresponding permeability flag for the simulation: ")
     alpha_val = input("Enter value for alpha (range from [0.5 - 5] using 0.5 step increments):")
-
-
+    
+    #return will be a dictionary with input parameter information
+    
 if __name__ == "__main__":
     main()
 
