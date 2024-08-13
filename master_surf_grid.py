@@ -6,16 +6,17 @@ This is the main program for a full flooding simulationdisp
 #import statements
 import numpy as np
 import matplotlib.pyplot as plt
-#from get_phi_test import get_phi_test
-#from KKdef import KKdef
-#from s0c0 import s0c0
-#from compvis import compvis
-
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+from src.get_phi_test import get_phi_test
+from src.KKdef import KKdef
+from src.s0c0 import s0c0
+from Exceptions import OutOfRangeError
+#from src.compvis import compvis
 
 # declaring global variables to reduce computational time in passing through function calls
 global c0_array, miuo, miuw, miup, swr0, sor0, dt, KK, s0, c0, g0, beta1, viscosityFlag, shearFlag, miup_array, polymerType, nsim, sog, k
-
-
 
 
 """
@@ -60,7 +61,15 @@ def simulation_parameters():
     print("1 = Original Model from JCP paper(Shear thinning off)")
     print("2 = Sourav's Model")
     print("3 = Dynamic Viscosity Model (Non-Newtonian Model(Shear thinning on)")
-    model_type = int(input("Enter which computation model to use for this simulation: "))
+    while True:
+        try:
+            model_type = int(input("Enter which computation model to use for this simulation: "))
+            if not (1 <= model_type <= 3):
+                raise OutOfRangeError(model_type)
+            break
+
+        except OutOfRangeError as e:
+              print(e)
     print("----------------------------------------------")
 
     figure_num = int(input("enter figure number being simulated here: "))
@@ -73,12 +82,26 @@ def simulation_parameters():
     print("0 = Saturation(UU) Plot")
     print("1 = Polymer(CC) Plot")
     print("2 = Surfactant(GG) Plot")
-    plot_type_input = int(input("Enter the type of plot desired: "))
+    while True:
+        try:
+            plot_type_input = int(input("Enter the type of plot desired: "))
+            if not(0 <= plot_type_input <= 2):
+                raise OutOfRangeError(plot_type_input)
+            break
+        except OutOfRangeError as e:
+            print(e)
     print("----------------------------------------------")
 
     print("0 = xanthane")
     print("1 = schizophyllan")
-    polymer_input = int(input("Enter the desired polymer for the simulation: "))
+    while True:
+        try:    
+            polymer_input = int(input("Enter the desired polymer for the simulation: "))
+            if not(0 <= polymer_input <= 1):
+                raise OutOfRangeError(polymer_input)
+            break
+        except OutOfRangeError as e:
+            print(e)
     print("----------------------------------------------")
 
     print("1 = homogeneous with magnitude 1000")
@@ -87,10 +110,23 @@ def simulation_parameters():
     print("4 = impermeable block inclusion off the center")
     print("5 = Upper Ness from SPE10 model sections")
     print("6 = Tabert from SPE10 model sections")
-    permeability_input = int(input("Enter the corresponding permeability flag for the simulation: "))
+    while True:
+        try:
+            permeability_input = int(input("Enter the corresponding permeability flag for the simulation: "))
+            if not(1 <= permeability_input <= 6):
+                raise OutOfRangeError(permeability_input)
+            break
+        except OutOfRangeError as e:
+            print(e)
     print("----------------------------------------------")
-
-    alpha_val = float(input("Enter value for alpha (range from [0.5 - 5] using 0.5 step increments):"))
+    while True:
+        try:
+            alpha_val = float(input("Enter value for alpha (range from [0.5 - 5] using 0.5 step increments):"))
+            if not(0.5 <= alpha_val <= 5):
+                raise OutOfRangeError(alpha_val)
+            break
+        except OutOfRangeError as e:
+            print(e)
     print("----------------------------------------------")
 
     #initializing key variables for simulation 
