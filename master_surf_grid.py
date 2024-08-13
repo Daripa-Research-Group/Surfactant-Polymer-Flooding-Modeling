@@ -12,7 +12,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 from src.get_phi_test import get_phi_test
 from src.KKdef import KKdef
 from src.s0c0 import s0c0
-from Exceptions import OutOfRangeError
+from src.Exceptions import OutOfRangeError
 #from src.compvis import compvis
 
 # declaring global variables to reduce computational time in passing through function calls
