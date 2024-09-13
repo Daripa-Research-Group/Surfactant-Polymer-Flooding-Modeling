@@ -6,14 +6,16 @@ This is the main program for a full flooding simulationdisp
 #import statements
 import numpy as np
 import matplotlib.pyplot as plt
+
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
-from src.get_phi_test import get_phi_test
-from src.KKdef import KKdef
-from src.s0c0 import s0c0
-from src.Exceptions import OutOfRangeError
-#from src.compvis import compvis
+
+from lib.get_phi_test import get_phi_test
+from lib.KKdef import KKdef
+from lib.s0c0 import s0c0
+from lib.compvis import compvis
+from lib.Exceptions import OutOfRangeError
 
 # declaring global variables to reduce computational time in passing through function calls
 global c0_array, miuo, miuw, miup, swr0, sor0, dt, KK, s0, c0, g0, beta1, viscosityFlag, shearFlag, miup_array, polymerType, nsim, sog, k
