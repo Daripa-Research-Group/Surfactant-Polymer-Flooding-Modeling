@@ -1,6 +1,6 @@
 import warnings
-from data_reader import DataReader
-from plotter import DataEntry, Plotter
+from lib.data_reader import DataReader
+from lib.plotter import DataEntry, Plotter
 
 # Suppress all FutureWarnings
 warnings.simplefilter(action='ignore', category=FutureWarning)

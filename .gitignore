@@ -1,5 +1,4 @@
 .DS_Store
 results/figures/*.png
 results/*.xlsx
-results/__pycache__
 __pycache__/
