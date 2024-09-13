@@ -4,10 +4,10 @@ This is the main program for a full flooding simulationdisp
 '''
 import numpy as np
 import matplotlib.pyplot as plt
-from get_phi_test import get_phi_test
-from KKdef import KKdef
-from s0c0 import s0c0
-from compvis import compvis
+from lib.get_phi_test import get_phi_test
+from lib.KKdef import KKdef
+from lib.s0c0 import s0c0
+from lib.compvis import compvis
 
 # clearing variables and setting all initial paramters
 plt.close("all")
