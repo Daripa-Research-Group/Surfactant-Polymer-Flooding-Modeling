@@ -3,7 +3,7 @@ Surfactant-Polymer (SP) flooding is an enhanced-oil-recovery (EOR) process which
  - Reduction of interfacial tension (IFT) to decrease residual oil saturation
  - Increasing the viscosity of the displacing front thereby improving the overall sweep efficiency. 
 
-This repository contains the code and data used in our research to model and analyze the effects of SP flooding, witha  particular focus on the shear-thinning behavior of polymers. 
+This repository contains the code and data used in our research to model and analyze the effects of SP flooding, with a  particular focus on the shear-thinning behavior of polymers. 
 
 ## Purpose
 This research aims to view the effects of surfactant in EOR while accounting for the shear-thinning behavior of polymers. 
