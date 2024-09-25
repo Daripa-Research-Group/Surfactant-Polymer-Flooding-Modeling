@@ -84,6 +84,15 @@ def compvis(c, U, V, X, Y, params, viscosity):
 
         vis_aqueous = vis_water * np.ones((n,m))
         
+        divergence_list = []
+        divergence_list[0] = divergence(X,V)
+        divergence_list[1] = divergence(Y,U)
+        divergence_list[2] = divergence(X,U)
+        divergence_list[3] = divergence(Y,V)
+
+        pi_D = abs(-1*0.25*((divergence_list[0]+divergence_list[1])**2)+(divergence_list[2]*divergence_list[3]))
+
+        #Updating the polymer viscosity matrix
 
 
 def divergence(X, V):
