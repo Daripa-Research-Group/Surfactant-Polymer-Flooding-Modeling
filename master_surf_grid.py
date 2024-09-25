@@ -14,13 +14,13 @@ import seaborn as sb
 import math
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
-from src.get_phi_test import get_phi_test
-from src.KKdef import KKdef
-from src.surfactant_polymer_conc_initial import inital_polymer_surfactant_concentration
-from src.Exceptions import OutOfRangeError
-from src import para
-from src.compvis import compvis
+sys.path.append(os.path.join(os.path.dirname(__file__), 'lib'))
+from lib.get_phi_test import get_phi_test
+from lib.KKdef import KKdef
+from lib.surfactant_polymer_conc_initial import inital_polymer_surfactant_concentration
+from lib.Exceptions import OutOfRangeError
+from lib.para import Para
+from lib.compvis import compvis
 
 
 #initializing global variables
