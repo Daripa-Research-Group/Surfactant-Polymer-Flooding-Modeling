@@ -2,7 +2,7 @@
 This is the main program for a full flooding simulationdisp
     -- Grid sizes used 15x15, 20x20, 30x30, 40x40
 
-This code was derived from MATLAB
+This code was derived from EOR repository developed by Sourav Dutta and Prabir Daripa
 
 @author: Bhargav Akula Ramesh Kumar
 '''
@@ -271,9 +271,8 @@ def sim_auto_runs(usr_input_dict, initalized_param_dict):
                 "polymer" : viscosity_polymer,
                 "polymer_array" : viscosity_polymer_array
                 }
-        [visocity_aqu, shear] = compvis(CC, u, v, initalized_param_dict['np_mesh_grid']['x'], initalized_param_dict['np_mesh_grid']['y'], compvis_params, viscosity_dict)
-        
-        pass
+        [viscosity_aqu, shear] = compvis(CC, u, v, initalized_param_dict['np_mesh_grid']['x'], initalized_param_dict['np_mesh_grid']['y'], compvis_params, viscosity_dict)
+
     
 
 def sim_visualization():
