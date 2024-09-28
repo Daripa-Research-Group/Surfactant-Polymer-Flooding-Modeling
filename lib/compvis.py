@@ -84,33 +84,27 @@ def compvis(c, U, V, X, Y, params, viscosity):
 
         vis_aqueous = vis_water * np.ones((n,m))
         
-        divergence_list = []
-        divergence_list[0] = divergence(X,V)
-        divergence_list[1] = divergence(Y,U)
-        divergence_list[2] = divergence(X,U)
-        divergence_list[3] = divergence(Y,V)
+        dList = []
+        dList[0] = divergence(X,V)
+        dList[1] = divergence(Y,U)
+        dList[2] = divergence(X,U)
+        dList[3] = divergence(Y,V)
 
-        pi_D = abs(-1*0.25*((divergence_list[0]+divergence_list[1])**2)+(divergence_list[2]*divergence_list[3]))
-
+        pi_D = np.abs(-0.25* ( (dList[0] + dList[1])**2 ) + (dList[2] * dList[3])) 
+        print(pi_D)
         #Updating the polymer viscosity matrix
 
 
-def divergence(X, V):
+def divergence(F1, F2):
     """
-    Compute the divergence of a vector field V with respect to spatial coordinates X.
+    Calculate the divergence of a 2D vector field.
     
     Parameters:
-    X : list of arrays
-        Spatial coordinates. For 2D: [x, y], for 3D: [x, y, z]
-    V : list of arrays
-        Vector field components. For 2D: [Vx, Vy], for 3D: [Vx, Vy, Vz]
-        
+    F1, F2 : 2D numpy arrays
+        Components of the vector field
+    
     Returns:
-    div : array
+    div : 2D numpy array
         Divergence of the vector field
     """
-    div = np.zeros_like(V[0])
-    for i in range(len(X)):
-        grad = np.gradient(V[i], X[i])
-        div += grad[i]
-    return div
+    return np.gradient(F1, axis=1) + np.gradient(F2, axis=0)
