@@ -114,6 +114,8 @@ def compvis(c, U, V, X, Y, params, viscosity):
                         if vis_polymer_array[ii, jj] > 100:
                             vis_polymer_array[ii, jj] = 100
 
+    return [vis_aqueous, gamma_dot]
+
 
 def divergence(F1, F2):
     """
