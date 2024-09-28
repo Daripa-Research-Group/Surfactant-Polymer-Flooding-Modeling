@@ -11,10 +11,10 @@ This code was derived from MATLAB
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'lib'))
 import numpy as np
 from z_func_test import z_func_test
-from src.para import Box
+from lib.para import Box
 
 def get_phi_test(para_box : Box, permeability_input : int):
     m = para_box.m

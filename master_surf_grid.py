@@ -19,7 +19,7 @@ from lib.get_phi_test import get_phi_test
 from lib.KKdef import KKdef
 from lib.surfactant_polymer_conc_initial import inital_polymer_surfactant_concentration
 from lib.Exceptions import OutOfRangeError
-from lib.para import Para
+from lib.para import Para, Box
 from lib.compvis import compvis
 
 
@@ -160,7 +160,7 @@ def usr_inputs():
 
 def sim_condition_initialization(usr_input_dict):
     #### Initializing grid points
-    mesh_dimensions = para.Box()
+    mesh_dimensions = Box()
     mesh_dimensions.m = SOG
     mesh_dimensions.n = SOG
     mesh_dimensions.calculate_spacing
