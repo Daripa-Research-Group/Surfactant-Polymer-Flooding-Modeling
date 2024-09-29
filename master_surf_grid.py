@@ -272,6 +272,8 @@ def sim_auto_runs(usr_input_dict, initalized_param_dict):
                 "polymer_array" : viscosity_polymer_array
                 }
         [viscosity_aqu, shear] = compvis(CC, u, v, initalized_param_dict['np_mesh_grid']['x'], initalized_param_dict['np_mesh_grid']['y'], compvis_params, viscosity_dict)
+        
+
 
     
 
