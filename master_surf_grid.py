@@ -2,7 +2,7 @@
 This is the main program for a full flooding simulationdisp
     -- Grid sizes used 15x15, 20x20, 30x30, 40x40
 
-This code was derived from MATLAB
+This code was derived from EOR repository developed by Sourav Dutta and Prabir Daripa
 
 @author: Bhargav Akula Ramesh Kumar
 '''
@@ -14,13 +14,13 @@ import seaborn as sb
 import math
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
-from src.get_phi_test import get_phi_test
-from src.KKdef import KKdef
-from src.surfactant_polymer_conc_initial import inital_polymer_surfactant_concentration
-from src.Exceptions import OutOfRangeError
-from src import para
-from src.compvis import compvis
+sys.path.append(os.path.join(os.path.dirname(__file__), 'lib'))
+from lib.get_phi_test import get_phi_test
+from lib.KKdef import KKdef
+from lib.surfactant_polymer_conc_initial import inital_polymer_surfactant_concentration
+from lib.Exceptions import OutOfRangeError
+from lib.para import Para, Box
+from lib.compvis import compvis
 
 
 #initializing global variables
@@ -160,12 +160,12 @@ def usr_inputs():
 
 def sim_condition_initialization(usr_input_dict):
     #### Initializing grid points
-    mesh_dimensions = para.Box()
+    mesh_dimensions = Box()
     mesh_dimensions.m = SOG
     mesh_dimensions.n = SOG
     mesh_dimensions.calculate_spacing
 
-    np_mesh_grid = np.meshgrid(
+    [x,y] = np.meshgrid(
             range(mesh_dimensions.left, mesh_dimensions.right, round(mesh_dimensions.dx)), 
             range(mesh_dimensions.bottom, mesh_dimensions.top, round(mesh_dimensions.dy)))
     
@@ -188,7 +188,7 @@ def sim_condition_initialization(usr_input_dict):
         exit(1)
     
     initalized_param_dict = {
-            "np_mesh_grid" : np_mesh_grid,
+            "np_mesh_grid" : {"x" : x, "y" : y},
             "dimensions" : mesh_dimensions,
             "phi_initial" : phi_test,
             "source_matrix" : src_matrix,
@@ -237,6 +237,7 @@ def sim_auto_runs(usr_input_dict, initalized_param_dict):
     tstop = TIME_STOP
     dt = CFL * mesh_grid.dx / MASS_FLOW_MAGNITUDE
     u = np.zeros((mesh_grid.n + 1, mesh_grid.m +1))
+    v = u
     coc_matrix = np.zeros((NSIM, 2000))
     prod_rate_matrix = np.zeros((NSIM, math.floor(tstop / dt)))
     croip_matrix = np.zeros((NSIM, math.floor(tstop/dt)))
@@ -257,9 +258,23 @@ def sim_auto_runs(usr_input_dict, initalized_param_dict):
         sigma = 10.001 / ((alpha * GG) + 1) - 0.001
         
         #Determining the aqueous soln visocity as a function of polymer
-        # [visocity_aqu, shear] = compvis(CC,u, )
+        compvis_params = {
+                "model_type" : usr_input_dict['model_type'],
+                "polymer_type" : usr_input_dict['polymer_input'],
+                "beta_1" : beta_1,
+                "c0" : c0,
+                "c0_array" : c0_array
+            }
+        viscosity_dict = {
+                "water" : viscosity_water,
+                "oil" : viscosity_oil,
+                "polymer" : viscosity_polymer,
+                "polymer_array" : viscosity_polymer_array
+                }
+        [viscosity_aqu, shear] = compvis(CC, u, v, initalized_param_dict['np_mesh_grid']['x'], initalized_param_dict['np_mesh_grid']['y'], compvis_params, viscosity_dict)
+        
 
-        pass
+
     
 
 def sim_visualization():
