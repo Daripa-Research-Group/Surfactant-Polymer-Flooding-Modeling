@@ -3,7 +3,7 @@ This python script will contain the class definition for surfactants
 
 """
 
-from .Exceptions import OutOfRangeError
+from Exceptions import OutOfRangeError
 
 class Surfactant:
     def __init__(self, name, concentration, IFT_conc_equ):

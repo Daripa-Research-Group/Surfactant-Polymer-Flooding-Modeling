@@ -2,13 +2,13 @@
 This python script contains the class definition for running simulations
 """
 
-from .surfactant import Surfactant
-from .polymer import Polymer
-from . import Exceptions
-from .para import Box
+from surfactant import Surfactant
+from polymer import Polymer
+import Exceptions
+from para import Box
 
 class Simulation:
-    def __init__(self, sim_id, polymer, surfactant, resevoir_geometry, permeability_flg, mesh_grid):
+    def __init__(self, sim_id : int, polymer : Polymer, surfactant : Surfactant, resevoir_geometry : str, permeability_flg : str, mesh_grid : Box):
         """
         creates instance of the simulation class which will enable for calculating changes in system parameters at every time-step
 
@@ -31,21 +31,27 @@ class Simulation:
         :type mesh_grid: Box
         """
         
-        # PROTECTED MEMBERS
+        
+        #Polymer and Surfactant Properties
         self._polymer_ = None
         self._surfactant_ = None
+        self.polymer = polymer
+        self.surfactant = surfactant
+
+        #User Inputs
         self._resevoir_geometry_ = None
         self._permeability_flag_ = None
         self._mesh_ = None
-        
-        #PUBLIC MEMBERS
-        self.sim_id = sim_id
-        self.polymer = polymer
-        self.surfactant = surfactant
         self.resevoir_geometry = resevoir_geometry
         self.permeability_flg = permeability_flg
         self.mesh = mesh_grid
 
+        #General Parameters in Simulation
+        self._phi_ = None 
+        self.sim_id = sim_id
+
+
+    #PROPERTIES OF SIMULATION CLASS
     @property
     def polymer(self):
         return self._polymer_
@@ -86,3 +92,66 @@ class Simulation:
     def mesh(self, value):
         self._mesh_ = value
 
+    @property
+    def phi(self):
+        self._phi_ = self.get_phi_value()
+        return self._phi_
+
+
+    def get_phi_value(self):
+        """
+        function to initialize s,c,g in the domain
+        flag = 0 is no surfactantimplementation#
+        flag = 1 is with surfactant
+        1-s0 = initial residual saturation 
+        c0 = concentration of polymer in injected mixture
+        g0 = concentration of surfactant in injected mixture
+
+        :return: phi value in vector form
+        :rtype: np.meshgrid
+        """
+        if(self.mesh is Box()):
+            m = self.mesh.m
+            n = self.mesh.n
+            
+            dx = self.mesh.dx
+            dy = self.mesh.dy
+            
+            left = self.mesh.left
+            bottom = self.mesh.bottom
+        
+        
+        # --- Vectorized implementation
+        jj, ii = np.meshgrid(np.arange(1, n + 2), np.arange(1, m + 2))
+        phi_vec = z_func_test(left+(ii - 1) * dx, bottom+(jj - 1)*dy, permeability_input)
+        
+        return phi_vec
+
+
+    def z_func_test(x, y, permeability_input):
+        """
+        Specifying the initial position of the water front
+        A function describing the initial position of 
+        the water front in the shape of a circular arc 
+        $$ z(x,y) = x^2+y^2-0.015 $$ 
+        This can take array input
+
+        :return: returns water front position
+        """
+        init_front_hs = 0.1
+        # out=(x-0.15)^2+(y-0.15)^2 -0.5*(x+y-0.35)^2;
+        # # perturbed initial saturation front for special fingering simulations
+        # out = x.^2 + y.^2 - 0.015*(1+0.1*sin(18*atan(y./x)))^2;
+
+        #setting default value to out
+        out = 0
+        
+        #homogenous
+        if permeability_input == 1:
+            out = y - init_front_hs + 0.01 * (np.cos(80 * np.pi * x))
+        elif permeability_input == 2:
+            out = y - init_front_hs ## Rectilinear Homogenous
+        elif permeability_input == 5:
+            out=(x)**2+(y)**2-0.015 # Normal unperturbed initial saturation front 
+        
+        return out
