@@ -111,6 +111,8 @@ class Simulation:
         :return: phi value in vector form
         :rtype: np.meshgrid
         """
+
+        #getting values from mesh:
         if(self.mesh is Box()):
             m = self.mesh.m
             n = self.mesh.n
@@ -126,7 +128,7 @@ class Simulation:
         jj, ii = np.meshgrid(np.arange(1, n + 2), np.arange(1, m + 2))
         phi_vec = z_func_test(left+(ii - 1) * dx, bottom+(jj - 1)*dy, permeability_input)
         
-        return phi_vec
+        return phi_vec 
 
 
     def z_func_test(x, y, permeability_input):
