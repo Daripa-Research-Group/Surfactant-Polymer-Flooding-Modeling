@@ -2,6 +2,7 @@
 This python script contains the class definition for running simulations
 """
 
+#Relevant imports
 from surfactant import Surfactant
 from polymer import Polymer
 import Exceptions
