@@ -5,7 +5,7 @@ This python script contains the class definition for running simulations
 #Relevant imports
 from surfactant import Surfactant
 from polymer import Polymer
-from Exceptions import OutOfRangeError, SimulationCalcInputException
+from Exceptions import SimulationCalcInputException
 from para import Box
 
 import numpy as np
@@ -13,7 +13,10 @@ import numpy as np
 
 
 class Simulation:
-    def __init__(self, sim_id : int, polymer : Polymer, surfactant : Surfactant, resevoir_geometry : str, permeability_flg : str, mesh_grid : Box):
+    """
+    Class is used to generate an instance of a simulation which will run the SP-flooding model based on the given parameters provided by the user
+    """
+    def __init__(self, sim_id : int, polymer : Polymer, surfactant : Surfactant, resevoir_geometry : str, permeability_flg : str, mesh_grid : Box, is_surfactant : bool):
         """
         creates instance of the simulation class which will enable for calculating changes in system parameters at every time-step
 
@@ -34,8 +37,10 @@ class Simulation:
 
         :param mesh_grid: mesh_grid used in the SP-flooding run
         :type mesh_grid: Box
+
+        :param is_surfactant: boolean that states whether there is surfactant in the system or not
+        :type is_surfactant: bool
         """
-        
         
         #Polymer and Surfactant Properties
         self._polymer_ = None
@@ -54,6 +59,7 @@ class Simulation:
         #General Parameters in Simulation
         self._phi_ = None 
         self.sim_id = sim_id
+        self.is_surfactant = is_surfactant
 
 
     #PROPERTIES OF SIMULATION CLASS
@@ -164,3 +170,30 @@ class Simulation:
             out = ( (x)**2 ) + ( (y)**2 ) - 0.015 # Normal unperturbed initial saturation front 
         
         return out
+
+
+    def initial_concentration_matrix(self, s_0, c_0, g_0, flag):
+        """
+        function to initialize s,c,g in the domain
+        flag = 0 is no surfactantimplementation#
+        flag = 1 is with surfactant
+        1-s0 = initial residual saturation 
+        c0 = concentration of polymer in injected mixture
+        g0 = concentration of surfactant in injected mixture
+
+        Vectorized implementation
+
+        """
+        s0 = np.zeros((para_box["n"] + 1, para_box["m"] + 1))
+        c0 = np.copy(s0)
+        D = (phi > 1e-10) + (np.abs(phi) < 1e-10)
+        if flag == 0:
+            g0 = []
+            s0 = (~D) + D * (1 - s_0)
+            c0 = (~D) * c_0
+        elif flag == 1:
+            s0 = (~D) + D * (1 - s_0)
+            c0 = (~D) * c_0
+            g0 = (~D) * g_0
+            
+        return [ s0, c0, g0 ]

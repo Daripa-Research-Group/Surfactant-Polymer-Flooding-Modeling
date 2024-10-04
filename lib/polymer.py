@@ -11,7 +11,7 @@ class Polymer:
         :param name: Name of the polymer
         :type name: str
 
-        :param concentration: concentration of polymer for surfactant-polymer flooding simulation in wppm
+        :param concentration: concentration of polymer in the injected solution
         :type concentration: float
 
         :param e_coeff: The coefficients used to determine epsilon for the empirical power law expression used to determine the viscosity of the aqueous phase
@@ -25,4 +25,9 @@ class Polymer:
         self.concentration = concentration
         self.e_coeff = e_coeff
         self.n_coeff = n_coeff
-
+    
+    def calc_power_law_coefficients(self):
+        """
+        This function will calculate the n and epsilon values required to determine the aqueous phase viscosity
+        """
+        pass
