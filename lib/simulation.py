@@ -5,8 +5,12 @@ This python script contains the class definition for running simulations
 #Relevant imports
 from surfactant import Surfactant
 from polymer import Polymer
-import Exceptions
+from Exceptions import OutOfRangeError, SimulationCalcInputException
 from para import Box
+
+import numpy as np
+
+
 
 class Simulation:
     def __init__(self, sim_id : int, polymer : Polymer, surfactant : Surfactant, resevoir_geometry : str, permeability_flg : str, mesh_grid : Box):
@@ -42,7 +46,7 @@ class Simulation:
         #User Inputs
         self._resevoir_geometry_ = None
         self._permeability_flag_ = None
-        self._mesh_ = None
+        self._mesh_ = Box()
         self.resevoir_geometry = resevoir_geometry
         self.permeability_flg = permeability_flg
         self.mesh = mesh_grid
@@ -111,27 +115,29 @@ class Simulation:
         :return: phi value in vector form
         :rtype: np.meshgrid
         """
-
-        #getting values from mesh:
-        if(self.mesh is Box()):
-            m = self.mesh.m
-            n = self.mesh.n
+        try:
+            #getting values from mesh:
+            if(self.mesh is Box()):
+                m = self.mesh.m
+                n = self.mesh.n
+                
+                dx = self.mesh.dx
+                dy = self.mesh.dy
+                
+                left = self.mesh.left
+                bottom = self.mesh.bottom
+            else:
+                raise SimulationCalcInputException("SimulationError | get_phi_value | mesh values not provided")
             
-            dx = self.mesh.dx
-            dy = self.mesh.dy
-            
-            left = self.mesh.left
-            bottom = self.mesh.bottom
-        
-        
-        # --- Vectorized implementation
-        jj, ii = np.meshgrid(np.arange(1, n + 2), np.arange(1, m + 2))
-        phi_vec = z_func_test(left+(ii - 1) * dx, bottom+(jj - 1)*dy, permeability_input)
-        
-        return phi_vec 
+            # --- Vectorized implementation
+            jj, ii = np.meshgrid(np.arange(1, n + 2), np.arange(1, m + 2))
+            phi_vec = self.z_func_test(left + (ii - 1) * dx, bottom + (jj - 1) * dy)
+            return phi_vec
+        except Exception as e:
+            print(e)
 
 
-    def z_func_test(x, y, permeability_input):
+    def z_func_test(self, x, y):
         """
         Specifying the initial position of the water front
         A function describing the initial position of 
@@ -150,11 +156,11 @@ class Simulation:
         out = 0
         
         #homogenous
-        if permeability_input == 1:
+        if ( self.permeability_flg == "HOMOGENOUS" and self.resevoir_geometry == "RECTILINEAR" ):
             out = y - init_front_hs + 0.01 * (np.cos(80 * np.pi * x))
-        elif permeability_input == 2:
+        elif ( self.permeability_flg == "HETEROGENOUS" and self.resevoir_geometry == "RECTILINEAR" ):
             out = y - init_front_hs ## Rectilinear Homogenous
-        elif permeability_input == 5:
-            out=(x)**2+(y)**2-0.015 # Normal unperturbed initial saturation front 
+        elif ( self.permeability_flg == "HETEROGENOUS" and self.resevoir_geometry == "QUARTER_FIVE_SPOT" ):
+            out = ( (x)**2 ) + ( (y)**2 ) - 0.015 # Normal unperturbed initial saturation front 
         
         return out
