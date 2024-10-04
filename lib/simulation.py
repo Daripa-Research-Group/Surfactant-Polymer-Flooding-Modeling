@@ -141,6 +141,7 @@ class Simulation:
             return phi_vec
         except Exception as e:
             print(e)
+            exit(1)
 
 
     def z_func_test(self, x, y):
@@ -184,16 +185,25 @@ class Simulation:
         Vectorized implementation
 
         """
-        s0 = np.zeros((para_box["n"] + 1, para_box["m"] + 1))
-        c0 = np.copy(s0)
-        D = (phi > 1e-10) + (np.abs(phi) < 1e-10)
-        if flag == 0:
-            g0 = []
-            s0 = (~D) + D * (1 - s_0)
-            c0 = (~D) * c_0
-        elif flag == 1:
-            s0 = (~D) + D * (1 - s_0)
-            c0 = (~D) * c_0
-            g0 = (~D) * g_0
+        try:
+            s0 = np.zeros((self.mesh.m + 1, self.mesh.n + 1))
+            c0 = np.copy(s0)
+            if(self.phi != None):
+                D = (self.phi > 1e-10) + (np.abs(self.phi) < 1e-10)
+            else:
+                raise SimulationCalcInputException("SimulationError: phi value not calculated!")
+            if flag == 0:
+                g0 = []
+                s0 = (~D) + D * (1 - s_0)
+                c0 = (~D) * c_0
+            elif flag == 1:
+                s0 = (~D) + D * (1 - s_0)
+                c0 = (~D) * c_0
+                g0 = (~D) * g_0
+            else:
+                raise SimulationCalcInputException("SimulationError: 'is_surfactant' flag not provided")
             
-        return [ s0, c0, g0 ]
+            return [ s0, c0, g0 ]
+        except Exception as e:
+            print(e)
+            exit(1)
