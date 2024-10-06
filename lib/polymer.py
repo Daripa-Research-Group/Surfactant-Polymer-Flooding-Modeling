@@ -4,14 +4,14 @@ This python script contains the class definition for polymers for the surfactant
 """
 
 class Polymer:
-    def __init__(self, name, concentration, e_coeff, n_coeff):
+    def __init__(self, name, initial_concentration, e_coeff, n_coeff, viscosity = None, vec_concentration = None):
         """
         Initializes a instance of the polymer class
 
         :param name: Name of the polymer
-        :type name: str
+        :type name: enum 'PolymerList'
 
-        :param concentration: concentration of polymer in the injected solution
+        :param initial_concentration: Initial concentration of polymer in the injected solution (scalar variable)
         :type concentration: float
 
         :param e_coeff: The coefficients used to determine epsilon for the empirical power law expression used to determine the viscosity of the aqueous phase
@@ -19,15 +19,18 @@ class Polymer:
 
         :param n_coeff:  The coefficients used to determine epsilon for the empirical power law expression used to determine the viscosity of the aqueous phase
         :type n_coeff: List<int>
+
+        :param viscosity: viscosity matrix of the polymer
+        :type viscosity: np.array, None
+
+        :param vec_concentration: vector representation of polymer concentration within resevoir
+        :type vec_concentration: np.array, None
         """
 
         self.name = name
-        self.concentration = concentration
+        self.initial_concentration = initial_concentration
+        self.vec_concentration = vec_concentration
+        self.viscosity = viscosity
         self.e_coeff = e_coeff
         self.n_coeff = n_coeff
     
-    def calc_power_law_coefficients(self):
-        """
-        This function will calculate the n and epsilon values required to determine the aqueous phase viscosity
-        """
-        pass

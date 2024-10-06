@@ -10,13 +10,14 @@ from para import Box
 
 import numpy as np
 
+from enumerations import SimulationConstants, PolymerList, SurfactantList, ModelType, PlotType, ResevoirGeometry, PermeabilityType
 
 
 class Simulation:
     """
     Class is used to generate an instance of a simulation which will run the SP-flooding model based on the given parameters provided by the user
     """
-    def __init__(self, sim_id : int, polymer : Polymer, surfactant : Surfactant, resevoir_geometry : str, permeability_flg : str, mesh_grid : Box, is_surfactant : bool):
+    def __init__(self, sim_id, polymer, surfactant, init_water_saturation, resevoir_geometry, permeability_flg, mesh_grid, is_surfactant, mdl_id, plt_type):
         """
         creates instance of the simulation class which will enable for calculating changes in system parameters at every time-step
 
@@ -29,17 +30,26 @@ class Simulation:
         :param surfactant: Surfactant object used in SP-flooding run
         :type surfactant: Surfactant
 
+        :param init_water_saturation: Initial Water Saturation
+        :type init_water_saturation: float
+
         :param resevoir_geometry: Type of resevoir geometry (is it a rectilinear or quarter-five-spot geometry)
-        :type resevoir_geometry: str
+        :type resevoir_geometry: enum 'ResevoirGeometry'
 
         :param permeability_flg: Homogenous vs. Heterogenous porosity in resevoir
-        :type permeability_flg: str
+        :type permeability_flg: enum 'PermeabilityType'
 
         :param mesh_grid: mesh_grid used in the SP-flooding run
         :type mesh_grid: Box
 
         :param is_surfactant: boolean that states whether there is surfactant in the system or not
         :type is_surfactant: bool
+
+        :param mdl_id: the model id for the simulation
+        :type mdl_id: enum 'ModelType'
+
+        :param plt_type: the plot type outputted by the program for the simulation run
+        :type plt_type: enum 'PlotType'
         """
         
         #Polymer and Surfactant Properties
@@ -56,10 +66,16 @@ class Simulation:
         self.permeability_flg = permeability_flg
         self.mesh = mesh_grid
 
+        self._water_saturation_ = None
+        self._init_water_saturation_scalar_ = init_water_saturation
+        self._aqueous_viscosity_ = None
+
         #General Parameters in Simulation
         self._phi_ = None 
         self.sim_id = sim_id
         self.is_surfactant = is_surfactant
+        self.mdl_id = mdl_id
+        self.plt_type = plt_type
 
 
     #PROPERTIES OF SIMULATION CLASS
@@ -107,6 +123,30 @@ class Simulation:
     def phi(self):
         self._phi_ = self.get_phi_value()
         return self._phi_
+
+    @property
+    def water_saturation(self):
+        return self._water_saturation_
+
+    @water_saturation.setter
+    def water_saturation(self, value):
+        self._water_saturation_ = value
+
+    @property
+    def init_water_saturation_scalar(self):
+        return self._init_water_saturation_scalar_
+
+    @init_water_saturation_scalar.setter
+    def init_water_saturation_scalar(self, value):
+        self._init_water_saturation_scalar_ = value
+
+    @property
+    def aqueous_viscosity(self):
+        return self._aqueous_viscosity_
+    
+    @aqueous_viscosity.setter
+    def aqueous_viscosity(self, value):
+        self._aqueous_viscosity_ = value
 
 
     def get_phi_value(self):
@@ -163,11 +203,11 @@ class Simulation:
         out = 0
         
         #homogenous
-        if ( self.permeability_flg == "HOMOGENOUS" and self.resevoir_geometry == "RECTILINEAR" ):
+        if ( self.permeability_flg == PermeabilityType.Homogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear ):
             out = y - init_front_hs + 0.01 * (np.cos(80 * np.pi * x))
-        elif ( self.permeability_flg == "HETEROGENOUS" and self.resevoir_geometry == "RECTILINEAR" ):
+        elif ( self.permeability_flg == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
             out = y - init_front_hs ## Rectilinear Homogenous
-        elif ( self.permeability_flg == "HETEROGENOUS" and self.resevoir_geometry == "QUARTER_FIVE_SPOT" ):
+        elif ( self.permeability_flg == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Quarter_Five_Spot ):
             out = ( (x)**2 ) + ( (y)**2 ) - 0.015 # Normal unperturbed initial saturation front 
         
         return out
@@ -179,31 +219,159 @@ class Simulation:
         flag = 0 is no surfactantimplementation#
         flag = 1 is with surfactant
         1-s0 = initial residual saturation 
-        c0 = concentration of polymer in injected mixture
-        g0 = concentration of surfactant in injected mixture
 
         Vectorized implementation
-
+        
+        :return: List object with the vectorized implementation of the water saturation (s0), polymer concentration (c0), and surfactant concentration (g0)
+        :rtype: List
         """
         try:
-            s0 = np.zeros((self.mesh.m + 1, self.mesh.n + 1))
-            c0 = np.copy(s0)
-            if(self.phi != None):
+            if(self.polymer is not None and self.surfactant is not None and self.water_saturation is not None):
+                s_0 = self.init_water_saturation_scalar
+                c_0 = self.polymer.concentration
+                g_0 = self.surfactant.concentration
+                self.water_saturation = np.zeros((self.mesh.m + 1, self.mesh.n + 1))
+                self.polymer.vec_concentration = np.copy(self.water_saturation)
+
+            if(self.phi is not None):
                 D = (self.phi > 1e-10) + (np.abs(self.phi) < 1e-10)
             else:
                 raise SimulationCalcInputException("SimulationError: phi value not calculated!")
-            if flag == 0:
-                g0 = []
-                s0 = (~D) + D * (1 - s_0)
-                c0 = (~D) * c_0
-            elif flag == 1:
-                s0 = (~D) + D * (1 - s_0)
-                c0 = (~D) * c_0
-                g0 = (~D) * g_0
+
+            if flag == 0 and self.polymer is not None and self.surfactant is not None:
+                self.surfactant.vec_concentration = []
+                self.water_saturation = (~D) + D * (1 - s_0)
+                self.polymer.vec_concentration = (~D) * c_0
+            elif flag == 1 and self.polymer is not None and self.surfactant is not None:
+                self.water_saturation = (~D) + D * (1 - s_0)
+                self.polymer.vec_concentration = (~D) * c_0
+                self.surfactant.vec_concentration = (~D) * g_0
             else:
-                raise SimulationCalcInputException("SimulationError: 'is_surfactant' flag not provided")
+                raise SimulationCalcInputException("SimulationError: Surfactant and/or polymer not initialized")
             
-            return [ s0, c0, g0 ]
+            return [ self.water_saturation, self.polymer.vec_concentration, self.surfactant.vec_concentration ]
+        
         except Exception as e:
             print(e)
             exit(1)
+
+
+    
+    def compvis(self, U, V, X, Y, beta1, c0_array):
+        """
+        function to compute viscosity of injected
+        displacing phase containing polymer
+        miuo = Displaced phase viscosity, c = polymer concentration
+
+        """
+        ### Initializing variables:
+        try:
+            if(self.polymer is not None and self.surfactant is not None):
+                gamma_dot = np.zeros_like(self.polymer.vec_concentration)
+                vis_water = SimulationConstants.Water_Viscosity #viscosity['water']
+                vis_oil = SimulationConstants.Oil_Viscosity #viscosity['oil']
+                # vis_polymer_array = self.polymer.visosity #viscosity['polymer_array']
+                # polymer_type = self.polymer.name #params['polymer_type']
+                polymer_obj = self.polymer
+                # beta1 =  beta1 #params['beta1']
+            else:
+                raise SimulationCalcInputException("SimulationError: Surfactant and/or Polymer Not Initialized")
+
+            if (self.mdl_id == ModelType.No_Shear_Thinning):
+                # Newtonian Model (NO SHEAR THINNING INVOLVED => MODEL TYPE #1)
+                n = np.shape(( polymer_obj.vec_concentration,1 ))
+                m = np.shape(( polymer_obj.vec_concentration,2 ))
+                if polymer_obj.vec_concentration == 0:
+                    self.aqueous_viscosity = vis_water * np.ones((n, m))
+                else:
+                    self.aqueous_viscosity = vis_water * (1 + beta1 * polymer_obj.vec_concentration)
+            elif (self.mdl_id == ModelType.Sourav_Implementation):
+                # Sourav's Implementation (MODEL TYPE #2)
+                n = np.shape((polymer_obj.vec_concentration,1))
+                if(polymer_obj.initial_concentration == 0):
+                    self.aqueous_viscosity = vis_water * np.ones(n)
+                else:
+                    self.aqueous_viscosity = vis_oil * (0.5 + polymer_obj.vec_concentration)
+            elif(self.mdl_id == ModelType.Shear_Thinning_On):
+                # Dynamic Viscosity (SHEAR THINNING ON => MODEL TYPE #3)
+                rho_water = SimulationConstants.Water_Density # kg/m^3
+                rho_xanthane = PolymerList.Xanthane.Density #kg/m^3
+                rho_schizophyllan = PolymerList.Schizophyllan.Density #kg/m^3
+                
+                if(polymer_obj.name == PolymerList.Xanthane.Id):
+                    #Xanthane polymer
+                    w1 = rho_xanthane * polymer_obj.vec_concentration
+                    w10 = rho_xanthane * c0_array
+                elif(polymer_obj.name == PolymerList.Schizophyllan.Id):
+                    #Schizophyllan polymer
+                    w1 = rho_schizophyllan * polymer_obj.vec_concentration
+                    w10 = rho_schizophyllan * c0_array 
+                else:
+                    raise SimulationCalcInputException("SimulationError: Polymer Not Part of Enumeration List")
+                
+                w2 = rho_water * (1-polymer_obj.vec_concentration)
+                w20 = rho_water * (1- c0_array)
+
+                wppm0 = (w10 / (w10 + w20)) * 1*10^(6)
+                wppm = (w1 / (w1 + w2))* (10**6)
+
+                #determining the epsilon and n values for the power law equation:
+                e_coeff = polymer_obj.epsilon_coefficients
+                n_coeff = polymer_obj.n_coefficients
+                    
+                e_power_value = pow((e_coeff[0]*wppm0), e_coeff[1])
+                n_power_value = min(pow((n_coeff[0]*wppm0), n_coeff[1]))
+                e_vector = pow((e_coeff[0]*wppm), e_coeff[1])
+                n_vector = min(pow((n_coeff[0]*wppm0), n_coeff[1]))
+                
+                n = np.shape((polymer_obj.vec_concentration,1))
+                m = np.shape((polymer_obj.vec_concentration,2))
+
+                self.aqueous_viscosity = vis_water * np.ones((n,m))
+                
+                dList = []
+                dList[0] = self.divergence(X,V)
+                dList[1] = self.divergence(Y,U)
+                dList[2] = self.divergence(X,U)
+                dList[3] = self.divergence(Y,V)
+
+                pi_D = np.abs(-0.25* ( (dList[0] + dList[1])**2 ) + (dList[2] * dList[3])) 
+                
+                #Updating the polymer viscosity matrix
+                for ii in range(n):
+                    for jj in range(m):
+                        if polymer_obj.vec_concentration[ii, jj] > 0:
+                            gamma_dot[ii, jj] = 2 * np.sqrt(pi_D[ii, jj])
+                            if gamma_dot[ii, jj] != 0:
+                                polymer_obj.vec_concentration[ii, jj] = e_power_value[ii, jj] * (gamma_dot[ii, jj] ** (n_power_value[ii, jj] - 1))
+                                self.aqueous_viscosity[ii, jj] = e_vector[ii, jj] * (gamma_dot[ii, jj] ** (n_vector[ii, jj] - 1))
+
+                                # Applying constraints
+                                if self.aqueous_viscosity[ii, jj] < vis_water:
+                                    self.aqueous_viscosity[ii, jj] = vis_water
+                                if self.aqueous_viscosity[ii, jj] > 100:
+                                    self.aqueous_viscosity[ii, jj] = 100
+                                if polymer_obj.vec_concentration[ii, jj] < vis_water:
+                                    polymer_obj.vec_concentration[ii, jj] = vis_water
+                                if polymer_obj.vec_concentration[ii, jj] > 100:
+                                    polymer_obj.vec_concentration[ii, jj] = 100
+
+            return [self.aqueous_viscosity, gamma_dot]
+        except Exception as e:
+            print(e)
+            exit(1)
+
+
+    def divergence(self,F1, F2):
+        """
+        Calculate the divergence of a 2D vector field.
+        
+        Parameters:
+        F1, F2 : 2D numpy arrays
+            Components of the vector field
+        
+        Returns:
+        div : 2D numpy array
+            Divergence of the vector field
+        """
+        return np.gradient(F1, axis=1) + np.gradient(F2, axis=0)
