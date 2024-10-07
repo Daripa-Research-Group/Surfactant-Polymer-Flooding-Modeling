@@ -22,6 +22,7 @@ class SimulationConstants(Enum):
 class PolymerList(Enum):
     Xanthane = (1, 1500)
     Schizophyllan = (2 , 1300)
+    No_Polymer = (3, 0)
     
     @property
     def Id(self):
@@ -34,6 +35,7 @@ class PolymerList(Enum):
 
 class SurfactantList(Enum):
     Alkyl_Ether_Sulfate = 1
+    No_Surfactant = 2
 
 class ModelType(Enum):
     No_Shear_Thinning = 1

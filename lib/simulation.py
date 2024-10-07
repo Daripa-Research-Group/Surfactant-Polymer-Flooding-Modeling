@@ -3,14 +3,10 @@ This python script contains the class definition for running simulations
 """
 
 #Relevant imports
-from surfactant import Surfactant
-from polymer import Polymer
 from Exceptions import SimulationCalcInputException
 from para import Box
-
 import numpy as np
-
-from enumerations import SimulationConstants, PolymerList, SurfactantList, ModelType, PlotType, ResevoirGeometry, PermeabilityType
+from enumerations import SimulationConstants, PolymerList, ModelType, ResevoirGeometry, PermeabilityType
 
 
 class Simulation:
@@ -192,6 +188,13 @@ class Simulation:
         $$ z(x,y) = x^2+y^2-0.015 $$ 
         This can take array input
 
+        :param x: x dimension value
+        :type x: float
+
+        :param y: y dimension value
+        :type y: float
+
+
         :return: returns water front position
         """
         init_front_hs = 0.1
@@ -213,7 +216,7 @@ class Simulation:
         return out
 
 
-    def initial_concentration_matrix(self, s_0, c_0, g_0, flag):
+    def initial_concentration_matrix(self):
         """
         function to initialize s,c,g in the domain
         flag = 0 is no surfactantimplementation#
@@ -232,17 +235,19 @@ class Simulation:
                 g_0 = self.surfactant.concentration
                 self.water_saturation = np.zeros((self.mesh.m + 1, self.mesh.n + 1))
                 self.polymer.vec_concentration = np.copy(self.water_saturation)
+            else:
+                raise SimulationCalcInputException("SimulationError: Did not provide intial water saturation or Polymer and/or Surfactant were not intialized. Please try again...")
 
             if(self.phi is not None):
                 D = (self.phi > 1e-10) + (np.abs(self.phi) < 1e-10)
             else:
                 raise SimulationCalcInputException("SimulationError: phi value not calculated!")
 
-            if flag == 0 and self.polymer is not None and self.surfactant is not None:
+            if self.is_surfactant == 0 and self.polymer is not None and self.surfactant is not None:
                 self.surfactant.vec_concentration = []
                 self.water_saturation = (~D) + D * (1 - s_0)
                 self.polymer.vec_concentration = (~D) * c_0
-            elif flag == 1 and self.polymer is not None and self.surfactant is not None:
+            elif self.is_surfactant == 1 and self.polymer is not None and self.surfactant is not None:
                 self.water_saturation = (~D) + D * (1 - s_0)
                 self.polymer.vec_concentration = (~D) * c_0
                 self.surfactant.vec_concentration = (~D) * g_0
@@ -307,7 +312,7 @@ class Simulation:
                     w1 = rho_schizophyllan * polymer_obj.vec_concentration
                     w10 = rho_schizophyllan * c0_array 
                 else:
-                    raise SimulationCalcInputException("SimulationError: Polymer Not Part of Enumeration List")
+                    raise SimulationCalcInputException("SimulationError: Polymer Not Part of 'PolymerTypes' Enumerations List")
                 
                 w2 = rho_water * (1-polymer_obj.vec_concentration)
                 w20 = rho_water * (1- c0_array)
@@ -355,7 +360,9 @@ class Simulation:
                                     polymer_obj.vec_concentration[ii, jj] = vis_water
                                 if polymer_obj.vec_concentration[ii, jj] > 100:
                                     polymer_obj.vec_concentration[ii, jj] = 100
-
+                
+            else:
+                raise SimulationCalcInputException("SimulationError: Model Type not part of 'ModelType' Enumerations list")
             return [self.aqueous_viscosity, gamma_dot]
         except Exception as e:
             print(e)
