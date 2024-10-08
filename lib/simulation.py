@@ -62,9 +62,11 @@ class Simulation:
         self.permeability_flg = permeability_flg
         self.mesh = mesh_grid
 
-        self._water_saturation_ = None
+        self._water_saturation_ = 0
         self._init_water_saturation_scalar_ = init_water_saturation
-        self._aqueous_viscosity_ = None
+        self._aqueous_viscosity_ = 0
+        self._oleic_mobility_ = 0
+        self._aqueous_mobility_ = 0 
 
         #General Parameters in Simulation
         self._phi_ = None 
@@ -144,6 +146,22 @@ class Simulation:
     def aqueous_viscosity(self, value):
         self._aqueous_viscosity_ = value
 
+    @property
+    def oleic_mobility(self):
+        return self._oleic_mobility_
+
+    @oleic_mobility.setter
+    def oleic_mobility(self, value):
+        self._oleic_mobility_ = value
+
+    @property
+    def aqueous_mobility(self):
+        return self._aqueous_mobility_
+
+    @aqueous_mobility.setter
+    def aqueous_mobility(self, value):
+        self._aqueous_mobility_ = value
+
 
     def get_phi_value(self):
         """
@@ -196,11 +214,9 @@ class Simulation:
 
 
         :return: returns water front position
+        :rtype: np.array
         """
         init_front_hs = 0.1
-        # out=(x-0.15)^2+(y-0.15)^2 -0.5*(x+y-0.35)^2;
-        # # perturbed initial saturation front for special fingering simulations
-        # out = x.^2 + y.^2 - 0.015*(1+0.1*sin(18*atan(y./x)))^2;
 
         #setting default value to out
         out = 0
@@ -260,14 +276,11 @@ class Simulation:
             print(e)
             exit(1)
 
-
     
     def compvis(self, U, V, X, Y, beta1, c0_array):
         """
         function to compute viscosity of injected
         displacing phase containing polymer
-        miuo = Displaced phase viscosity, c = polymer concentration
-
         """
         ### Initializing variables:
         try:
@@ -368,6 +381,75 @@ class Simulation:
             print(e)
             exit(1)
 
+
+    def compmob(self, sor, swr, sor0, swr0, flag):
+        """
+        function to compute mobility
+
+        :param sor: residual oil saturation at IFT sigma (matrix)
+        :type sor: float
+
+        :param swr: residual water saturation at IFT sigma (matrix)
+        :type swr: float
+        
+        :param sor0: residual oil saturation at IFT sigma0 (constant)
+        :type sor0: float
+
+        :param swr0: residual water saturation at IFT sigma0 (constant)
+        :type swr0: float
+
+        :param flag: denotes which phase 0=oleic and 1=aqueous
+        :type flag: int
+
+        :return: mobility of aqueous or oleic phases
+        :rtype: np.array
+        """
+        oil_viscosity = SimulationConstants.Oil_Viscosity
+        if(self.is_surfactant == 0): # (without surfactant)
+            # Normalized saturations of water and oil at IFT sigma0
+            nsw0 = (self.water_saturation - swr0) / (1 - swr0)
+            nso0 = (self.water_saturation - swr0) / (1 - swr0 - sor0)
+
+            # Corey type relative permeability in the absence of surfactant
+            krw0 = nsw0**3.5
+            kro0 = ((1 - nso0)**2) * (1 - nso0**1.5)
+
+            if(flag == 0): #calculating mobility in oleic phase
+                self.oleic_mobility = kro0/oil_viscosity
+                return self.oleic_mobility
+            elif(flag == 1): #calculating mobility in aqueous phase
+                self.aqueous_mobility = krw0/self.aqueous_viscosity
+                return self.aqueous_mobility
+            else:
+                raise SimulationCalcInputException("SimulationError: Flag unknown. Flag can only be a 0 (for oleic mobility calculation) and 1 (for aqueous mobility calculation). Please try again...")
+        elif(self.is_surfactant == 1): # (with surfactant)
+            # normalized saturations of water and oil at IFT sigma
+            nsw = (self.water_saturation - swr)/(1 - swr)
+            nso = (self.water_saturation - swr)/(1 - swr - sor)
+
+            # rel perm in presence of surfactant
+            krw = nsw * (2.5 * swr * ((nsw**2) - 1) + 1)
+            kro = (1 - nso) * (1 - 5 * sor * nso)
+
+            if(flag == 0): #calculating mobility in oleic phase
+                self.oleic_mobility = kro/oil_viscosity
+                return self.oleic_mobility
+            elif(flag == 1): #calculating mobilitty of the aqueous phase
+                self.aqueous_mobility = krw/self.aqueous_viscosity
+                return self.aqueous_mobility
+            else:
+                raise SimulationCalcInputException("SimulationError: Flag unknown. Flag can only be a 0 (for oleic mobility calculation) and 1 (for aqueous mobility calculation). Please try again...")
+        else:
+            raise SimulationCalcInputException("SimulationError: Need proper statement of is_surfactant (0 for Polymer Flooding Simulation & 1 for Surfactant-Polymer Flooding Simulation). Please try again...")
+
+    def compres(self):
+        """
+        function to compute residual saturations as a function of surfactant
+        concentration via capillary number variation. Hence it varies with change
+        in surf concentration and velocity evolution. Must be recomputed at every
+        time step.
+        """
+        pass
 
     def divergence(self,F1, F2):
         """
