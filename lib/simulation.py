@@ -62,14 +62,16 @@ class Simulation:
         self.permeability_flg = permeability_flg
         self.mesh = mesh_grid
 
+        #simulation properties
         self._water_saturation_ = 0
         self._init_water_saturation_scalar_ = init_water_saturation
         self._aqueous_viscosity_ = 0
         self._oleic_mobility_ = 0
         self._aqueous_mobility_ = 0 
-
+        self._phi_ = 0 
+        self._sigma_ = 0 # interfacial tension
+        
         #General Parameters in Simulation
-        self._phi_ = None 
         self.sim_id = sim_id
         self.is_surfactant = is_surfactant
         self.mdl_id = mdl_id
@@ -161,6 +163,14 @@ class Simulation:
     @aqueous_mobility.setter
     def aqueous_mobility(self, value):
         self._aqueous_mobility_ = value
+
+    @property
+    def sigma(self):
+        return self._sigma_
+
+    @sigma.setter
+    def sigma(self, value):
+        self._sigma_ = value
 
 
     def get_phi_value(self):
