@@ -8,9 +8,9 @@ class SimulationConstants(Enum):
     Water_Viscosity = 1.26
     Water_Density = 1000 #kg/m^3
     Oil_Viscosity = 10
-    Initial_Resid_Water_Saturation = 0.21
-    Resid_Aqueous_Phase_Saturation = 0.1
-    Resid_Oleic_Phase_Saturation = 0.2
+    Initial_Resident_Water_Saturation = 0.21
+    Resid_Aqueous_Phase_Saturation_Initial = 0.1
+    Resid_Oleic_Phase_Saturation_Initial = 0.2
     Aqueous_Phase_Critical_Capillary_Num = 10**(-5)
     Oleic_Phase_Critical_Capillary_Num = 10**(-5)
     Capillary_Pressure_Param_1 = 0.1 # omega_1

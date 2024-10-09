@@ -232,7 +232,7 @@ class Simulation:
         out = 0
         
         #homogenous
-        if ( self.permeability_flg == PermeabilityType.Homogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear ):
+        if ( self.permeability_flg == PermeabilityType.Homogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
             out = y - init_front_hs + 0.01 * (np.cos(80 * np.pi * x))
         elif ( self.permeability_flg == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
             out = y - init_front_hs ## Rectilinear Homogenous
@@ -296,8 +296,8 @@ class Simulation:
         try:
             if(self.polymer is not None and self.surfactant is not None):
                 gamma_dot = np.zeros_like(self.polymer.vec_concentration)
-                vis_water = SimulationConstants.Water_Viscosity #viscosity['water']
-                vis_oil = SimulationConstants.Oil_Viscosity #viscosity['oil']
+                vis_water = SimulationConstants.Water_Viscosity.value #viscosity['water']
+                vis_oil = SimulationConstants.Oil_Viscosity.value #viscosity['oil']
                 # vis_polymer_array = self.polymer.visosity #viscosity['polymer_array']
                 # polymer_type = self.polymer.name #params['polymer_type']
                 polymer_obj = self.polymer
@@ -322,7 +322,7 @@ class Simulation:
                     self.aqueous_viscosity = vis_oil * (0.5 + polymer_obj.vec_concentration)
             elif(self.mdl_id == ModelType.Shear_Thinning_On):
                 # Dynamic Viscosity (SHEAR THINNING ON => MODEL TYPE #3)
-                rho_water = SimulationConstants.Water_Density # kg/m^3
+                rho_water = SimulationConstants.Water_Density.value # kg/m^3
                 rho_xanthane = PolymerList.Xanthane.Density #kg/m^3
                 rho_schizophyllan = PolymerList.Schizophyllan.Density #kg/m^3
                 
@@ -392,7 +392,7 @@ class Simulation:
             exit(1)
 
 
-    def compmob(self, sor, swr, sor0, swr0, flag):
+    def compmob(self, sor, swr, flag):
         """
         function to compute mobility
 
@@ -414,7 +414,9 @@ class Simulation:
         :return: mobility of aqueous or oleic phases
         :rtype: np.array
         """
-        oil_viscosity = SimulationConstants.Oil_Viscosity
+        oil_viscosity = SimulationConstants.Oil_Viscosity.value
+        swr0 = SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value
+        sor0 = SimulationConstants.Resid_Oleic_Phase_Saturation_Initial.value
         if(self.is_surfactant == 0): # (without surfactant)
             # Normalized saturations of water and oil at IFT sigma0
             nsw0 = (self.water_saturation - swr0) / (1 - swr0)
@@ -452,14 +454,54 @@ class Simulation:
         else:
             raise SimulationCalcInputException("SimulationError: Need proper statement of is_surfactant (0 for Polymer Flooding Simulation & 1 for Surfactant-Polymer Flooding Simulation). Please try again...")
 
-    def compres(self):
+    def compres(self, u, v):
         """
         function to compute residual saturations as a function of surfactant
         concentration via capillary number variation. Hence it varies with change
         in surf concentration and velocity evolution. Must be recomputed at every
         time step.
         """
+
+        # define critical capillary numbers 
+        # ie $$N_c $$ at which $$s_{ro}$$ and $$ s_{ra}$$ begin to decrease
+        Nco0 = ( 1.44 )*( 10**(-4) )  # Values from Amafuele Handy 1982
+        Nca0 = ( 1.44 )*( 10**(-4) )  # these two do not have to be the same
+        
+        miuo = SimulationConstants.Oil_Viscosity.value
+        swr0 = SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value
+        sor0 = SimulationConstants.Resid_Oleic_Phase_Saturation_Initial.value
+
+        # compute capillary number
+        nca = np.sqrt(u**2 + v**2) * self.aqueous_viscosity / self.sigma
+        nco = np.sqrt(u**2 + v**2) * miuo / self.sigma
+        Nca = np.linalg.norm(nca)  # compute 2-norm (largest singular value)
+        Nco = np.linalg.norm(nco)
+
+        # define residual saturations as functions of capillary numbers
+        if Nco < Nco0:
+            sor = sor0
+        else:
+            sor = sor0 * (Nco0 / Nco)**0.5213
+
+        if Nca < Nca0:
+            swr = swr0
+        else:
+            swr = swr0 * (Nca0 / Nca)**0.1534
+
+        return [swr, sor]
+
+    def setTri(self):
         pass
+
+    def setGrid(self):
+        pass
+
+    def setRHS(self):
+        pass
+
+    def setA(self):
+        pass
+
 
     def divergence(self,F1, F2):
         """
