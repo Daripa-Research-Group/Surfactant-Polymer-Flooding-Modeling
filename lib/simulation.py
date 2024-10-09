@@ -537,6 +537,19 @@ class Simulation:
     def setA(self):
         pass
 
+    def setB(self):
+        pass
+
+    def transport_solver(self):
+        pass
+
+
+    def __str__(self):
+        return ""
+
+    def export_data(self):
+        pass
+
 
     def divergence(self,F1, F2):
         """
