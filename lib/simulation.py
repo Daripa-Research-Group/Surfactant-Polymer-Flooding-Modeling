@@ -78,7 +78,6 @@ class Simulation:
         self.plt_type = plt_type
 
 
-    #PROPERTIES OF SIMULATION CLASS
     @property
     def polymer(self):
         return self._polymer_
@@ -491,9 +490,45 @@ class Simulation:
         return [swr, sor]
 
     def setTri(self):
-        pass
+        """
+        Setting up triangulations for the FEM grid:
+
+        U = cell array with each element = array of vertices of Upper Triangle of the rectangular cell 
+        L = cell array with each element = array of vertices of Lower Triangle of the rectangular cell
+        At every point (i,j), U{i,j} & L{i,j} are cells with coordinates of vertices of the two triangles 
+        obtained by bisecting the rectangle starting at (i,j). The bisection line goes from NW to SE.
+         
+        """
+        U = np.empty((self.mesh.m, self.mesh.n), dtype=object)
+        L = np.empty((self.mesh.m, self.mesh.n), dtype=object)
+
+        for j in range(0,self.mesh.m):
+            for k in range(0, self.mesh.n):
+                x1 = self.mesh.left + j * self.mesh.dx
+                y1 = self.mesh.bottom + k * self.mesh.dy
+                x2 = self.mesh.left + (j + 1) * self.mesh.dx
+                y2 = y1
+                x3 = x1
+                y3 = self.mesh.bottom + (k + 1) * self.mesh.dy
+                x4 = x2
+                y4 = y3
+
+                l = {
+                    'x': [x1, x2, x3],
+                    'y': [y1, y2, y3]
+                }
+
+                u = {
+                    'x': [x4, x3, x2],
+                    'y': [y4, y3, y2]
+                }
+
+                U[j, k] = u
+                L[j, k] = l
+        return [U, L]
 
     def setGrid(self):
+        
         pass
 
     def setRHS(self):
