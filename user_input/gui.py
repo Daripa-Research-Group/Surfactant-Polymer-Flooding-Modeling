@@ -6,7 +6,7 @@ class UserInputGUI:
     def __init__(self, master):
         self.master = master
         self.master.title("User Input GUI")
-        self.master.geometry("800x600")  # Default size, can be adjusted
+        self.master.geometry("800x600")
 
         self.main_frame = tk.Frame(self.master)
         self.main_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -21,19 +21,15 @@ class UserInputGUI:
         )
 
         self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
-
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
         self.inputs = []
         self.row_count = 0
 
         self.create_table_headers()
-
         self.add_simulation()
-
         self.create_buttons()
 
     def create_table_headers(self):
@@ -45,10 +41,10 @@ class UserInputGUI:
         for col, header in enumerate(headers):
             label = tk.Label(self.scrollable_frame, text=header, font=("Arial", 10, "bold"))
             label.grid(row=1, column=col, padx=5, pady=5, sticky="nsew")
-            self.scrollable_frame.columnconfigure(col, weight=1)  
+            self.scrollable_frame.columnconfigure(col, weight=1)
 
     def add_simulation(self):
-        row = self.row_count + 2  
+        row = self.row_count + 2
         input_vars = {}
 
         simulation_label = tk.Label(self.scrollable_frame, text=str(self.row_count + 1))
@@ -62,17 +58,16 @@ class UserInputGUI:
             input_vars[header] = var
             
             entry = tk.Entry(self.scrollable_frame, textvariable=var, width=10)
-            entry.grid(row=row, column=col + 1, padx=5, pady=5, sticky="ew")  
-            self.scrollable_frame.columnconfigure(col + 1, weight=1) 
+            entry.grid(row=row, column=col + 1, padx=5, pady=5, sticky="ew")
+            self.scrollable_frame.columnconfigure(col + 1, weight=1)
 
         self.inputs.append(input_vars)
         self.row_count += 1
-
-        self.scrollable_frame.rowconfigure(row, weight=1)  
+        self.scrollable_frame.rowconfigure(row, weight=1)
 
     def create_buttons(self):
         button_frame = tk.Frame(self.master)
-        button_frame.pack(side=tk.BOTTOM, fill=tk.X)  
+        button_frame.pack(side=tk.BOTTOM, fill=tk.X)
 
         tk.Button(button_frame, text="Submit All", command=self.submit_all).pack(side=tk.LEFT, padx=10, pady=10)
         tk.Button(button_frame, text="Add Simulation", command=self.add_simulation).pack(side=tk.LEFT, padx=10)
@@ -87,7 +82,7 @@ class UserInputGUI:
             try:
                 data = pd.read_csv(file_path)
                 messagebox.showinfo("CSV Loaded", data.head().to_string())
-                print(data)  
+                print(data)
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to load CSV file: {e}")
 
@@ -103,6 +98,7 @@ class UserInputGUI:
 
         if all(all_inputs):
             print("All inputs received:")
+            self.master.destroy()
         else:
             messagebox.showwarning("Input Error", "Please fill in all fields before submitting.")
 
