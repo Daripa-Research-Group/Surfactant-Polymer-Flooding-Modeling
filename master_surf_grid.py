@@ -9,6 +9,7 @@ This code was derived from EOR repository developed by Sourav Dutta and Prabir D
 
 #### IMPORT STATEMENTS
 import numpy as np
+import tkinter as tk
 # import matplotlib.pyplot as plt
 import seaborn as sb
 import math
@@ -21,6 +22,8 @@ from lib.surfactant_polymer_conc_initial import inital_polymer_surfactant_concen
 from lib.Exceptions import OutOfRangeError
 from lib.para import Para, Box
 from lib.compvis import compvis
+from user_input.json_input_parser import get_user_input
+from user_input.gui import UserInputGUI
 
 
 #initializing global variables
@@ -34,131 +37,7 @@ CFL = 1
 TIME_STOP = 500
 TIME_START = 0
 
-
-
-
-"""
-Runs the simulation
-
-Parameters: None
-
-Return: None
-"""
-def main():
-    # # clearing variables and setting all initial paramters
-    # plt.close("all")
-    # np.set_printoptions(precision=15, suppress=True) #adjusts print setting for improved readability
-    # 
-    # #getting simulation parameters
-    # input_dict = sim_inputs()
-    pass
-
-
-
-"""
-Allows the user to provide information on the type of simulation they want to run
-
-Parameters: None
-
-Return: Dict
-
-"""
-def usr_inputs():
-    #need to implement feature to take in file with user inputs instead if user wants to do multiple runs
-
-    #collecting user input for simulation
-    print("1 = Original Model from JCP paper(Shear thinning off)")
-    print("2 = Sourav's Model")
-    print("3 = Dynamic Viscosity Model (Non-Newtonian Model(Shear thinning on)")
-    while True:
-        try:
-            model_type = int(input("Enter which computation model to use for this simulation: "))
-            if not (1 <= model_type <= 3):
-                raise OutOfRangeError(model_type)
-            break
-
-        except OutOfRangeError as e:
-              print(e)
-    print("----------------------------------------------")
-
-    figure_num = int(input("enter figure number being simulated here: "))
-    print("----------------------------------------------")
-
-    c0iter_val = float(input("Enter value for c0iter(0.001 as default): "))
-    g0iter_val = float(input("Enter value for g0iter_val: "))
-    print("----------------------------------------------")
-
-    print("0 = Saturation(UU) Plot")
-    print("1 = Polymer(CC) Plot")
-    print("2 = Surfactant(GG) Plot")
-    while True:
-        try:
-            plot_type_input = int(input("Enter the type of plot desired: "))
-            if not(0 <= plot_type_input <= 2):
-                raise OutOfRangeError(plot_type_input)
-            break
-        except OutOfRangeError as e:
-            print(e)
-    print("----------------------------------------------")
-
-    print("0 = xanthane")
-    print("1 = schizophyllan")
-    while True:
-        try:    
-            polymer_input = int(input("Enter the desired polymer for the simulation: "))
-            if not(0 <= polymer_input <= 1):
-                raise OutOfRangeError(polymer_input)
-            break
-        except OutOfRangeError as e:
-            print(e)
-    print("----------------------------------------------")
-
-    print("1 = homogeneous with magnitude 1000")
-    print("2 = continuous heterogeneous function")
-    print("3 = impermeable block inclusion at the center")
-    print("4 = impermeable block inclusion off the center")
-    print("5 = Upper Ness from SPE10 model sections")
-    print("6 = Tabert from SPE10 model sections")
-    while True:
-        try:
-            permeability_input = int(input("Enter the corresponding permeability flag for the simulation: "))
-            if not(1 <= permeability_input <= 6):
-                raise OutOfRangeError(permeability_input)
-            break
-        except OutOfRangeError as e:
-            print(e)
-    print("----------------------------------------------")
-    while True:
-        try:
-            alpha_val = float(input("Enter value for alpha (range from [0.5 - 5] using 0.5 step increments):"))
-            if not(0.5 <= alpha_val <= 5):
-                raise OutOfRangeError(alpha_val)
-            break
-        except OutOfRangeError as e:
-            print(e)
-    print("----------------------------------------------")
-
-    
-    #return will be a dictionary with input parameter information
-    usr_input_dict = {
-            "figure_number" : figure_num,
-            "model_type" : model_type,
-            "c0iter" : c0iter_val,
-            "g0iter" : g0iter_val,
-            "plot_type" : plot_type_input,
-            "polymer" : polymer_input,
-            "permeability_flag" : permeability_input,
-            "alpha_value" : alpha_val,
-            "nsim" : 1,
-            'Todd_Longstaff_mixing_parameter' : 0,
-            'shear_flag' : 0
-            #"size_of_grid" : [SOG, SOG, SOG, SOG] <-- use when implementing multiple runs
-        }
-
-    return usr_input_dict
-
-
-def sim_condition_initialization(usr_input_dict):
+def sim_condition_initialization(usr_input_dict) -> dict:
     #### Initializing grid points
     mesh_dimensions = Box()
     mesh_dimensions.m = SOG
@@ -273,13 +152,20 @@ def sim_auto_runs(usr_input_dict, initalized_param_dict):
                 }
         [viscosity_aqu, shear] = compvis(CC, u, v, initalized_param_dict['np_mesh_grid']['x'], initalized_param_dict['np_mesh_grid']['y'], compvis_params, viscosity_dict)
         
+        
+def main() -> None:
+    root = tk.Tk()
+    app = UserInputGUI(root)
+    root.mainloop()
+    # user_inputs = get_user_input('simulation_input.json')
+    # for simulation_input in user_inputs:
+    #     try:         
+    #         print(simulation_input)
+    #         # sim_condition_initialization(simulation_input)
+    #     except Exception as e:
+    #         print(f'An error has occured: {e}')
 
 
-    
-
-def sim_visualization():
-    
-    pass
 
 if(__name__ == "__main__"):
     main()

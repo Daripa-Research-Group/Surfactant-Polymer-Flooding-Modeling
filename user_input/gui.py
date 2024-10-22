@@ -93,8 +93,7 @@ class UserInputGUI:
             all_inputs.append(input_values)
 
         print("All Simulations:")
-        for simulation in all_inputs:
-            print(simulation)
+        print(all_inputs)
 
         if all(all_inputs):
             print("All inputs received:")
