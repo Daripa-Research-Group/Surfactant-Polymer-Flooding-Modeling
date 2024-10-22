@@ -34,7 +34,7 @@ class UserInputGUI:
         
         self.all_inputs = None
 
-    def create_table_headers(self):
+    def create_table_headers(self) -> None:
         headers = ["Simulation", "Figure Number", "Model Type", "C0iter", "G0iter", "Plot Type", 
                    "Polymer", "Permeability Flag", "Alpha Value", 
                    "Nsim", "Todd Longstaff Mixing Parameter", "Shear Flag"]
@@ -45,7 +45,7 @@ class UserInputGUI:
             label.grid(row=1, column=col, padx=5, pady=5, sticky="nsew")
             self.scrollable_frame.columnconfigure(col, weight=1)
 
-    def add_simulation(self):
+    def add_simulation(self) -> None:
         row = self.row_count + 2
         input_vars = {}
 
@@ -67,7 +67,7 @@ class UserInputGUI:
         self.row_count += 1
         self.scrollable_frame.rowconfigure(row, weight=1)
 
-    def create_buttons(self):
+    def create_buttons(self) -> None:
         button_frame = tk.Frame(self.master)
         button_frame.pack(side=tk.BOTTOM, fill=tk.X)
 
@@ -78,7 +78,7 @@ class UserInputGUI:
         for button in button_frame.winfo_children():
             button.pack(side=tk.LEFT, padx=(10, 0), pady=10)
 
-    def load_csv(self):
+    def load_csv(self) -> None:
         file_path = filedialog.askopenfilename(title="Select a CSV file", filetypes=[("CSV files", "*.csv")])
         if file_path:
             try:
@@ -88,14 +88,11 @@ class UserInputGUI:
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to load CSV file: {e}")
 
-    def submit_all(self):
+    def submit_all(self) -> None:
         all_inputs = []
         for input_vars in self.inputs:
             input_values = {key: var.get() for key, var in input_vars.items()}
             all_inputs.append(input_values)
-
-        # print("All Simulations:")
-        # print(all_inputs)
 
         if all(all_inputs):
             print("All inputs received:")
@@ -104,6 +101,6 @@ class UserInputGUI:
         else:
             messagebox.showwarning("Input Error", "Please fill in all fields before submitting.")
             
-    def get_input(self):
+    def get_input(self) -> list[dict]:
         return self.all_inputs
 
