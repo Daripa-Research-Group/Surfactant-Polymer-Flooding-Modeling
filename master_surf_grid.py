@@ -157,13 +157,9 @@ def main() -> None:
     root = tk.Tk()
     app = UserInputGUI(root)
     root.mainloop()
-    # user_inputs = get_user_input('simulation_input.json')
-    # for simulation_input in user_inputs:
-    #     try:         
-    #         print(simulation_input)
-    #         # sim_condition_initialization(simulation_input)
-    #     except Exception as e:
-    #         print(f'An error has occured: {e}')
+    
+    user_input = app.get_input()
+    print(f'User entered: {user_input}')
 
 
 
