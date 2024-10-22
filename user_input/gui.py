@@ -31,6 +31,8 @@ class UserInputGUI:
         self.create_table_headers()
         self.add_simulation()
         self.create_buttons()
+        
+        self.all_inputs = None
 
     def create_table_headers(self):
         headers = ["Simulation", "Figure Number", "Model Type", "C0iter", "G0iter", "Plot Type", 
@@ -92,12 +94,16 @@ class UserInputGUI:
             input_values = {key: var.get() for key, var in input_vars.items()}
             all_inputs.append(input_values)
 
-        print("All Simulations:")
-        print(all_inputs)
+        # print("All Simulations:")
+        # print(all_inputs)
 
         if all(all_inputs):
             print("All inputs received:")
+            self.all_inputs = all_inputs
             self.master.destroy()
         else:
             messagebox.showwarning("Input Error", "Please fill in all fields before submitting.")
+            
+    def get_input(self):
+        return self.all_inputs
 
