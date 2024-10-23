@@ -159,7 +159,8 @@ def main() -> None:
     root.mainloop()
     
     user_input = app.get_input()
-    print(f'User entered: {user_input}')
+    for simulation in user_input:
+        sim_condition_initialization(simulation)
 
 
 
