@@ -6,6 +6,7 @@ This python script contains the class definition for running simulations
 from Exceptions import SimulationCalcInputException
 from para import Box
 import numpy as np
+from scipy.special import beta
 from enumerations import SimulationConstants, PolymerList, ModelType, ResevoirGeometry, PermeabilityType
 
 
@@ -527,11 +528,132 @@ class Simulation:
                 L[j, k] = l
         return [U, L]
 
-    def setGrid(self):
+
+    def set_grid(self,U, L, beta):
+        m = self.mesh.m
+        n = self.mesh.n
+
+        out = [[None for _ in range(n+1)] for _ in range(m+1)]
         
-        pass
+
+        for j in range(m+1):
+            for l in range(n+1):
+                if j == 0 and l != 0 and l != n:
+                    t1 = self.weak(L[j][l], [1, 0, 0])
+                    t2 = [0, 0, 0, 0]
+                    t3 = [0, 0, 0, 0]
+                    t4 = [0, 0, 0, 0]
+                    t5 = self.weak(L[j][l-1],[0, 0, 1])
+                    t6 = self.weak(U[j][l-1], [0, 1, 0])
+                elif j == m and l != 0 and l != n:
+                    t1 = [0, 0, 0, 0]
+                    t2 = self.weak(U[j-1][l],[0, 0, 1])
+                    t3 = self.weak(L[j-1][l], [0, 1, 0])
+                    t4 = self.weak(U[j-1][l-1], [1, 0, 0])
+                    t5 = [0, 0, 0, 0]
+                    t6 = [0, 0, 0, 0]
+                elif j != 0 and j != m and l == 0:
+                    t1 = self.weak(L[j][l],[1, 0, 0])
+                    t2 = self.weak(U[j-1][l], [0, 0, 1])
+                    t3 = self.weak(L[j-1][l], [0, 1, 0])
+                    t4 = [0, 0, 0, 0]
+                    t5 = [0, 0, 0, 0]
+                    t6 = [0, 0, 0, 0]
+                elif j != 0 and j != m and l == n:
+                    t1 = [0, 0, 0, 0]
+                    t2 = [0, 0, 0, 0]
+                    t3 = [0, 0, 0, 0]
+                    t4 = self.weak(U[j-1][l-1],[1, 0, 0])
+                    t5 = self.weak(L[j][l-1],[0, 0, 1])
+                    t6 = self.weak(U[j][l-1], [0, 1, 0])
+                elif j == 0 and l == 0:
+                    t1 = self.weak(L[j][l],[1, 0, 0])
+                    t2 = [0, 0, 0, 0]
+                    t3 = [0, 0, 0, 0]
+                    t4 = [0, 0, 0, 0]
+                    t5 = [0, 0, 0, 0]
+                    t6 = [0, 0, 0, 0]
+                elif j == 0 and l == n:
+                    t1 = [0, 0, 0, 0]
+                    t2 = [0, 0, 0, 0]
+                    t3 = [0, 0, 0, 0]
+                    t4 = [0, 0, 0, 0]
+                    t5 = self.weak(L[j][l-1], [0, 0, 1])
+                    t6 = self.weak(U[j][l-1], [0, 1, 0])
+                elif j == m and l == 0:
+                    t1 = [0, 0, 0, 0]
+                    t2 = self.weak(U[j-1][l], [0, 0, 1])
+                    t3 = self.weak(L[j-1][l], [0, 1, 0])
+                    t4 = [0, 0, 0, 0]
+                    t5 = [0, 0, 0, 0]
+                    t6 = [0, 0, 0, 0]
+                elif j == m and l == n:
+                    t1 = [0, 0, 0, 0]
+                    t2 = [0, 0, 0, 0]
+                    t3 = [0, 0, 0, 0]
+                    t4 = self.weak(U[j-1][l-1], [1, 0, 0])
+                    t5 = [0, 0, 0, 0]
+                    t6 = [0, 0, 0, 0]
+                else:
+                    t1 = self.weak(L[j][l], [1, 0, 0])
+                    t2 = self.weak(U[j-1][l], [0, 0, 1])
+                    t3 = self.weak(L[j-1][l], [0, 1, 0])
+                    t4 = self.weak(U[j-1][l-1], [1, 0, 0])
+                    t5 = self.weak(L[j][l-1], [0, 0, 1])
+                    t6 = self.weak(U[j][l-1], [0, 1, 0])
+
+                grid = {
+                    'c': t1[0] + t2[2] + t3[1] + t4[0] + t5[2] + t6[1],
+                    'w': t3[0] + t4[1],
+                    's': t4[2] + t5[0],
+                    'n': t1[2] + t2[0],
+                    'e': t1[1] + t6[0],
+                    'nw': t2[1] + t3[2],
+                    'se': t5[1] + t6[2],
+                    'const': t1[3] + t2[3] + t3[3] + t4[3] + t5[3] + t6[3]
+                }
+                
+                out[j][l] = grid
+
+        return out
+
+    def weak(self, T, v):
+        b1 = self.beta_func(T.x[0],T.y[0])
+        b2 = self.beta_func(T.x[1],T.y[1])
+        b3 = self.beta_func(T.x[2],T.y[2])
+        b_avg = (b1 + b2 + b3) / 3
+        
+        s = self.polyarea(T.x, T.y)
+
+        # Create and manipulate matrix M
+        M = np.vstack((T.x, T.y, [1, 1, 1])).T
+        M_inv = np.linalg.inv(M)
+        M = M_inv[:2, :]  # Extract the first two rows of M_inv
+
+        # Calculate vdiff and inte
+        vdiff = np.dot(M, v)
+        inte = np.dot(vdiff.T, beta * np.dot(M, s))
+
+        # Output result
+        out = [inte, 0] 
+
+        return out
+
+    def beta_func(self, x, y):
+        dx = self.mesh.dx
+        dy = self.mesh.dy
+        
+        left = self.mesh.left
+        bottom = self.mesh.bottom
+        
+        nn = np.round(( x - left )/dx) + 1
+        mm = np.round(( y - bottom )/dy) + 1
+        
+        out = beta(nn,mm)
+        return out
 
     def setRHS(self):
+
         pass
 
     def setA(self):
@@ -564,3 +686,19 @@ class Simulation:
             Divergence of the vector field
         """
         return np.gradient(F1, axis=1) + np.gradient(F2, axis=0)
+
+    def polyarea(self, x, y):
+        """
+        Calculate the area of a polygon using the Shoelace formula.
+        The vertices are defined by the x and y coordinates.
+        
+        Parameters:
+        x (list or array): x-coordinates of the polygon vertices
+        y (list or array): y-coordinates of the polygon vertices
+        
+        Returns:
+        float: Area of the polygon
+        """
+        return 0.5 * abs(sum(x[i] * y[i + 1] - y[i] * x[i + 1] for i in range(-1, len(x) - 1)))
+
+
