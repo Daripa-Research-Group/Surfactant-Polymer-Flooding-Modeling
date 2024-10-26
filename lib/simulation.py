@@ -6,7 +6,6 @@ This python script contains the class definition for running simulations
 from Exceptions import SimulationCalcInputException
 from para import Box
 import numpy as np
-from scipy.special import beta
 from enumerations import SimulationConstants, PolymerList, ModelType, ResevoirGeometry, PermeabilityType
 
 
@@ -539,23 +538,23 @@ class Simulation:
         for j in range(m+1):
             for l in range(n+1):
                 if j == 0 and l != 0 and l != n:
-                    t1 = self.weak(L[j][l], [1, 0, 0])
+                    t1 = self.weak(L[j][l],[1, 0, 0], beta)
                     t2 = [0, 0, 0, 0]
                     t3 = [0, 0, 0, 0]
                     t4 = [0, 0, 0, 0]
-                    t5 = self.weak(L[j][l-1],[0, 0, 1])
-                    t6 = self.weak(U[j][l-1], [0, 1, 0])
+                    t5 = self.weak(L[j][l-1],[0, 0, 1], beta)
+                    t6 = self.weak(U[j][l-1], [0, 1, 0], beta)
                 elif j == m and l != 0 and l != n:
                     t1 = [0, 0, 0, 0]
-                    t2 = self.weak(U[j-1][l],[0, 0, 1])
-                    t3 = self.weak(L[j-1][l], [0, 1, 0])
-                    t4 = self.weak(U[j-1][l-1], [1, 0, 0])
+                    t2 = self.weak(U[j-1][l],[0, 0, 1], beta)
+                    t3 = self.weak(L[j-1][l], [0, 1, 0], beta)
+                    t4 = self.weak(U[j-1][l-1], [1, 0, 0], beta)
                     t5 = [0, 0, 0, 0]
                     t6 = [0, 0, 0, 0]
                 elif j != 0 and j != m and l == 0:
-                    t1 = self.weak(L[j][l],[1, 0, 0])
-                    t2 = self.weak(U[j-1][l], [0, 0, 1])
-                    t3 = self.weak(L[j-1][l], [0, 1, 0])
+                    t1 = self.weak(L[j][l],[1, 0, 0], beta)
+                    t2 = self.weak(U[j-1][l], [0, 0, 1], beta)
+                    t3 = self.weak(L[j-1][l], [0, 1, 0], beta)
                     t4 = [0, 0, 0, 0]
                     t5 = [0, 0, 0, 0]
                     t6 = [0, 0, 0, 0]
@@ -563,11 +562,11 @@ class Simulation:
                     t1 = [0, 0, 0, 0]
                     t2 = [0, 0, 0, 0]
                     t3 = [0, 0, 0, 0]
-                    t4 = self.weak(U[j-1][l-1],[1, 0, 0])
-                    t5 = self.weak(L[j][l-1],[0, 0, 1])
-                    t6 = self.weak(U[j][l-1], [0, 1, 0])
+                    t4 = self.weak(U[j-1][l-1],[1, 0, 0], beta)
+                    t5 = self.weak(L[j][l-1],[0, 0, 1], beta)
+                    t6 = self.weak(U[j][l-1], [0, 1, 0], beta)
                 elif j == 0 and l == 0:
-                    t1 = self.weak(L[j][l],[1, 0, 0])
+                    t1 = self.weak(L[j][l],[1, 0, 0], beta)
                     t2 = [0, 0, 0, 0]
                     t3 = [0, 0, 0, 0]
                     t4 = [0, 0, 0, 0]
@@ -578,12 +577,12 @@ class Simulation:
                     t2 = [0, 0, 0, 0]
                     t3 = [0, 0, 0, 0]
                     t4 = [0, 0, 0, 0]
-                    t5 = self.weak(L[j][l-1], [0, 0, 1])
-                    t6 = self.weak(U[j][l-1], [0, 1, 0])
+                    t5 = self.weak(L[j][l-1], [0, 0, 1], beta)
+                    t6 = self.weak(U[j][l-1], [0, 1, 0], beta)
                 elif j == m and l == 0:
                     t1 = [0, 0, 0, 0]
-                    t2 = self.weak(U[j-1][l], [0, 0, 1])
-                    t3 = self.weak(L[j-1][l], [0, 1, 0])
+                    t2 = self.weak(U[j-1][l], [0, 0, 1], beta)
+                    t3 = self.weak(L[j-1][l], [0, 1, 0], beta)
                     t4 = [0, 0, 0, 0]
                     t5 = [0, 0, 0, 0]
                     t6 = [0, 0, 0, 0]
@@ -591,16 +590,16 @@ class Simulation:
                     t1 = [0, 0, 0, 0]
                     t2 = [0, 0, 0, 0]
                     t3 = [0, 0, 0, 0]
-                    t4 = self.weak(U[j-1][l-1], [1, 0, 0])
+                    t4 = self.weak(U[j-1][l-1], [1, 0, 0], beta)
                     t5 = [0, 0, 0, 0]
                     t6 = [0, 0, 0, 0]
                 else:
-                    t1 = self.weak(L[j][l], [1, 0, 0])
-                    t2 = self.weak(U[j-1][l], [0, 0, 1])
-                    t3 = self.weak(L[j-1][l], [0, 1, 0])
-                    t4 = self.weak(U[j-1][l-1], [1, 0, 0])
-                    t5 = self.weak(L[j][l-1], [0, 0, 1])
-                    t6 = self.weak(U[j][l-1], [0, 1, 0])
+                    t1 = self.weak(L[j][l], [1, 0, 0], beta)
+                    t2 = self.weak(U[j-1][l], [0, 0, 1], beta)
+                    t3 = self.weak(L[j-1][l], [0, 1, 0], beta)
+                    t4 = self.weak(U[j-1][l-1], [1, 0, 0], beta)
+                    t5 = self.weak(L[j][l-1], [0, 0, 1], beta)
+                    t6 = self.weak(U[j][l-1], [0, 1, 0], beta)
 
                 grid = {
                     'c': t1[0] + t2[2] + t3[1] + t4[0] + t5[2] + t6[1],
@@ -617,10 +616,10 @@ class Simulation:
 
         return out
 
-    def weak(self, T, v):
-        b1 = self.beta_func(T.x[0],T.y[0])
-        b2 = self.beta_func(T.x[1],T.y[1])
-        b3 = self.beta_func(T.x[2],T.y[2])
+    def weak(self, T, v, beta):
+        b1 = self.beta_func(T.x[0],T.y[0], beta)
+        b2 = self.beta_func(T.x[1],T.y[1], beta)
+        b3 = self.beta_func(T.x[2],T.y[2], beta)
         b_avg = (b1 + b2 + b3) / 3
         
         s = self.polyarea(T.x, T.y)
@@ -639,7 +638,7 @@ class Simulation:
 
         return out
 
-    def beta_func(self, x, y):
+    def beta_func(self, x, y, beta):
         dx = self.mesh.dx
         dy = self.mesh.dy
         
@@ -649,12 +648,111 @@ class Simulation:
         nn = np.round(( x - left )/dx) + 1
         mm = np.round(( y - bottom )/dy) + 1
         
-        out = beta(nn,mm)
+        out = beta[nn][mm]
         return out
 
-    def setRHS(self):
+    def setRightHand(self, src_matrix, U, L):
+        m = self.mesh.m
+        n = self.mesh.n
+        
+        rh = np.zeros((m+1) * (n+1))
+        
+        for j in range(1, m + 2):
+            for l in range(1, n + 2):
+                id = j + (l - 1) * (m + 1) - 1  # Adjust for Python 0-based indexing
+                
+                if j == 1 and l != 1 and l != (n + 1):
+                    t1 = self.fInt(L[j][l], src_matrix, [1, 0, 0])
+                    t2 = t3 = t4 = 0
+                    t5 = self.fInt(L[j][l - 1], src_matrix, [0, 0, 1])
+                    t6 = self.fInt(U[j][l - 1], src_matrix, [0, 1, 0])
+                
+                elif j == (m + 1) and l != 1 and l != (n + 1):
+                    t1 = 0
+                    t2 = self.fInt(U[j - 1][l], src_matrix, [0, 0, 1])
+                    t3 = self.fInt(L[j - 1][l], src_matrix, [0, 1, 0])
+                    t4 = self.fInt(U[j - 1][l - 1], src_matrix, [1, 0, 0])
+                    t5 = t6 = 0
+                
+                elif j != 1 and j != (m + 1) and l == 1:
+                    t1 = self.fInt(L[j][l], src_matrix, [1, 0, 0])
+                    t2 = self.fInt(U[j - 1][l], src_matrix, [0, 0, 1])
+                    t3 = self.fInt(L[j - 1][l], src_matrix, [0, 1, 0])
+                    t4 = t5 = t6 = 0
+                
+                elif j != 1 and j != (m + 1) and l == (n + 1):
+                    t1 = t2 = t3 = 0
+                    t4 = self.fInt(U[j - 1][l - 1], src_matrix, [1, 0, 0])
+                    t5 = self.fInt(L[j][l - 1], src_matrix, [0, 0, 1])
+                    t6 = self.fInt(U[j][l - 1], src_matrix, [0, 1, 0])
+                
+                elif j == 1 and l == 1:
+                    t1 = self.fInt(L[j][l], src_matrix, [1, 0, 0])
+                    t2 = t3 = t4 = t5 = t6 = 0
+                
+                elif j == 1 and l == (n + 1):
+                    t1 = t2 = t3 = t4 = 0
+                    t5 = self.fInt(L[j][l - 1], src_matrix, [0, 0, 1])
+                    t6 = self.fInt(U[j][l - 1], src_matrix, [0, 1, 0])
+                
+                elif j == (m + 1) and l == 1:
+                    t1 = 0
+                    t2 = self.fInt(U[j - 1][l], src_matrix, [0, 0, 1])
+                    t3 = self.fInt(L[j - 1][l], src_matrix, [0, 1, 0])
+                    t4 = t5 = t6 = 0
+                
+                elif j == (m + 1) and l == (n + 1):
+                    t1 = t2 = t3 = 0
+                    t4 = self.fInt(U[j - 1][l - 1], src_matrix, [1, 0, 0])
+                    t5 = t6 = 0
+                
+                else:
+                    t1 = self.fInt(L[j][l], src_matrix, [1, 0, 0])
+                    t2 = self.fInt(U[j - 1][l], src_matrix, [0, 0, 1])
+                    t3 = self.fInt(L[j - 1][l], src_matrix, [0, 1, 0])
+                    t4 = self.fInt(U[j - 1][l - 1], src_matrix, [1, 0, 0])
+                    t5 = self.fInt(L[j][l - 1], src_matrix, [0, 0, 1])
+                    t6 = self.fInt(U[j][l - 1], src_matrix, [0, 1, 0])
+                
+                rh[id] = t1 + t2 + t3 + t4 + t5 + t6
+        
+        return rh
 
-        pass
+    def fInt(self, T, src_matrix, v):
+        f0 = self.f_func(T.x[0], T.y[0],src_matrix)
+        f1 = self.f_func(T.x[1], T.y[1],src_matrix)
+        f2 = self.f_func(T.x[2], T.y[2],src_matrix)
+        
+        s = self.polyarea(T.x, T.y)
+        
+        f_avg = (f0 + f1 + f2) / 3
+        v_avg = (v[0], v[1] + v[2]) / 3
+
+        f3 = (f1 + f2) / 2
+        f4 = (f0 + f2) / 2
+        f5 = (f0 + f1) / 2
+
+        v3 = (v[1] + v[2]) / 2
+        v4 = (v[2] + v[0]) / 2
+        v5 = (v[0] + v[1]) / 2
+
+        out = (f3*v3 + f4*v4 + f5*v5 + f_avg*v_avg)*s / 4
+
+        return out
+
+
+    def f_func(self, x, y, src_matrix):
+        dx = self.mesh.dx
+        dy = self.mesh.dy
+        
+        left = self.mesh.left
+        bottom = self.mesh.bottom
+        
+        nn = np.round(( x - left )/dx) + 1
+        mm = np.round(( y - bottom )/dy) + 1
+        
+        out = src_matrix[nn][mm]
+        return out
 
     def setA(self):
         pass
@@ -664,8 +762,7 @@ class Simulation:
 
     def transport_solver(self):
         pass
-
-
+    
     def __str__(self):
         return ""
 
