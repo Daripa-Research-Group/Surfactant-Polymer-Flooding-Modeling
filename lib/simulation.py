@@ -754,21 +754,76 @@ class Simulation:
         out = src_matrix[nn][mm]
         return out
 
-    def setA(self):
-        pass
+    def setA(self, grid):
+        m = self.mesh.m
+        n = self.mesh.n
+        
+        A = np.zeros(((m + 1) * (n + 1) * 7, 3))
+        list_index = 0
+        
+        for j in range(1, m + 2):
+            for l in range(1, n + 2):
+                a = grid[j][l]
+                id_ = j + (l - 1) * (m + 1)
+                
+                # Center
+                A[list_index, :] = [id_, id_, a['c']]
+                list_index += 1
+                
+                # West
+                if j != 1:
+                    A[list_index, :] = [id_, id_ - 1, a['w']]
+                    list_index += 1
+                
+                # Northwest
+                if j != 1 and l != (n + 1):
+                    A[list_index, :] = [id_, id_ + m, a['nw']]
+                    list_index += 1
+                
+                # North
+                if l != (n + 1):
+                    A[list_index, :] = [id_, id_ + m + 1, a['n']]
+                    list_index += 1
+                
+                # East
+                if j != (m + 1):
+                    A[list_index, :] = [id_, id_ + 1, a['e']]
+                    list_index += 1
+                
+                # South
+                if l != 1:
+                    A[list_index, :] = [id_, id_ - m - 1, a['s']]
+                    list_index += 1
+                
+                # Southeast
+                if j != (m + 1) and l != 1:
+                    A[list_index, :] = [id_, id_ - m, a['se']]
+                    list_index += 1
+        
+        # Trim the array to remove unused rows
+        A = A[:list_index, :]
+        return A
 
-    def setB(self):
-        pass
+    def setB(self, grid, rh):
+        m = self.mesh.m
+        n = self.mesh.n
+        
+        B = np.zeros((m + 1) * (n + 1))
+        
+        for j in range(1, m + 2):
+            for l in range(1, n + 2):
+                a = grid[j][l]
+                id_ = j + (l - 1) * (m + 1)
+                B[id_ - 1] = a['const']  # Adjust for zero-indexing
+        
+        B = rh - B
+        return B
 
     def transport_solver(self):
         pass
     
-    def __str__(self):
-        return ""
-
-    def export_data(self):
+    def get_gradient(self):
         pass
-
 
     def divergence(self,F1, F2):
         """
