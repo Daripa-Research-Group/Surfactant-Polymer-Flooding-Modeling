@@ -820,10 +820,43 @@ class Simulation:
         return B
 
     def transport_solver(self):
+        """
+        -- Solving Saturation Equations --
+        code to compute solution of saturation,concentration and 
+        surfactant equations by Modified Method of Characteristics
+        using explicit formulation (Yuan Yi-Rang 1993) and implicit finite
+        difference method
+        """
+
         pass
     
-    def get_gradient(self):
-        pass
+    def get_gradient(self, vn):
+        m = self.mesh.m
+        n = self.mesh.n
+
+        dx = self.mesh.dx
+        dy = self.mesh.dy
+
+        px = np.zeros((n+1, m+1))
+        py = px
+        
+        for i in range(m + 2):
+            for j in range(n + 2):
+                if i != 0:
+                    px[j, i] = (vn[j, i] - vn[j, i - 1]) / dx
+                if i != m:
+                    px[j, i] = (vn[j, i + 1] - vn[j, i]) / dx
+                if i != 0 and i != m:
+                    px[j, i] = (vn[j, i + 1] - vn[j, i - 1]) / (2 * dx)
+                if j != 0:
+                    py[j, i] = (vn[j, i] - vn[j - 1, i]) / dy
+                if j != n:
+                    py[j, i] = (vn[j + 1, i] - vn[j, i]) / dy
+                if j != 0 and j != n:
+                    py[j, i] = (vn[j + 1, i] - vn[j - 1, i]) / (2 * dy)
+        return [px, py]
+
+
 
     def divergence(self,F1, F2):
         """
