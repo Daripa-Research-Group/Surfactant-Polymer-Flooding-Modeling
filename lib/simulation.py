@@ -343,8 +343,8 @@ class Simulation:
                 wppm = (w1 / (w1 + w2))* (10**6)
 
                 #determining the epsilon and n values for the power law equation:
-                e_coeff = polymer_obj.epsilon_coefficients
-                n_coeff = polymer_obj.n_coefficients
+                e_coeff = polymer_obj.e_coeff
+                n_coeff = polymer_obj.n_coeff
                     
                 e_power_value = pow((e_coeff[0]*wppm0), e_coeff[1])
                 n_power_value = min(pow((n_coeff[0]*wppm0), n_coeff[1]))
@@ -827,7 +827,7 @@ class Simulation:
         using explicit formulation (Yuan Yi-Rang 1993) and implicit finite
         difference method
         """
-
+        
         pass
     
     def get_gradient(self, vn):

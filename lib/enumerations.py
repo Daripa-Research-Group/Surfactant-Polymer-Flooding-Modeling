@@ -20,9 +20,9 @@ class SimulationConstants(Enum):
     Grid_Size = 29
 
 class PolymerList(Enum):
-    Xanthane = (1, 1500)
-    Schizophyllan = (2 , 1300)
-    No_Polymer = (3, 0)
+    Xanthane = (1, 1500, [3.05428284, -0.27294817], [1.15410398e-04, 2.04937780e+00])
+    Schizophyllan = (2 , 1300, [4.86265534, -0.41570227], [0.03647214, 1.32175949])
+    No_Polymer = (3, 0, [0,0], [0,0])
     
     @property
     def Id(self):
@@ -31,6 +31,14 @@ class PolymerList(Enum):
     @property
     def Density(self):
         return self.value[1]
+
+    @property
+    def n_coeff(self):
+        return self.value[2]
+
+    @property
+    def e_coeff(self):
+        return self.value[3]
 
 
 class SurfactantList(Enum):
