@@ -39,9 +39,9 @@ class Simulation:
         :type mesh_grid: Box
 
         :param is_surfactant: boolean that states whether there is surfactant in the system or not
-        :type is_surfactant: bool
+        :type is_surfactant: bool 
 
-        :param mdl_id: the model id for the simulation
+        :param mdl_id: the model id for the simulation (whether shear thinning is on or off)
         :type mdl_id: enum 'ModelType'
 
         :param plt_type: the plot type outputted by the program for the simulation run
@@ -73,7 +73,7 @@ class Simulation:
         
         #General Parameters in Simulation
         self.sim_id = sim_id
-        self.is_surfactant = is_surfactant
+        self.is_surfactant = is_surfactant #need to determine whether this is actually important!!!
         self.mdl_id = mdl_id
         self.plt_type = plt_type
 
