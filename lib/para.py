@@ -19,6 +19,7 @@ class Box(Para):
         self.right = 1   # x_max
         self.bottom = 0  # y_min
         self.top = 1     # y_max
+        self.calculate_spacing
 
     @property
     def calculate_spacing(self):

@@ -203,9 +203,12 @@ class Simulation:
             
             # --- Vectorized implementation
             jj, ii = np.meshgrid(np.arange(1, n + 2), np.arange(1, m + 2))
-            print("jj is: ", jj)
-            print("ii is: ", ii)
-            print(left + (ii - 1) * dx)
+            # print("jj is: ", jj)
+            # print("ii is: ", ii)
+            # print("Left is: ", left)
+            # print("bottom is: ", bottom)
+            # print("dx is: ", dx) 
+            # print("dy is: ", dy)
             phi_vec = self.z_func_test(left + (ii - 1) * dx, bottom + (jj - 1) * dy)
             return phi_vec
         except Exception as e:

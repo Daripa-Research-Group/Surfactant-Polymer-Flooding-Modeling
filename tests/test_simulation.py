@@ -77,21 +77,19 @@ def initializing_simulation():
 
 def test_get_phi_value():
     """
-    This function will test calculation of phi value
+    This function will test calculation of phi value. This test also goes through testing the z_func
 
     """
     #initializing simulation object
     test_sim_object = initializing_simulation()
      
     #getting the phi value
-    test_sim_object.get_phi_value()
+    phi_vec = test_sim_object.get_phi_value()
+    print("The phi vector is: ", phi_vec)
 
-    pass
-
-def test_z_func_calculation():
-    pass
 
 def test_initialize_concentration():
+    
     pass
 
 def test_compute_viscosity():
