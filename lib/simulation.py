@@ -1,12 +1,14 @@
 """
 This python script contains the class definition for running simulations
 """
-
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 #Relevant imports
-from Exceptions import SimulationCalcInputException
-from para import Box
+from lib.Exceptions import SimulationCalcInputException
+from lib.para import Box
 import numpy as np
-from enumerations import SimulationConstants, PolymerList, ModelType, ResevoirGeometry, PermeabilityType
+from lib.enumerations import SimulationConstants, PolymerList, ModelType, ResevoirGeometry, PermeabilityType
 
 
 class Simulation:
@@ -186,7 +188,8 @@ class Simulation:
         """
         try:
             #getting values from mesh:
-            if(self.mesh is Box()):
+            print(type(Box()))
+            if(isinstance(self.mesh, Box)):
                 m = self.mesh.m
                 n = self.mesh.n
                 
@@ -200,6 +203,9 @@ class Simulation:
             
             # --- Vectorized implementation
             jj, ii = np.meshgrid(np.arange(1, n + 2), np.arange(1, m + 2))
+            print("jj is: ", jj)
+            print("ii is: ", ii)
+            print(left + (ii - 1) * dx)
             phi_vec = self.z_func_test(left + (ii - 1) * dx, bottom + (jj - 1) * dy)
             return phi_vec
         except Exception as e:

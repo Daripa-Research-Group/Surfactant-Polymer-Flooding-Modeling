@@ -3,6 +3,10 @@ This file should hold the test cases for the 'simulation.py' class
 
 @author: Bhargav Akula Ramesh Kumar
 """
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from lib.para import Box
 from lib.simulation import Simulation
 from lib.polymer import Polymer
@@ -12,13 +16,16 @@ from lib.enumerations import PolymerList, SurfactantList, ResevoirGeometry, Perm
 #pytest import for unit tests
 import pytest
 
-def test_initializing_simulation():
+def initializing_simulation():
     """
-    This pytest will initialize the simulation object
+    This function will initialize the simulation object
 
     This test will generate a simulation object for homogenous porous media, 
     rectilinear resevoir geometry, with 0 wppm Surfactant and 
     0.001 wppm injection concentration of Xanthane.
+
+    :return: Test simulation object
+    :rtype: Simulation
     """
     
     #simulation id
@@ -30,7 +37,6 @@ def test_initializing_simulation():
     #initializing surfactant object
     lambda_IFT_equation = lambda GG: 10.001 / (GG + 1) - 0.001
     surfactant_object = Surfactant(SurfactantList.Alkyl_Ether_Sulfate, 0, lambda_IFT_equation)
-    
 
     #initializing initial water saturation
     initial_water_saturation = 0.79
@@ -66,10 +72,20 @@ def test_initializing_simulation():
             is_surfactant= is_surfactant
             )
     
+    return sim_obj_test
 
-    pass
 
 def test_get_phi_value():
+    """
+    This function will test calculation of phi value
+
+    """
+    #initializing simulation object
+    test_sim_object = initializing_simulation()
+     
+    #getting the phi value
+    test_sim_object.get_phi_value()
+
     pass
 
 def test_z_func_calculation():
@@ -89,3 +105,7 @@ def test_compute_mobility():
 
 def test_solving_saturation_equations():
     pass
+
+
+if __name__ == "__main__":
+    test_get_phi_value()
