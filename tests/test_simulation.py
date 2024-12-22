@@ -89,7 +89,18 @@ def test_get_phi_value():
 
 
 def test_initialize_concentration():
+    """
+    This function will be use test the initialization of surfactant and polymer concentrations
+    at the injection site
+    """
+    #intializing simulation object
+    test_sim_object = initializing_simulation()
     
+    #determining intial concentration matrix
+    concentration_matrix = test_sim_object.initial_concentration_matrix()
+
+    print(concentration_matrix)
+
     pass
 
 def test_compute_viscosity():
@@ -106,4 +117,4 @@ def test_solving_saturation_equations():
 
 
 if __name__ == "__main__":
-    test_get_phi_value()
+    test_initialize_concentration()

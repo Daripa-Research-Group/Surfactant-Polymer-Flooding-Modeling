@@ -265,7 +265,7 @@ class Simulation:
         try:
             if(self.polymer is not None and self.surfactant is not None and self.water_saturation is not None):
                 s_0 = self.init_water_saturation_scalar
-                c_0 = self.polymer.concentration
+                c_0 = self.polymer.initial_concentration
                 g_0 = self.surfactant.concentration
                 self.water_saturation = np.zeros((self.mesh.m + 1, self.mesh.n + 1))
                 self.polymer.vec_concentration = np.copy(self.water_saturation)
