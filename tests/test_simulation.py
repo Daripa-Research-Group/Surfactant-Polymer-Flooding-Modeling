@@ -101,9 +101,16 @@ def test_initialize_concentration():
 
     print(concentration_matrix)
 
-    pass
-
 def test_compute_viscosity():
+    """
+    This function will test the 'compvis' method within the simulation class
+    """
+    test_sim_object = initializing_simulation()
+    
+    ####calculating parameters for compvis function:
+    
+    # Determining U:
+    
     pass
 
 def test_compute_resid_saturations():
