@@ -3,6 +3,7 @@ This file should hold the test cases for the 'simulation.py' class
 
 @author: Bhargav Akula Ramesh Kumar
 """
+import numpy as np
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -108,10 +109,28 @@ def test_compute_viscosity():
     test_sim_object = initializing_simulation()
     
     ####calculating parameters for compvis function:
-    
+        
     # Determining U:
+    u = np.zeros(( test_sim_object.mesh.n + 1, test_sim_object.mesh.m + 1 ))
+
+    # Determining V:
+    v = u
+
+    #Determining X and Y:
+    [x, y] = np.meshgrid(
+            range(test_sim_object.mesh.left, test_sim_object.mesh.right, round(test_sim_object.mesh.dx)), 
+            range(test_sim_object.mesh.bottom, test_sim_object.mesh.top, round(test_sim_object.mesh.dy)))
+
+    #Determining beta1:
+    beta1 = 15000
+
+    #Determining c0_array:
+    sog = 29 #test value for size of grid
+    c0_array = test_sim_object.polymer.vec_concentration * np.ones((sog+1, sog + 1))
+
+    test_sim_object.compvis(u, v, x, y, beta1, c0_array)
+
     
-    pass
 
 def test_compute_resid_saturations():
     pass
