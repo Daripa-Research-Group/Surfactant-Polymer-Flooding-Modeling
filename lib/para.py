@@ -24,6 +24,6 @@ class Box(Para):
     @property
     def calculate_spacing(self):
         # Calculate dx and dy based on the box dimensions
-        self.dx = (self.right - self.left) / (self.m - 1)
-        self.dy = (self.top - self.bottom) / (self.n - 1)
+        self.dx = (self.right - self.left) / (self.m)
+        self.dy = (self.top - self.bottom) / (self.n)
 
