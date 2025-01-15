@@ -107,6 +107,14 @@ def test_compute_viscosity():
     This function will test the 'compvis' method within the simulation class
     """
     test_sim_object = initializing_simulation()
+
+    #setting up mesh
+    sog = 29 #test value for size of grid
+    test_sim_object.mesh.m = sog
+    test_sim_object.mesh.n = sog
+    test_sim_object.mesh.calculate_spacing
+
+    print(test_sim_object.mesh.dx)
     
     ####calculating parameters for compvis function:
         
@@ -118,14 +126,14 @@ def test_compute_viscosity():
 
     #Determining X and Y:
     [x, y] = np.meshgrid(
-            range(test_sim_object.mesh.left, test_sim_object.mesh.right, round(test_sim_object.mesh.dx)), 
-            range(test_sim_object.mesh.bottom, test_sim_object.mesh.top, round(test_sim_object.mesh.dy)))
+            np.arange(test_sim_object.mesh.left, test_sim_object.mesh.right + test_sim_object.mesh.dx, test_sim_object.mesh.dx), 
+            np.arange(test_sim_object.mesh.bottom, test_sim_object.mesh.top + test_sim_object.mesh.dy, test_sim_object.mesh.dy))
 
     #Determining beta1:
     beta1 = 15000
 
     #Determining c0_array:
-    sog = 29 #test value for size of grid
+    test_sim_object.initial_concentration_matrix()
     c0_array = test_sim_object.polymer.vec_concentration * np.ones((sog+1, sog + 1))
 
     test_sim_object.compvis(u, v, x, y, beta1, c0_array)
@@ -133,6 +141,9 @@ def test_compute_viscosity():
     
 
 def test_compute_resid_saturations():
+    """
+    This function will test the function that determines that residual saturations
+    """
     pass
 
 def test_compute_mobility():
@@ -143,4 +154,4 @@ def test_solving_saturation_equations():
 
 
 if __name__ == "__main__":
-    test_initialize_concentration()
+    test_compute_viscosity()
