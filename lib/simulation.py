@@ -1,9 +1,11 @@
 """
 This python script contains the class definition for running simulations
 """
+
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 #Relevant imports
 from lib.Exceptions import SimulationCalcInputException
 from lib.para import Box
@@ -109,7 +111,7 @@ class Simulation:
 
     _IFT_ = 0
     @property
-    def sigma(self):
+    def sigma(self): #TODO: Need to update to make sure that i calculate the concentration using the lambda function within the surfactant object
         return self._IFT_
 
     @sigma.setter
@@ -119,6 +121,9 @@ class Simulation:
     _is_surfactant_ = None
     @property
     def is_surfactant(self):
+        """
+        This function differentiates whether the model is SP-Flooding or just polymer flooding
+        """
         if(self._is_surfactant_ is None):
             if(self.surfactant.initial_concentration == 0):
                 self._is_surfactant_ = False
