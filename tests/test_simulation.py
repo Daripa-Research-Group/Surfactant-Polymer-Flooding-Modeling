@@ -144,6 +144,16 @@ def test_compute_resid_saturations():
     """
     This function will test the function that determines that residual saturations
     """
+    
+    test_sim_object = initializing_simulation()
+    # Determining U:
+    u = np.zeros(( test_sim_object.mesh.n + 1, test_sim_object.mesh.m + 1 ))
+
+    # Determining V:
+    v = u
+    
+    # Need to implement method to calculate sigma (using the IFT vs surfactant concentration relationship)
+    test_sim_object.compres(u, v)
 
     pass
 
@@ -155,4 +165,4 @@ def test_solving_saturation_equations():
 
 
 if __name__ == "__main__":
-    test_compute_viscosity()
+    test_compute_resid_saturations()

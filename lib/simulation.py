@@ -15,7 +15,7 @@ class Simulation:
     """
     Class is used to generate an instance of a simulation which will run the SP-flooding model based on the given parameters provided by the user
     """
-    def __init__(self, sim_id, polymer, surfactant, init_water_saturation, resevoir_geometry, permeability_flg, mesh_grid, is_surfactant, mdl_id, plt_type):
+    def __init__(self, sim_id, polymer, surfactant, init_water_saturation, resevoir_geometry, permeability_flg, mesh_grid, mdl_id, plt_type):
         """
         creates instance of the simulation class which will enable for calculating changes in system parameters at every time-step
 
@@ -25,10 +25,10 @@ class Simulation:
         :param polymer: Polymer object used in SP-flooding run
         :type polymer: Polymer
 
-        :param surfactant: Surfactant object used in SP-flooding run
-        :type surfactant: Surfactant
+        :param surfactant: Surfactant object used in SP-flooding run (can also be non if surfactant concentration = 0)
+        :type surfactant: Surfactant, None
 
-        :param init_water_saturation: Initial Water Saturation
+        :param init_water_saturation: Initial Water Saturation (scalar quantitiy)
         :type init_water_saturation: float
 
         :param resevoir_geometry: Type of resevoir geometry (is it a rectilinear or quarter-five-spot geometry)
@@ -40,9 +40,6 @@ class Simulation:
         :param mesh_grid: mesh_grid used in the SP-flooding run
         :type mesh_grid: Box
 
-        :param is_surfactant: boolean that states whether there is surfactant in the system or not
-        :type is_surfactant: bool 
-
         :param mdl_id: the model id for the simulation (whether shear thinning is on or off)
         :type mdl_id: enum 'ModelType'
 
@@ -50,97 +47,40 @@ class Simulation:
         :type plt_type: enum 'PlotType'
         """
         
-        #Polymer and Surfactant Properties
-        self._polymer_ = None
-        self._surfactant_ = None
+        self.sim_id = sim_id
+        
+        #Instances of the polymer and surfactant objects
         self.polymer = polymer
         self.surfactant = surfactant
 
-        #User Inputs
-        self._resevoir_geometry_ = None
-        self._permeability_flag_ = None
-        self._mesh_ = Box()
+        #Simulaiton Properties
         self.resevoir_geometry = resevoir_geometry
         self.permeability_flg = permeability_flg
         self.mesh = mesh_grid
-
-        #simulation properties
-        self._water_saturation_ = 0
-        self._init_water_saturation_scalar_ = init_water_saturation
-        self._aqueous_viscosity_ = 0
-        self._oleic_mobility_ = 0
-        self._aqueous_mobility_ = 0 
-        self._phi_ = 0 
-        self._sigma_ = 0 # interfacial tension
+        self.init_water_saturation_scalar = init_water_saturation
         
-        #General Parameters in Simulation
-        self.sim_id = sim_id
-        self.is_surfactant = is_surfactant #need to determine whether this is actually important!!!
-        self.mdl_id = mdl_id
-        self.plt_type = plt_type
+        #Model and plotting flags
+        self.mdl_id = mdl_id #Model type
+        self.plt_type = plt_type #types of plots to generate
 
-
-    @property
-    def polymer(self):
-        return self._polymer_
-
-    @polymer.setter
-    def polymer(self, value):
-        self._polymer_ = value
-        
-    @property
-    def surfactant(self):
-        return self._surfactant_
-
-    @surfactant.setter
-    def surfactant(self, value):
-        self._surfactant_ = value
-
-    @property
-    def resevoir_geometry(self):
-        return self._resevoir_geometry_
-
-    @resevoir_geometry.setter
-    def resevoir_geometry(self, value):
-        self._resevoir_geometry_ = value
-
-    @property
-    def permeability_flg(self):
-        return self._permeability_flag_
-
-    @permeability_flg.setter
-    def permeability_flg(self, value):
-        self._permeability_flag_ = value
-
-    @property
-    def mesh(self):
-        return self._mesh_
-
-    @mesh.setter
-    def mesh(self, value):
-        self._mesh_ = value
-
+    ### DEPENDENT VARIABLES OF SIMULATION CLASS:
+    _phi_ = 0
     @property
     def phi(self):
-        self._phi_ = self.get_phi_value()
+        if(self._phi_ is None):
+            self._phi_ = self.get_phi_value()
         return self._phi_
 
+    _water_saturation_vector_form_ = 0
     @property
-    def water_saturation(self):
-        return self._water_saturation_
+    def water_saturation(self): #vector version
+        return self._water_saturation_vector_form_
 
     @water_saturation.setter
     def water_saturation(self, value):
-        self._water_saturation_ = value
+        self._water_saturation_vector_form_ = value
 
-    @property
-    def init_water_saturation_scalar(self):
-        return self._init_water_saturation_scalar_
-
-    @init_water_saturation_scalar.setter
-    def init_water_saturation_scalar(self, value):
-        self._init_water_saturation_scalar_ = value
-
+    _aqueous_viscosity_ = 0
     @property
     def aqueous_viscosity(self):
         return self._aqueous_viscosity_
@@ -149,6 +89,7 @@ class Simulation:
     def aqueous_viscosity(self, value):
         self._aqueous_viscosity_ = value
 
+    _oleic_mobility_ = 0
     @property
     def oleic_mobility(self):
         return self._oleic_mobility_
@@ -157,6 +98,7 @@ class Simulation:
     def oleic_mobility(self, value):
         self._oleic_mobility_ = value
 
+    _aqueous_mobility_ = 0
     @property
     def aqueous_mobility(self):
         return self._aqueous_mobility_
@@ -165,13 +107,24 @@ class Simulation:
     def aqueous_mobility(self, value):
         self._aqueous_mobility_ = value
 
+    _IFT_ = 0
     @property
     def sigma(self):
-        return self._sigma_
+        return self._IFT_
 
     @sigma.setter
     def sigma(self, value):
-        self._sigma_ = value
+        self._IFT_ = value
+
+    _is_surfactant_ = None
+    @property
+    def is_surfactant(self):
+        if(self._is_surfactant_ is None):
+            if(self.surfactant.initial_concentration == 0):
+                self._is_surfactant_ = False
+            else:
+                self._is_surfactant_ = True
+        return self._is_surfactant_
 
 
     def get_phi_value(self):
@@ -203,12 +156,6 @@ class Simulation:
             
             # --- Vectorized implementation
             jj, ii = np.meshgrid(np.arange(1, n + 2), np.arange(1, m + 2))
-            # print("jj is: ", jj)
-            # print("ii is: ", ii)
-            # print("Left is: ", left)
-            # print("bottom is: ", bottom)
-            # print("dx is: ", dx) 
-            # print("dy is: ", dy)
             phi_vec = self.z_func_test(left + (ii - 1) * dx, bottom + (jj - 1) * dy)
             return phi_vec
         except Exception as e:
@@ -277,11 +224,11 @@ class Simulation:
             else:
                 raise SimulationCalcInputException("SimulationError: phi value not calculated!")
 
-            if self.is_surfactant == 0 and self.polymer is not None and self.surfactant is not None:
+            if ( not self.is_surfactant ) and self.polymer is not None and self.surfactant is not None:
                 self.surfactant.vec_concentration = []
                 self.water_saturation = (~D) + D * (1 - s_0)
                 self.polymer.vec_concentration = (~D) * c_0
-            elif self.is_surfactant == 1 and self.polymer is not None and self.surfactant is not None:
+            elif self.is_surfactant and self.polymer is not None and self.surfactant is not None:
                 self.water_saturation = (~D) + D * (1 - s_0)
                 self.polymer.vec_concentration = (~D) * c_0
                 self.surfactant.vec_concentration = (~D) * g_0
