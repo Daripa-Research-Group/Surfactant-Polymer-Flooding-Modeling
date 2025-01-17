@@ -70,7 +70,6 @@ def initializing_simulation():
             mesh_grid= mesh_grid,
             mdl_id= mdl_type,
             plt_type= plot_type,
-            is_surfactant= is_surfactant
             )
     
     return sim_obj_test
@@ -153,6 +152,7 @@ def test_compute_resid_saturations():
     v = u
     
     # Need to implement method to calculate sigma (using the IFT vs surfactant concentration relationship)
+    test_sim_object.initial_concentration_matrix()
     test_sim_object.compres(u, v)
 
     pass

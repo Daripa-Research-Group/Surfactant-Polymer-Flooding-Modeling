@@ -109,14 +109,14 @@ class Simulation:
     def aqueous_mobility(self, value):
         self._aqueous_mobility_ = value
 
-    _IFT_ = 0
     @property
     def sigma(self): #TODO: Need to update to make sure that i calculate the concentration using the lambda function within the surfactant object
-        return self._IFT_
+        # print(type(self.surfactant.vec_concentration))
+        return self.surfactant.IFT_conc_equ(np.array(self.surfactant.vec_concentration)) 
 
-    @sigma.setter
-    def sigma(self, value):
-        self._IFT_ = value
+    # @sigma.setter
+    # def sigma(self, value):
+    #     self._IFT_ = value
 
     _is_surfactant_ = None
     @property
@@ -125,7 +125,7 @@ class Simulation:
         This function differentiates whether the model is SP-Flooding or just polymer flooding
         """
         if(self._is_surfactant_ is None):
-            if(self.surfactant.initial_concentration == 0):
+            if(self.surfactant.concentration == 0):
                 self._is_surfactant_ = False
             else:
                 self._is_surfactant_ = True

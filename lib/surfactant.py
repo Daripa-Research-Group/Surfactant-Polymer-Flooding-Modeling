@@ -11,7 +11,7 @@ class Surfactant:
         :param name: Name of the surfactant
         :type name: enum 'SurfactantList'
 
-        :param concentration: Concentration in wppm of surfactant
+        :param concentration: Initial concentration in wppm of surfactant (scalar quantity)
         :type concentration: float
 
         :param IFT_conc_equ: expression that relates surfactant concentration to interfacial tension b/t oil and water
