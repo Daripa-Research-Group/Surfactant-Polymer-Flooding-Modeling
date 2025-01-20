@@ -51,8 +51,6 @@ def initializing_simulation():
     #initializing mesh_grid
     mesh_grid = Box()
 
-    #initialiing whether surfactant will be present
-    is_surfactant = True
 
     #plot type (Polymer, Surfactant, or Saturation Plots)
     plot_type = PlotType.Saturation_Plot
@@ -75,7 +73,7 @@ def initializing_simulation():
     return sim_obj_test
 
 
-def test_get_phi_value():
+def test_get_phi_value(): #tested
     """
     This function will test calculation of phi value. This test also goes through testing the z_func
 
@@ -88,7 +86,7 @@ def test_get_phi_value():
     print("The phi vector is: ", phi_vec)
 
 
-def test_initialize_concentration():
+def test_initialize_concentration(): #tested
     """
     This function will be use test the initialization of surfactant and polymer concentrations
     at the injection site
@@ -101,7 +99,7 @@ def test_initialize_concentration():
 
     print(concentration_matrix)
 
-def test_compute_viscosity():
+def test_compute_viscosity(): #tested
     """
     This function will test the 'compvis' method within the simulation class
     """
@@ -139,7 +137,7 @@ def test_compute_viscosity():
 
     
 
-def test_compute_resid_saturations():
+def test_compute_resid_saturations(): #currently testing
     """
     This function will test the function that determines that residual saturations
     """
