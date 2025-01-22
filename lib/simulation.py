@@ -66,14 +66,14 @@ class Simulation:
         self.plt_type = plt_type #types of plots to generate
 
     ### DEPENDENT VARIABLES OF SIMULATION CLASS:
-    _phi_ = 0
+    _phi_ = None
     @property
     def phi(self):
         if(self._phi_ is None):
             self._phi_ = self.get_phi_value()
         return self._phi_
 
-    _water_saturation_vector_form_ = 0
+    _water_saturation_vector_form_ = None
     @property
     def water_saturation(self): #vector version
         return self._water_saturation_vector_form_
@@ -82,7 +82,7 @@ class Simulation:
     def water_saturation(self, value):
         self._water_saturation_vector_form_ = value
 
-    _aqueous_viscosity_ = 0
+    _aqueous_viscosity_ = None
     @property
     def aqueous_viscosity(self):
         return self._aqueous_viscosity_
@@ -91,7 +91,7 @@ class Simulation:
     def aqueous_viscosity(self, value):
         self._aqueous_viscosity_ = value
 
-    _oleic_mobility_ = 0
+    _oleic_mobility_ = None
     @property
     def oleic_mobility(self):
         return self._oleic_mobility_
@@ -100,7 +100,7 @@ class Simulation:
     def oleic_mobility(self, value):
         self._oleic_mobility_ = value
 
-    _aqueous_mobility_ = 0
+    _aqueous_mobility_ = None
     @property
     def aqueous_mobility(self):
         return self._aqueous_mobility_
@@ -215,7 +215,10 @@ class Simulation:
         :rtype: List
         """
         try:
-            if(self.polymer is not None and self.surfactant is not None and self.water_saturation is not None):
+            if(self.polymer is not None and self.surfactant is not None and self.init_water_saturation_scalar is not None):
+                # scalar quantities of concentration for surfactant and polymer
+                # scalar quantity of initial water saturation (fraction of pore space filled with water)
+                print("reaches here")
                 s_0 = self.init_water_saturation_scalar
                 c_0 = self.polymer.initial_concentration
                 g_0 = self.surfactant.concentration
