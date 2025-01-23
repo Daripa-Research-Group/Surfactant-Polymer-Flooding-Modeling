@@ -242,4 +242,4 @@ def test_solving_saturation_equations():
 
 
 if __name__ == "__main__":
-    test_compute_viscosity()
+    test_compute_resid_saturations()

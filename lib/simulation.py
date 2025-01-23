@@ -379,7 +379,7 @@ class Simulation:
         oil_viscosity = SimulationConstants.Oil_Viscosity.value
         swr0 = SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value
         sor0 = SimulationConstants.Resid_Oleic_Phase_Saturation_Initial.value
-        if(self.is_surfactant == 0): # (without surfactant)
+        if(self.is_surfactant == 0 and self.water_saturation is not None): # (without surfactant)
             # Normalized saturations of water and oil at IFT sigma0
             nsw0 = (self.water_saturation - swr0) / (1 - swr0)
             nso0 = (self.water_saturation - swr0) / (1 - swr0 - sor0)
@@ -396,7 +396,7 @@ class Simulation:
                 return self.aqueous_mobility
             else:
                 raise SimulationCalcInputException("SimulationError: Flag unknown. Flag can only be a 0 (for oleic mobility calculation) and 1 (for aqueous mobility calculation). Please try again...")
-        elif(self.is_surfactant == 1): # (with surfactant)
+        elif(self.is_surfactant == 1 and self.water_saturation is not None): # (with surfactant)
             # normalized saturations of water and oil at IFT sigma
             nsw = (self.water_saturation - swr)/(1 - swr)
             nso = (self.water_saturation - swr)/(1 - swr - sor)
