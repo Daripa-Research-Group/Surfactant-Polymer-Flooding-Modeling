@@ -131,9 +131,10 @@ def test_compute_viscosity(): #tested
 
     #Determining c0_array:
     test_sim_object.initial_concentration_matrix()
-    c0_array = test_sim_object.polymer.vec_concentration * np.ones((sog+1, sog + 1))
-
-    test_sim_object.compvis(u, v, x, y, beta1, c0_array)
+    print("Polymer Concentration (vector form):", test_sim_object.polymer.vec_concentration)
+    c0_array = test_sim_object.polymer.initial_concentration * np.ones((sog+1, sog + 1))
+    print("c0array:", c0_array)
+    test_sim_object.compvis(u, v, x, y, beta1, c0_array) #Issue with calculating c0array
 
     
 

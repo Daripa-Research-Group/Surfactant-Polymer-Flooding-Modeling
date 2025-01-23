@@ -146,7 +146,6 @@ class Simulation:
         """
         try:
             #getting values from mesh:
-            print(type(Box()))
             if(isinstance(self.mesh, Box)):
                 m = self.mesh.m
                 n = self.mesh.n
@@ -259,21 +258,21 @@ class Simulation:
         try:
             if(self.polymer is not None and self.surfactant is not None):
                 gamma_dot = np.zeros_like(self.polymer.vec_concentration)
+                print("reaches here")
                 vis_water = SimulationConstants.Water_Viscosity.value #viscosity['water']
                 vis_oil = SimulationConstants.Oil_Viscosity.value #viscosity['oil']
-                # vis_polymer_array = self.polymer.visosity #viscosity['polymer_array']
-                # polymer_type = self.polymer.name #params['polymer_type']
                 polymer_obj = self.polymer
-                # beta1 =  beta1 #params['beta1']
             else:
                 raise SimulationCalcInputException("SimulationError: Surfactant and/or Polymer Not Initialized")
 
             if (self.mdl_id == ModelType.No_Shear_Thinning):
                 # Newtonian Model (NO SHEAR THINNING INVOLVED => MODEL TYPE #1)
-                n = np.shape(( polymer_obj.vec_concentration,1 ))
-                m = np.shape(( polymer_obj.vec_concentration,2 ))
-                if polymer_obj.vec_concentration == 0:
+                print("shape of polymer vec concentration:", np.shape(polymer_obj.vec_concentration))
+                n = np.shape(polymer_obj.vec_concentration)[0]
+                m = np.shape(polymer_obj.vec_concentration)[1]
+                if polymer_obj.vec_concentration.all() == 0:
                     self.aqueous_viscosity = vis_water * np.ones((n, m))
+                    print('aqueous viscosity: ', self.aqueous_viscosity)
                 else:
                     self.aqueous_viscosity = vis_water * (1 + beta1 * polymer_obj.vec_concentration)
             elif (self.mdl_id == ModelType.Sourav_Implementation):
