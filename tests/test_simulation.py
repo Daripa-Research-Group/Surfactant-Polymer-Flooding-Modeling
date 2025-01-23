@@ -183,7 +183,57 @@ def test_compute_resid_saturations(): #tested
 
     pass
 
-def test_compute_mobility():
+def test_mobility_calculation():
+    """
+    This function will test the 'compmob' method of the simulation class 
+    """
+    test_sim_object = initializing_simulation()
+    
+    #setting up mesh
+    sog = 29 #test value for size of grid
+    test_sim_object.mesh.m = sog
+    test_sim_object.mesh.n = sog
+    test_sim_object.mesh.calculate_spacing
+
+    print(test_sim_object.mesh.dx)
+    
+    ####calculating parameters for compvis function:
+        
+    # Determining U:
+    u = np.zeros(( test_sim_object.mesh.n + 1, test_sim_object.mesh.m + 1 ))
+
+    # Determining V:
+    v = u
+
+    #Determining X and Y:
+    [x, y] = np.meshgrid(
+            np.arange(test_sim_object.mesh.left, test_sim_object.mesh.right + test_sim_object.mesh.dx, test_sim_object.mesh.dx), 
+            np.arange(test_sim_object.mesh.bottom, test_sim_object.mesh.top + test_sim_object.mesh.dy, test_sim_object.mesh.dy))
+
+    #Determining beta1:
+    beta1 = 15000
+
+    
+    # Need to implement method to calculate sigma (using the IFT vs surfactant concentration relationship)
+    test_sim_object.phi
+    test_sim_object.initial_concentration_matrix()
+    
+    c0_array = test_sim_object.polymer.vec_concentration * np.ones((sog+1, sog + 1))
+    test_sim_object.compvis(u, v, x, y, beta1, c0_array)
+    
+    #Inital concentration matrix for surfactant:
+    print( test_sim_object.surfactant.vec_concentration )
+
+    [swr, sor] = test_sim_object.compres(u, v)
+    
+    # Determining sor (residual oil saturation) & Determining swr (residual water saturation):
+    oleic_mobility_test = test_sim_object.compmob(sor, swr, 0)
+    aqueous_mobility_test = test_sim_object.compmob(sor, swr, 1)
+
+    print("Oleic Mobility:", oleic_mobility_test)
+    print("Aqueous Mobility:", aqueous_mobility_test)
+
+    # flag -> 0 = oleic and 1 = aqueous
     pass
 
 def test_solving_saturation_equations():
@@ -191,4 +241,4 @@ def test_solving_saturation_equations():
 
 
 if __name__ == "__main__":
-    test_compute_resid_saturations()
+    test_compute_viscosity()
