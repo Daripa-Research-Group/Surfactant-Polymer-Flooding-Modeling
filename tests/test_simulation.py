@@ -72,6 +72,14 @@ def initializing_simulation():
     
     return sim_obj_test
 
+def test_z_func():
+    # determines water front position using the simulation classes "z_func_test" method
+    
+    test_sim_object = initializing_simulation()
+    
+    water_front_pos = test_sim_object.z_func_test()
+    
+    print("Water front position is:", water_front_pos)
 
 def test_get_phi_value(): #tested
     """
