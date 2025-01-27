@@ -245,6 +245,12 @@ def test_mobility_calculation():
     # flag -> 0 = oleic and 1 = aqueous
     pass
 
+def test_divergence(A, B):
+    # calculates the divergence of a 2D vector field
+    test_sim_object = initializing_simulation()
+
+    print("The divergence is:", test_sim_object.divergence(A,B))
+
 def test_solving_saturation_equations():
     pass
 
