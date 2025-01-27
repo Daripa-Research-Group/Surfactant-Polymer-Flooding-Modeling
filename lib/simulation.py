@@ -2,18 +2,22 @@
 This python script contains the class definition for running simulations
 """
 
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 #Relevant imports
-from Exceptions import SimulationCalcInputException
-from para import Box
+from lib.Exceptions import SimulationCalcInputException
+from lib.para import Box
 import numpy as np
-from enumerations import SimulationConstants, PolymerList, ModelType, ResevoirGeometry, PermeabilityType
+from lib.enumerations import SimulationConstants, PolymerList, ModelType, ResevoirGeometry, PermeabilityType
 
 
 class Simulation:
     """
     Class is used to generate an instance of a simulation which will run the SP-flooding model based on the given parameters provided by the user
     """
-    def __init__(self, sim_id, polymer, surfactant, init_water_saturation, resevoir_geometry, permeability_flg, mesh_grid, is_surfactant, mdl_id, plt_type):
+    def __init__(self, sim_id, polymer, surfactant, init_water_saturation, resevoir_geometry, permeability_flg, mesh_grid, mdl_id, plt_type):
         """
         creates instance of the simulation class which will enable for calculating changes in system parameters at every time-step
 
@@ -23,10 +27,10 @@ class Simulation:
         :param polymer: Polymer object used in SP-flooding run
         :type polymer: Polymer
 
-        :param surfactant: Surfactant object used in SP-flooding run
-        :type surfactant: Surfactant
+        :param surfactant: Surfactant object used in SP-flooding run (can also be non if surfactant concentration = 0)
+        :type surfactant: Surfactant, None
 
-        :param init_water_saturation: Initial Water Saturation
+        :param init_water_saturation: Initial Water Saturation (scalar quantitiy)
         :type init_water_saturation: float
 
         :param resevoir_geometry: Type of resevoir geometry (is it a rectilinear or quarter-five-spot geometry)
@@ -38,107 +42,47 @@ class Simulation:
         :param mesh_grid: mesh_grid used in the SP-flooding run
         :type mesh_grid: Box
 
-        :param is_surfactant: boolean that states whether there is surfactant in the system or not
-        :type is_surfactant: bool
-
-        :param mdl_id: the model id for the simulation
+        :param mdl_id: the model id for the simulation (whether shear thinning is on or off)
         :type mdl_id: enum 'ModelType'
 
         :param plt_type: the plot type outputted by the program for the simulation run
         :type plt_type: enum 'PlotType'
         """
         
-        #Polymer and Surfactant Properties
-        self._polymer_ = None
-        self._surfactant_ = None
+        self.sim_id = sim_id
+        
+        #Instances of the polymer and surfactant objects
         self.polymer = polymer
         self.surfactant = surfactant
 
-        #User Inputs
-        self._resevoir_geometry_ = None
-        self._permeability_flag_ = None
-        self._mesh_ = Box()
+        #Simulaiton Properties
         self.resevoir_geometry = resevoir_geometry
         self.permeability_flg = permeability_flg
         self.mesh = mesh_grid
-
-        #simulation properties
-        self._water_saturation_ = 0
-        self._init_water_saturation_scalar_ = init_water_saturation
-        self._aqueous_viscosity_ = 0
-        self._oleic_mobility_ = 0
-        self._aqueous_mobility_ = 0 
-        self._phi_ = 0 
-        self._sigma_ = 0 # interfacial tension
+        self.init_water_saturation_scalar = init_water_saturation
         
-        #General Parameters in Simulation
-        self.sim_id = sim_id
-        self.is_surfactant = is_surfactant
-        self.mdl_id = mdl_id
-        self.plt_type = plt_type
+        #Model and plotting flags
+        self.mdl_id = mdl_id #Model type
+        self.plt_type = plt_type #types of plots to generate
 
-
-    @property
-    def polymer(self):
-        return self._polymer_
-
-    @polymer.setter
-    def polymer(self, value):
-        self._polymer_ = value
-        
-    @property
-    def surfactant(self):
-        return self._surfactant_
-
-    @surfactant.setter
-    def surfactant(self, value):
-        self._surfactant_ = value
-
-    @property
-    def resevoir_geometry(self):
-        return self._resevoir_geometry_
-
-    @resevoir_geometry.setter
-    def resevoir_geometry(self, value):
-        self._resevoir_geometry_ = value
-
-    @property
-    def permeability_flg(self):
-        return self._permeability_flag_
-
-    @permeability_flg.setter
-    def permeability_flg(self, value):
-        self._permeability_flag_ = value
-
-    @property
-    def mesh(self):
-        return self._mesh_
-
-    @mesh.setter
-    def mesh(self, value):
-        self._mesh_ = value
-
+    ### DEPENDENT VARIABLES OF SIMULATION CLASS:
+    _phi_ = None
     @property
     def phi(self):
-        self._phi_ = self.get_phi_value()
+        if(self._phi_ is None):
+            self._phi_ = self.get_phi_value()
         return self._phi_
 
+    _water_saturation_vector_form_ = None
     @property
-    def water_saturation(self):
-        return self._water_saturation_
+    def water_saturation(self): #vector version
+        return self._water_saturation_vector_form_
 
     @water_saturation.setter
     def water_saturation(self, value):
-        self._water_saturation_ = value
+        self._water_saturation_vector_form_ = value
 
-    @property
-    def init_water_saturation_scalar(self):
-        return self._init_water_saturation_scalar_
-
-    @init_water_saturation_scalar.setter
-    def init_water_saturation_scalar(self, value):
-        self._init_water_saturation_scalar_ = value
-
+    _aqueous_viscosity_ = None
     @property
     def aqueous_viscosity(self):
         return self._aqueous_viscosity_
@@ -147,6 +91,7 @@ class Simulation:
     def aqueous_viscosity(self, value):
         self._aqueous_viscosity_ = value
 
+    _oleic_mobility_ = None
     @property
     def oleic_mobility(self):
         return self._oleic_mobility_
@@ -155,6 +100,7 @@ class Simulation:
     def oleic_mobility(self, value):
         self._oleic_mobility_ = value
 
+    _aqueous_mobility_ = None
     @property
     def aqueous_mobility(self):
         return self._aqueous_mobility_
@@ -164,12 +110,26 @@ class Simulation:
         self._aqueous_mobility_ = value
 
     @property
-    def sigma(self):
-        return self._sigma_
+    def sigma(self): #TODO: Need to update to make sure that i calculate the concentration using the lambda function within the surfactant object
+        # print(type(self.surfactant.vec_concentration))
+        return self.surfactant.IFT_conc_equ(np.array(self.surfactant.vec_concentration)) 
 
-    @sigma.setter
-    def sigma(self, value):
-        self._sigma_ = value
+    # @sigma.setter
+    # def sigma(self, value):
+    #     self._IFT_ = value
+
+    _is_surfactant_ = None
+    @property
+    def is_surfactant(self):
+        """
+        This function differentiates whether the model is SP-Flooding or just polymer flooding
+        """
+        if(self._is_surfactant_ is None):
+            if(self.surfactant.concentration == 0):
+                self._is_surfactant_ = False
+            else:
+                self._is_surfactant_ = True
+        return self._is_surfactant_
 
 
     def get_phi_value(self):
@@ -186,7 +146,7 @@ class Simulation:
         """
         try:
             #getting values from mesh:
-            if(self.mesh is Box()):
+            if(isinstance(self.mesh, Box)):
                 m = self.mesh.m
                 n = self.mesh.n
                 
@@ -254,9 +214,12 @@ class Simulation:
         :rtype: List
         """
         try:
-            if(self.polymer is not None and self.surfactant is not None and self.water_saturation is not None):
+            if(self.polymer is not None and self.surfactant is not None and self.init_water_saturation_scalar is not None):
+                # scalar quantities of concentration for surfactant and polymer
+                # scalar quantity of initial water saturation (fraction of pore space filled with water)
+                print("reaches here")
                 s_0 = self.init_water_saturation_scalar
-                c_0 = self.polymer.concentration
+                c_0 = self.polymer.initial_concentration
                 g_0 = self.surfactant.concentration
                 self.water_saturation = np.zeros((self.mesh.m + 1, self.mesh.n + 1))
                 self.polymer.vec_concentration = np.copy(self.water_saturation)
@@ -268,11 +231,11 @@ class Simulation:
             else:
                 raise SimulationCalcInputException("SimulationError: phi value not calculated!")
 
-            if self.is_surfactant == 0 and self.polymer is not None and self.surfactant is not None:
+            if ( not self.is_surfactant ) and self.polymer is not None and self.surfactant is not None:
                 self.surfactant.vec_concentration = []
                 self.water_saturation = (~D) + D * (1 - s_0)
                 self.polymer.vec_concentration = (~D) * c_0
-            elif self.is_surfactant == 1 and self.polymer is not None and self.surfactant is not None:
+            elif self.is_surfactant and self.polymer is not None and self.surfactant is not None:
                 self.water_saturation = (~D) + D * (1 - s_0)
                 self.polymer.vec_concentration = (~D) * c_0
                 self.surfactant.vec_concentration = (~D) * g_0
@@ -295,21 +258,21 @@ class Simulation:
         try:
             if(self.polymer is not None and self.surfactant is not None):
                 gamma_dot = np.zeros_like(self.polymer.vec_concentration)
+                print("reaches here")
                 vis_water = SimulationConstants.Water_Viscosity.value #viscosity['water']
                 vis_oil = SimulationConstants.Oil_Viscosity.value #viscosity['oil']
-                # vis_polymer_array = self.polymer.visosity #viscosity['polymer_array']
-                # polymer_type = self.polymer.name #params['polymer_type']
                 polymer_obj = self.polymer
-                # beta1 =  beta1 #params['beta1']
             else:
                 raise SimulationCalcInputException("SimulationError: Surfactant and/or Polymer Not Initialized")
 
             if (self.mdl_id == ModelType.No_Shear_Thinning):
                 # Newtonian Model (NO SHEAR THINNING INVOLVED => MODEL TYPE #1)
-                n = np.shape(( polymer_obj.vec_concentration,1 ))
-                m = np.shape(( polymer_obj.vec_concentration,2 ))
-                if polymer_obj.vec_concentration == 0:
+                print("shape of polymer vec concentration:", np.shape(polymer_obj.vec_concentration))
+                n = np.shape(polymer_obj.vec_concentration)[0]
+                m = np.shape(polymer_obj.vec_concentration)[1]
+                if polymer_obj.vec_concentration.all() == 0:
                     self.aqueous_viscosity = vis_water * np.ones((n, m))
+                    print('aqueous viscosity: ', self.aqueous_viscosity)
                 else:
                     self.aqueous_viscosity = vis_water * (1 + beta1 * polymer_obj.vec_concentration)
             elif (self.mdl_id == ModelType.Sourav_Implementation):
@@ -343,8 +306,8 @@ class Simulation:
                 wppm = (w1 / (w1 + w2))* (10**6)
 
                 #determining the epsilon and n values for the power law equation:
-                e_coeff = polymer_obj.epsilon_coefficients
-                n_coeff = polymer_obj.n_coefficients
+                e_coeff = polymer_obj.e_coeff
+                n_coeff = polymer_obj.n_coeff
                     
                 e_power_value = pow((e_coeff[0]*wppm0), e_coeff[1])
                 n_power_value = min(pow((n_coeff[0]*wppm0), n_coeff[1]))
@@ -416,7 +379,7 @@ class Simulation:
         oil_viscosity = SimulationConstants.Oil_Viscosity.value
         swr0 = SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value
         sor0 = SimulationConstants.Resid_Oleic_Phase_Saturation_Initial.value
-        if(self.is_surfactant == 0): # (without surfactant)
+        if(self.is_surfactant == 0 and self.water_saturation is not None): # (without surfactant)
             # Normalized saturations of water and oil at IFT sigma0
             nsw0 = (self.water_saturation - swr0) / (1 - swr0)
             nso0 = (self.water_saturation - swr0) / (1 - swr0 - sor0)
@@ -433,7 +396,7 @@ class Simulation:
                 return self.aqueous_mobility
             else:
                 raise SimulationCalcInputException("SimulationError: Flag unknown. Flag can only be a 0 (for oleic mobility calculation) and 1 (for aqueous mobility calculation). Please try again...")
-        elif(self.is_surfactant == 1): # (with surfactant)
+        elif(self.is_surfactant == 1 and self.water_saturation is not None): # (with surfactant)
             # normalized saturations of water and oil at IFT sigma
             nsw = (self.water_saturation - swr)/(1 - swr)
             nso = (self.water_saturation - swr)/(1 - swr - sor)
@@ -527,28 +490,335 @@ class Simulation:
                 L[j, k] = l
         return [U, L]
 
-    def setGrid(self):
+
+    def set_grid(self,U, L, beta):
+        m = self.mesh.m
+        n = self.mesh.n
+
+        out = [[None for _ in range(n+1)] for _ in range(m+1)]
         
-        pass
 
-    def setRHS(self):
-        pass
+        for j in range(m+1):
+            for l in range(n+1):
+                if j == 0 and l != 0 and l != n:
+                    t1 = self.weak(L[j][l],[1, 0, 0], beta)
+                    t2 = [0, 0, 0, 0]
+                    t3 = [0, 0, 0, 0]
+                    t4 = [0, 0, 0, 0]
+                    t5 = self.weak(L[j][l-1],[0, 0, 1], beta)
+                    t6 = self.weak(U[j][l-1], [0, 1, 0], beta)
+                elif j == m and l != 0 and l != n:
+                    t1 = [0, 0, 0, 0]
+                    t2 = self.weak(U[j-1][l],[0, 0, 1], beta)
+                    t3 = self.weak(L[j-1][l], [0, 1, 0], beta)
+                    t4 = self.weak(U[j-1][l-1], [1, 0, 0], beta)
+                    t5 = [0, 0, 0, 0]
+                    t6 = [0, 0, 0, 0]
+                elif j != 0 and j != m and l == 0:
+                    t1 = self.weak(L[j][l],[1, 0, 0], beta)
+                    t2 = self.weak(U[j-1][l], [0, 0, 1], beta)
+                    t3 = self.weak(L[j-1][l], [0, 1, 0], beta)
+                    t4 = [0, 0, 0, 0]
+                    t5 = [0, 0, 0, 0]
+                    t6 = [0, 0, 0, 0]
+                elif j != 0 and j != m and l == n:
+                    t1 = [0, 0, 0, 0]
+                    t2 = [0, 0, 0, 0]
+                    t3 = [0, 0, 0, 0]
+                    t4 = self.weak(U[j-1][l-1],[1, 0, 0], beta)
+                    t5 = self.weak(L[j][l-1],[0, 0, 1], beta)
+                    t6 = self.weak(U[j][l-1], [0, 1, 0], beta)
+                elif j == 0 and l == 0:
+                    t1 = self.weak(L[j][l],[1, 0, 0], beta)
+                    t2 = [0, 0, 0, 0]
+                    t3 = [0, 0, 0, 0]
+                    t4 = [0, 0, 0, 0]
+                    t5 = [0, 0, 0, 0]
+                    t6 = [0, 0, 0, 0]
+                elif j == 0 and l == n:
+                    t1 = [0, 0, 0, 0]
+                    t2 = [0, 0, 0, 0]
+                    t3 = [0, 0, 0, 0]
+                    t4 = [0, 0, 0, 0]
+                    t5 = self.weak(L[j][l-1], [0, 0, 1], beta)
+                    t6 = self.weak(U[j][l-1], [0, 1, 0], beta)
+                elif j == m and l == 0:
+                    t1 = [0, 0, 0, 0]
+                    t2 = self.weak(U[j-1][l], [0, 0, 1], beta)
+                    t3 = self.weak(L[j-1][l], [0, 1, 0], beta)
+                    t4 = [0, 0, 0, 0]
+                    t5 = [0, 0, 0, 0]
+                    t6 = [0, 0, 0, 0]
+                elif j == m and l == n:
+                    t1 = [0, 0, 0, 0]
+                    t2 = [0, 0, 0, 0]
+                    t3 = [0, 0, 0, 0]
+                    t4 = self.weak(U[j-1][l-1], [1, 0, 0], beta)
+                    t5 = [0, 0, 0, 0]
+                    t6 = [0, 0, 0, 0]
+                else:
+                    t1 = self.weak(L[j][l], [1, 0, 0], beta)
+                    t2 = self.weak(U[j-1][l], [0, 0, 1], beta)
+                    t3 = self.weak(L[j-1][l], [0, 1, 0], beta)
+                    t4 = self.weak(U[j-1][l-1], [1, 0, 0], beta)
+                    t5 = self.weak(L[j][l-1], [0, 0, 1], beta)
+                    t6 = self.weak(U[j][l-1], [0, 1, 0], beta)
 
-    def setA(self):
-        pass
+                grid = {
+                    'c': t1[0] + t2[2] + t3[1] + t4[0] + t5[2] + t6[1],
+                    'w': t3[0] + t4[1],
+                    's': t4[2] + t5[0],
+                    'n': t1[2] + t2[0],
+                    'e': t1[1] + t6[0],
+                    'nw': t2[1] + t3[2],
+                    'se': t5[1] + t6[2],
+                    'const': t1[3] + t2[3] + t3[3] + t4[3] + t5[3] + t6[3]
+                }
+                
+                out[j][l] = grid
 
-    def setB(self):
-        pass
+        return out
+
+    def weak(self, T, v, beta):
+        b1 = self.beta_func(T.x[0],T.y[0], beta)
+        b2 = self.beta_func(T.x[1],T.y[1], beta)
+        b3 = self.beta_func(T.x[2],T.y[2], beta)
+        b_avg = (b1 + b2 + b3) / 3
+        
+        s = self.polyarea(T.x, T.y)
+
+        # Create and manipulate matrix M
+        M = np.vstack((T.x, T.y, [1, 1, 1])).T
+        M_inv = np.linalg.inv(M)
+        M = M_inv[:2, :]  # Extract the first two rows of M_inv
+
+        # Calculate vdiff and inte
+        vdiff = np.dot(M, v)
+        inte = np.dot(vdiff.T, beta * np.dot(M, s))
+
+        # Output result
+        out = [inte, 0] 
+
+        return out
+
+    def beta_func(self, x, y, beta):
+        dx = self.mesh.dx
+        dy = self.mesh.dy
+        
+        left = self.mesh.left
+        bottom = self.mesh.bottom
+        
+        nn = np.round(( x - left )/dx) + 1
+        mm = np.round(( y - bottom )/dy) + 1
+        
+        out = beta[nn][mm]
+        return out
+
+    def setRightHand(self, src_matrix, U, L):
+        m = self.mesh.m
+        n = self.mesh.n
+        
+        rh = np.zeros((m+1) * (n+1))
+        
+        for j in range(1, m + 2):
+            for l in range(1, n + 2):
+                id = j + (l - 1) * (m + 1) - 1  # Adjust for Python 0-based indexing
+                
+                if j == 1 and l != 1 and l != (n + 1):
+                    t1 = self.fInt(L[j][l], src_matrix, [1, 0, 0])
+                    t2 = t3 = t4 = 0
+                    t5 = self.fInt(L[j][l - 1], src_matrix, [0, 0, 1])
+                    t6 = self.fInt(U[j][l - 1], src_matrix, [0, 1, 0])
+                
+                elif j == (m + 1) and l != 1 and l != (n + 1):
+                    t1 = 0
+                    t2 = self.fInt(U[j - 1][l], src_matrix, [0, 0, 1])
+                    t3 = self.fInt(L[j - 1][l], src_matrix, [0, 1, 0])
+                    t4 = self.fInt(U[j - 1][l - 1], src_matrix, [1, 0, 0])
+                    t5 = t6 = 0
+                
+                elif j != 1 and j != (m + 1) and l == 1:
+                    t1 = self.fInt(L[j][l], src_matrix, [1, 0, 0])
+                    t2 = self.fInt(U[j - 1][l], src_matrix, [0, 0, 1])
+                    t3 = self.fInt(L[j - 1][l], src_matrix, [0, 1, 0])
+                    t4 = t5 = t6 = 0
+                
+                elif j != 1 and j != (m + 1) and l == (n + 1):
+                    t1 = t2 = t3 = 0
+                    t4 = self.fInt(U[j - 1][l - 1], src_matrix, [1, 0, 0])
+                    t5 = self.fInt(L[j][l - 1], src_matrix, [0, 0, 1])
+                    t6 = self.fInt(U[j][l - 1], src_matrix, [0, 1, 0])
+                
+                elif j == 1 and l == 1:
+                    t1 = self.fInt(L[j][l], src_matrix, [1, 0, 0])
+                    t2 = t3 = t4 = t5 = t6 = 0
+                
+                elif j == 1 and l == (n + 1):
+                    t1 = t2 = t3 = t4 = 0
+                    t5 = self.fInt(L[j][l - 1], src_matrix, [0, 0, 1])
+                    t6 = self.fInt(U[j][l - 1], src_matrix, [0, 1, 0])
+                
+                elif j == (m + 1) and l == 1:
+                    t1 = 0
+                    t2 = self.fInt(U[j - 1][l], src_matrix, [0, 0, 1])
+                    t3 = self.fInt(L[j - 1][l], src_matrix, [0, 1, 0])
+                    t4 = t5 = t6 = 0
+                
+                elif j == (m + 1) and l == (n + 1):
+                    t1 = t2 = t3 = 0
+                    t4 = self.fInt(U[j - 1][l - 1], src_matrix, [1, 0, 0])
+                    t5 = t6 = 0
+                
+                else:
+                    t1 = self.fInt(L[j][l], src_matrix, [1, 0, 0])
+                    t2 = self.fInt(U[j - 1][l], src_matrix, [0, 0, 1])
+                    t3 = self.fInt(L[j - 1][l], src_matrix, [0, 1, 0])
+                    t4 = self.fInt(U[j - 1][l - 1], src_matrix, [1, 0, 0])
+                    t5 = self.fInt(L[j][l - 1], src_matrix, [0, 0, 1])
+                    t6 = self.fInt(U[j][l - 1], src_matrix, [0, 1, 0])
+                
+                rh[id] = t1 + t2 + t3 + t4 + t5 + t6
+        
+        return rh
+
+    def fInt(self, T, src_matrix, v):
+        f0 = self.f_func(T.x[0], T.y[0],src_matrix)
+        f1 = self.f_func(T.x[1], T.y[1],src_matrix)
+        f2 = self.f_func(T.x[2], T.y[2],src_matrix)
+        
+        s = self.polyarea(T.x, T.y)
+        
+        f_avg = (f0 + f1 + f2) / 3
+        v_avg = (v[0], v[1] + v[2]) / 3
+
+        f3 = (f1 + f2) / 2
+        f4 = (f0 + f2) / 2
+        f5 = (f0 + f1) / 2
+
+        v3 = (v[1] + v[2]) / 2
+        v4 = (v[2] + v[0]) / 2
+        v5 = (v[0] + v[1]) / 2
+
+        out = (f3*v3 + f4*v4 + f5*v5 + f_avg*v_avg)*s / 4
+
+        return out
+
+
+    def f_func(self, x, y, src_matrix):
+        dx = self.mesh.dx
+        dy = self.mesh.dy
+        
+        left = self.mesh.left
+        bottom = self.mesh.bottom
+        
+        nn = np.round(( x - left )/dx) + 1
+        mm = np.round(( y - bottom )/dy) + 1
+        
+        out = src_matrix[nn][mm]
+        return out
+
+    def setA(self, grid):
+        m = self.mesh.m
+        n = self.mesh.n
+        
+        A = np.zeros(((m + 1) * (n + 1) * 7, 3))
+        list_index = 0
+        
+        for j in range(1, m + 2):
+            for l in range(1, n + 2):
+                a = grid[j][l]
+                id_ = j + (l - 1) * (m + 1)
+                
+                # Center
+                A[list_index, :] = [id_, id_, a['c']]
+                list_index += 1
+                
+                # West
+                if j != 1:
+                    A[list_index, :] = [id_, id_ - 1, a['w']]
+                    list_index += 1
+                
+                # Northwest
+                if j != 1 and l != (n + 1):
+                    A[list_index, :] = [id_, id_ + m, a['nw']]
+                    list_index += 1
+                
+                # North
+                if l != (n + 1):
+                    A[list_index, :] = [id_, id_ + m + 1, a['n']]
+                    list_index += 1
+                
+                # East
+                if j != (m + 1):
+                    A[list_index, :] = [id_, id_ + 1, a['e']]
+                    list_index += 1
+                
+                # South
+                if l != 1:
+                    A[list_index, :] = [id_, id_ - m - 1, a['s']]
+                    list_index += 1
+                
+                # Southeast
+                if j != (m + 1) and l != 1:
+                    A[list_index, :] = [id_, id_ - m, a['se']]
+                    list_index += 1
+        
+        # Trim the array to remove unused rows
+        A = A[:list_index, :]
+        return A
+
+    def setB(self, grid, rh):
+        m = self.mesh.m
+        n = self.mesh.n
+        
+        B = np.zeros((m + 1) * (n + 1))
+        
+        for j in range(1, m + 2):
+            for l in range(1, n + 2):
+                a = grid[j][l]
+                id_ = j + (l - 1) * (m + 1)
+                B[id_ - 1] = a['const']  # Adjust for zero-indexing
+        
+        B = rh - B
+        return B
 
     def transport_solver(self):
+        """
+        -- Solving Saturation Equations --
+        code to compute solution of saturation,concentration and 
+        surfactant equations by Modified Method of Characteristics
+        using explicit formulation (Yuan Yi-Rang 1993) and implicit finite
+        difference method
+        """
+        
         pass
+    
+    def get_gradient(self, vn):
+        m = self.mesh.m
+        n = self.mesh.n
 
+        dx = self.mesh.dx
+        dy = self.mesh.dy
 
-    def __str__(self):
-        return ""
+        px = np.zeros((n+1, m+1))
+        py = px
+        
+        for i in range(m + 2):
+            for j in range(n + 2):
+                if i != 0:
+                    px[j, i] = (vn[j, i] - vn[j, i - 1]) / dx
+                if i != m:
+                    px[j, i] = (vn[j, i + 1] - vn[j, i]) / dx
+                if i != 0 and i != m:
+                    px[j, i] = (vn[j, i + 1] - vn[j, i - 1]) / (2 * dx)
+                if j != 0:
+                    py[j, i] = (vn[j, i] - vn[j - 1, i]) / dy
+                if j != n:
+                    py[j, i] = (vn[j + 1, i] - vn[j, i]) / dy
+                if j != 0 and j != n:
+                    py[j, i] = (vn[j + 1, i] - vn[j - 1, i]) / (2 * dy)
+        return [px, py]
 
-    def export_data(self):
-        pass
 
 
     def divergence(self,F1, F2):
@@ -564,3 +834,19 @@ class Simulation:
             Divergence of the vector field
         """
         return np.gradient(F1, axis=1) + np.gradient(F2, axis=0)
+
+    def polyarea(self, x, y):
+        """
+        Calculate the area of a polygon using the Shoelace formula.
+        The vertices are defined by the x and y coordinates.
+        
+        Parameters:
+        x (list or array): x-coordinates of the polygon vertices
+        y (list or array): y-coordinates of the polygon vertices
+        
+        Returns:
+        float: Area of the polygon
+        """
+        return 0.5 * abs(sum(x[i] * y[i + 1] - y[i] * x[i + 1] for i in range(-1, len(x) - 1)))
+
+
