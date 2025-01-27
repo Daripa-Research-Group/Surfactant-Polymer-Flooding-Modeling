@@ -181,6 +181,8 @@ def test_compute_resid_saturations(): #tested
     # Need to implement method to calculate sigma (using the IFT vs surfactant concentration relationship)
     test_sim_object.phi
     test_sim_object.initial_concentration_matrix()
+
+    print("Surfactant_Concentration: ", test_sim_object.surfactant.vec_concentration)
     
     c0_array = test_sim_object.polymer.vec_concentration * np.ones((sog+1, sog + 1))
     test_sim_object.compvis(u, v, x, y, beta1, c0_array)
