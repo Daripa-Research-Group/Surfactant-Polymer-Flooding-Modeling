@@ -77,7 +77,23 @@ def test_z_func():
     
     test_sim_object = initializing_simulation()
     
-    water_front_pos = test_sim_object.z_func_test()
+    #setting up mesh
+    sog = 29 #test value for size of grid
+    test_sim_object.mesh.m = sog
+    test_sim_object.mesh.n = sog
+    test_sim_object.mesh.calculate_spacing
+
+    n = test_sim_object.mesh.n
+    m = test_sim_object.mesh.m
+    left = test_sim_object.mesh.left
+    bottom = test_sim_object.mesh.bottom
+    dx = test_sim_object.mesh.dx
+    dy = test_sim_object.mesh.dy
+
+    jj, ii = np.meshgrid(np.arange(1, n + 2), np.arange(1, m + 2))
+    
+
+    water_front_pos = test_sim_object.z_func_test(left + (ii - 1) * dx, bottom + (jj - 1) * dy)
     
     print("Water front position is:", water_front_pos)
 

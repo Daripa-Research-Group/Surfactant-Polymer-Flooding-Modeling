@@ -215,8 +215,8 @@ class Simulation:
         """
         try:
             if(self.polymer is not None and self.surfactant is not None and self.init_water_saturation_scalar is not None):
-                # scalar quantities of concentration for surfactant and polymer
-                # scalar quantity of initial water saturation (fraction of pore space filled with water)
+                # retrieving scalar quantities of concentration for surfactant and polymer
+                # retrieving scalar quantity of initial water saturation (fraction of pore space filled with water)
                 print("reaches here")
                 s_0 = self.init_water_saturation_scalar
                 c_0 = self.polymer.initial_concentration
@@ -231,16 +231,9 @@ class Simulation:
             else:
                 raise SimulationCalcInputException("SimulationError: phi value not calculated!")
 
-            if ( not self.is_surfactant ) and self.polymer is not None and self.surfactant is not None:
-                self.surfactant.vec_concentration = []
-                self.water_saturation = (~D) + D * (1 - s_0)
-                self.polymer.vec_concentration = (~D) * c_0
-            elif self.is_surfactant and self.polymer is not None and self.surfactant is not None:
-                self.water_saturation = (~D) + D * (1 - s_0)
-                self.polymer.vec_concentration = (~D) * c_0
-                self.surfactant.vec_concentration = (~D) * g_0
-            else:
-                raise SimulationCalcInputException("SimulationError: Surfactant and/or polymer not initialized")
+            self.water_saturation = (~D) + D * (1 - s_0)
+            self.polymer.vec_concentration = (~D) * c_0
+            self.surfactant.vec_concentration = (~D) * g_0
             
             return [ self.water_saturation, self.polymer.vec_concentration, self.surfactant.vec_concentration ]
         
