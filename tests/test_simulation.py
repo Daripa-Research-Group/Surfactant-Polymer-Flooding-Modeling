@@ -267,6 +267,8 @@ def test_divergence(A, B):
     # calculates the divergence of a 2D vector field
     test_sim_object = initializing_simulation()
 
+    # need to retrieve the parameters for the divergence function
+
     print("The divergence is:", test_sim_object.divergence(A,B))
 
 def test_solving_saturation_equations():
@@ -274,4 +276,4 @@ def test_solving_saturation_equations():
 
 
 if __name__ == "__main__":
-    test_compute_resid_saturations()
+    test_mobility_calculation()
