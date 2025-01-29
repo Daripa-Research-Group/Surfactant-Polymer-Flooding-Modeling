@@ -260,16 +260,32 @@ def test_mobility_calculation():
     print("Oleic Mobility:", oleic_mobility_test)
     print("Aqueous Mobility:", aqueous_mobility_test)
 
-    # flag -> 0 = oleic and 1 = aqueous
-    pass
 
-def test_divergence(A, B):
-    # calculates the divergence of a 2D vector field
+def test_divergence():
+    """Test the divergence function with simple cases."""
     test_sim_object = initializing_simulation()
+    
+    # Case 1: Known divergence (F = (x, y))
+    F1 = np.array([[0, 1], [0, 1]], dtype=float)
+    F2 = np.array([[0, 0], [1, 1]], dtype=float)
+    expected_div = np.array([[2, 2], [2, 2]], dtype=float)
 
-    # need to retrieve the parameters for the divergence function
+    computed_div = test_sim_object.divergence(F1, F2)
+    np.testing.assert_allclose(computed_div, expected_div, atol=1e-1)  # Increase tolerance if needed
 
-    print("The divergence is:", test_sim_object.divergence(A,B))
+    # Case 2: Zero divergence (constant field)
+    F1 = np.ones((2, 2), dtype=float)
+    F2 = np.ones((2, 2), dtype=float)
+    expected_div = np.zeros((2, 2), dtype=float)
+
+    computed_div = test_sim_object.divergence(F1, F2)
+    np.testing.assert_allclose(computed_div, expected_div, atol=1e-1)
+
+    # Case 3: Check output shape
+    F1 = np.random.rand(5, 5)
+    F2 = np.random.rand(5, 5)
+    computed_div = test_sim_object.divergence(F1, F2)
+    assert computed_div.shape == F1.shape, "Output shape must match input shape"
 
 def test_solving_saturation_equations():
     pass

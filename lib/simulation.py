@@ -216,7 +216,7 @@ class Simulation:
         try:
             if(self.polymer is not None and self.surfactant is not None and self.init_water_saturation_scalar is not None):
                 # retrieving scalar quantities of concentration for surfactant and polymer
-                # retrieving scalar quantity of initial water saturation (fraction of pore space filled with water)
+                # scalar quantity of initial water saturation (fraction of pore space filled with water)
                 print("reaches here")
                 s_0 = self.init_water_saturation_scalar
                 c_0 = self.polymer.initial_concentration
