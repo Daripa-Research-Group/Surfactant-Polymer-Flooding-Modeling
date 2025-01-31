@@ -288,6 +288,36 @@ def test_divergence():
     assert computed_div.shape == F1.shape, "Output shape must match input shape"
 
 def test_solving_saturation_equations():
+    """
+    This test function will test the function that solves the saturation equations
+    """
+    pass
+
+def test_set_tri():
+    pass
+
+def test_set_grid():
+    pass
+
+def test_set_rhs():
+    pass
+
+def test_setA():
+    pass
+
+def test_setB():
+    pass
+
+def test_getu():
+    pass
+
+def test_getvn():
+    pass
+
+def test_get_gradient():
+    pass
+
+def test_compute_shear_effects():
     pass
 
 

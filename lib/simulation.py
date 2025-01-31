@@ -775,6 +775,18 @@ class Simulation:
         B = rh - B
         return B
 
+    def get_u_val(self):
+        """
+        This method is a helper functtion to formulate the mesh
+        """
+        pass
+
+    def get_vn_val(self):
+        """
+        This is a helper function to formulate mesh for simulation object
+        """
+        pass
+    
     def transport_solver(self):
         """
         -- Solving Saturation Equations --
@@ -811,9 +823,14 @@ class Simulation:
                 if j != 0 and j != n:
                     py[j, i] = (vn[j + 1, i] - vn[j - 1, i]) / (2 * dy)
         return [px, py]
+    
+    def calculate_shear_effects(self):
+        """
+        Will calculate the change in the aqueous viscosity due to polymer shear thinning (if flag is turned on)
+        """
+        pass
 
-
-
+    ### HELPER FUNCTIONS TO THE SIMULATION CLASS 
     def divergence(self,F1, F2):
         """
         Calculate the divergence of a 2D vector field.
