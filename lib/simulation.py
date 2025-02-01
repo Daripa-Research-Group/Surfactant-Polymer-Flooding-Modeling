@@ -115,9 +115,6 @@ class Simulation:
         # print(type(self.surfactant.vec_concentration))
         return self.surfactant.IFT_conc_equ(np.array(self.surfactant.vec_concentration)) 
 
-    # @sigma.setter
-    # def sigma(self, value):
-    #     self._IFT_ = value
 
     _is_surfactant_ = None
     @property
@@ -799,7 +796,7 @@ class Simulation:
         
         return vn
 
-    def transport_solver(self):
+    def saturation_equ_solver(self):
         """
         -- Solving Saturation Equations --
         code to compute solution of saturation,concentration and 
@@ -807,9 +804,10 @@ class Simulation:
         using explicit formulation (Yuan Yi-Rang 1993) and implicit finite
         difference method
         """
-        
-        pass
-    
+        g1 = self.init_water_saturation_scalar
+        g2 = self.init_water_saturation_scalar * self.polymer.initial_concentration
+        g3 = self.init_water_saturation_scalar * self.surfactant.concentration 
+
     def get_gradient(self, vn):
         m = self.mesh.m
         n = self.mesh.n

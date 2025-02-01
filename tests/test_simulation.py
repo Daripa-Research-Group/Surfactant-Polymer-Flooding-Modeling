@@ -1,7 +1,5 @@
 """
 This file should hold the test cases for the 'simulation.py' class
-
-@author: Bhargav Akula Ramesh Kumar
 """
 import numpy as np
 import sys
