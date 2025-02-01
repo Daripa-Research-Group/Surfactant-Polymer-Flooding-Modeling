@@ -4,12 +4,13 @@ This python script contains the class definition for running simulations
 
 import sys
 import os
+from scipy.sparse.linalg import bicgstab
+import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 #Relevant imports
 from lib.Exceptions import SimulationCalcInputException
 from lib.para import Box
-import numpy as np
 from lib.enumerations import SimulationConstants, PolymerList, ModelType, ResevoirGeometry, PermeabilityType
 
 
@@ -775,18 +776,29 @@ class Simulation:
         B = rh - B
         return B
 
-    def get_u_val(self):
+    def get_u_val(self, A, B):
         """
         This method is a helper functtion to formulate the mesh
         """
-        pass
+        maximum_iterations = 300
+        out = bicgstab(A, B, maxiter=maximum_iterations)
+        
+        return out
 
-    def get_vn_val(self):
+    def get_vn_val(self, u):
         """
         This is a helper function to formulate mesh for simulation object
         """
-        pass
-    
+        m = self.mesh.m
+        n = self.mesh.n
+
+        vn = np.zeros((n+1, m+1))
+        for ii in range(m+1):
+            for jj in range(n+1):
+                vn[ii, jj] = u[(jj-1)*(m+1)+ii]
+        
+        return vn
+
     def transport_solver(self):
         """
         -- Solving Saturation Equations --
@@ -859,4 +871,4 @@ class Simulation:
         """
         return 0.5 * abs(sum(x[i] * y[i + 1] - y[i] * x[i + 1] for i in range(-1, len(x) - 1)))
 
-
+    
