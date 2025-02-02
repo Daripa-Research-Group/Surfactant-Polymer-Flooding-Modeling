@@ -796,7 +796,7 @@ class Simulation:
         
         return vn
 
-    def saturation_equ_solver(self):
+    def saturation_equ_solver(self, dt):
         """
         -- Solving Saturation Equations --
         code to compute solution of saturation,concentration and 
@@ -806,7 +806,37 @@ class Simulation:
         """
         g1 = self.init_water_saturation_scalar
         g2 = self.init_water_saturation_scalar * self.polymer.initial_concentration
-        g3 = self.init_water_saturation_scalar * self.surfactant.concentration 
+        g3 = self.init_water_saturation_scalar * self.surfactant.concentration
+
+        if(self.water_saturation is not None):
+            m = np.size(self.water_saturation, 1)
+            n = np.size(self.water_saturation, 0)
+        else:
+            raise SimulationCalcInputException("SimulationError: Water Saturation matrix not initialized...")
+        
+        dx = self.mesh.dx
+        dy = self.mesh.dy
+
+        Q = self.water_saturation
+
+        dt_array = dt*np.ones((n,m))
+        
+        #Defining const. parameters for Pc
+        omega1 = 0.1
+        omega2 = 0.4
+
+        phi = 1 #porosity
+        [x, y] = np.meshgrid(
+                np.arange(self.mesh.left, self.mesh.right + self.mesh.dx, self.mesh.dx), 
+                np.arange(self.mesh.bottom, self.mesh.top + self.mesh.dy, self.mesh.dy))
+        
+
+        #Define critical capillary numbers
+        Nco0 = 10**(-5)
+        Nca0 = 10**(-5)
+
+        ###PARAMETER DEFINITION
+
 
     def get_gradient(self, vn):
         m = self.mesh.m
