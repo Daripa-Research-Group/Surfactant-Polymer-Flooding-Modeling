@@ -796,7 +796,7 @@ class Simulation:
         
         return vn
 
-    def saturation_equ_solver(self, dt):
+    def saturation_equ_solver(self, dt, u, v):
         """
         -- Solving Saturation Equations --
         code to compute solution of saturation,concentration and 
@@ -836,6 +836,23 @@ class Simulation:
         Nca0 = 10**(-5)
 
         ###PARAMETER DEFINITION
+        
+        #recompute the residual saturations using (n+1)th time velocities & define the normalized saturrations of water and oil at IFT sigma as:
+            # $$ \bar{s} = \frac{s-s_{ra}}{1-s_{ra}} $$
+            #
+            # $$ \tilde{s} = \frac{s-s_{ra}}{1-s_{ra}-s_{ro}} $$
+        [swr, sor] = self.compres(u, v)
+        nsw = (Q - swr) / (1-swr)
+        nso = (Q - swr) / (1-swr-sor)
+        
+        #recompute mobilities
+        lambda_a = self.compmob(sor, swr, 1)
+        lambda_o = self.compmob(sor, swr, 0)
+        lambda_total = lambda_a + lambda_o
+
+        #recompute fractional flows (lambda_a / lambda_total)
+        f = lambda_a / lambda_total
+        # need to write the "kkdef()" function
 
 
     def get_gradient(self, vn):
