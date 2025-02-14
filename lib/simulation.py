@@ -18,12 +18,15 @@ class Simulation:
     """
     Class is used to generate an instance of a simulation which will run the SP-flooding model based on the given parameters provided by the user
     """
-    def __init__(self, sim_id, polymer, surfactant, init_water_saturation, resevoir_geometry, permeability_flg, mesh_grid, mdl_id, plt_type):
+    def __init__(self, sim_id, size_of_grid, polymer, surfactant, init_water_saturation, resevoir_geometry, permeability_flg, mesh_grid, mdl_id, plt_type):
         """
         creates instance of the simulation class which will enable for calculating changes in system parameters at every time-step
 
         :param sim_id: Simulation number
         :type sim_id: int
+
+        :param size_of_grid: size of mesh
+        :type size_of_grid: int
 
         :param polymer: Polymer object used in SP-flooding run
         :type polymer: Polymer
@@ -51,7 +54,8 @@ class Simulation:
         """
         
         self.sim_id = sim_id
-        
+        self.sog = size_of_grid
+
         #Instances of the polymer and surfactant objects
         self.polymer = polymer
         self.surfactant = surfactant
@@ -853,6 +857,19 @@ class Simulation:
         #recompute fractional flows (lambda_a / lambda_total)
         f = lambda_a / lambda_total
         # need to write the "kkdef()" function
+
+    def KK_def(self, x, y):
+        if(self.permeability_flg == PermeabilityType.Homogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
+            # Represents a homogenous rectilinear model
+            Kmax = 1000
+            KK = Kmax*np.ones(self.sog+1)
+        elif(self.permeability_flg == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
+            Kmax = 100
+            KK = Kmax*( 0.5*(1-10^(-7))*(np.sin(6*np.pi*np.cos(x))*np.cos(4*np.pi*np.sin(3*y))-1)+1)
+        elif(self.permeability_flg == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Quarter_Five_Spot):
+            # need to load the KK30Tabert.mat file... need to use the scipy.io.loadmat() method
+            pass
+
 
 
     def get_gradient(self, vn):

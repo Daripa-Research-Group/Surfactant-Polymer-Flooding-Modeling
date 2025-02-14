@@ -58,6 +58,7 @@ def initializing_simulation():
 
     sim_obj_test = Simulation(
             sim_id= sim_id,
+            size_of_grid= 29,
             polymer= polymer_object,
             surfactant= surfactant_object,
             init_water_saturation= initial_water_saturation,
@@ -319,5 +320,3 @@ def test_compute_shear_effects():
     pass
 
 
-if __name__ == "__main__":
-    test_mobility_calculation()
