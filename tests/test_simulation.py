@@ -35,7 +35,8 @@ def initializing_simulation():
     
     #initializing surfactant object
     lambda_IFT_equation = lambda GG: 10.001 / (GG + 1) - 0.001
-    surfactant_object = Surfactant(SurfactantList.Alkyl_Ether_Sulfate, 0, lambda_IFT_equation)
+    deriv_IFT_equ = lambda GG: ( -10.001 ) / ((GG+1)**2)
+    surfactant_object = Surfactant(SurfactantList.Alkyl_Ether_Sulfate, 0, lambda_IFT_equation, deriv_IFT_equ)
 
     #initializing initial water saturation
     initial_water_saturation = 0.79
@@ -319,4 +320,5 @@ def test_get_gradient():
 def test_compute_shear_effects():
     pass
 
-
+if __name__ == "__main__":
+    test_z_func()

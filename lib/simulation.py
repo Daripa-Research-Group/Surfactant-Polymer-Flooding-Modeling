@@ -4,7 +4,7 @@ This python script contains the class definition for running simulations
 
 import sys
 import os
-from scipy.sparse.linalg import bicgstab
+import scipy as sp
 import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -117,7 +117,11 @@ class Simulation:
     @property
     def sigma(self): #TODO: Need to update to make sure that i calculate the concentration using the lambda function within the surfactant object
         # print(type(self.surfactant.vec_concentration))
-        return self.surfactant.IFT_conc_equ(np.array(self.surfactant.vec_concentration)) 
+        return self.surfactant.IFT_conc_equ(np.array(self.surfactant.vec_concentration))
+
+    @property
+    def derivative_sigma(self):
+        return self.surfactant.derivative_IFT_conc_equ(np.array(self.surfactant.vec_concentration))
 
 
     _is_surfactant_ = None
@@ -856,7 +860,18 @@ class Simulation:
 
         #recompute fractional flows (lambda_a / lambda_total)
         f = lambda_a / lambda_total
-        # need to write the "kkdef()" function
+        
+        #Getting KK and Kmax from KK_def() function
+        [Kmax, KK] = self.KK_def(x, y)
+
+        D = KK*lambda_o*f
+
+        #Calculating derivative of IFT with respect to surfactant concentration
+        derivative_sigma_g = self.derivative_sigma
+        
+        #compute the capillary number
+        
+
 
     def KK_def(self, x, y):
         if(self.permeability_flg == PermeabilityType.Homogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
@@ -868,7 +883,9 @@ class Simulation:
             KK = Kmax*( 0.5*(1-10^(-7))*(np.sin(6*np.pi*np.cos(x))*np.cos(4*np.pi*np.sin(3*y))-1)+1)
         elif(self.permeability_flg == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Quarter_Five_Spot):
             # need to load the KK30Tabert.mat file... need to use the scipy.io.loadmat() method
-            pass
+            [Kmax, KK] = sp.io.loadmat('./Resources/KK30Tabert.mat')
+
+        return [Kmax, KK]
 
 
 
