@@ -11,14 +11,16 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 #Relevant imports
 from lib.Exceptions import SimulationCalcInputException
 from lib.para import Box
-from lib.enumerations import SimulationConstants, PolymerList, ModelType, ResevoirGeometry, PermeabilityType
+from lib.enumerations import SimulationConstants, PolymerList, ModelType, ResevoirGeometry, PermeabilityType, PlotType
+from lib.polymer import Polymer
+from lib.surfactant import Surfactant
 
 
 class Simulation:
     """
     Class is used to generate an instance of a simulation which will run the SP-flooding model based on the given parameters provided by the user
     """
-    def __init__(self, sim_id, size_of_grid, polymer, surfactant, init_water_saturation, resevoir_geometry, permeability_flg, mesh_grid, mdl_id, plt_type):
+    def __init__(self, sim_id : int, size_of_grid : int, polymer : Polymer, surfactant : Surfactant, init_water_saturation : float, resevoir_geometry : ResevoirGeometry, permeability_type : PermeabilityType, mesh_grid : Box, model_type : ModelType, plot_type : PlotType):
         """
         creates instance of the simulation class which will enable for calculating changes in system parameters at every time-step
 
@@ -40,17 +42,17 @@ class Simulation:
         :param resevoir_geometry: Type of resevoir geometry (is it a rectilinear or quarter-five-spot geometry)
         :type resevoir_geometry: enum 'ResevoirGeometry'
 
-        :param permeability_flg: Homogenous vs. Heterogenous porosity in resevoir
-        :type permeability_flg: enum 'PermeabilityType'
+        :param permeability_type: Homogenous vs. Heterogenous porosity in resevoir
+        :type permeability_type: enum 'PermeabilityType'
 
         :param mesh_grid: mesh_grid used in the SP-flooding run
         :type mesh_grid: Box
 
-        :param mdl_id: the model id for the simulation (whether shear thinning is on or off)
-        :type mdl_id: enum 'ModelType'
+        :param model_type: the model id for the simulation (whether shear thinning is on or off)
+        :type model_type: enum 'ModelType'
 
-        :param plt_type: the plot type outputted by the program for the simulation run
-        :type plt_type: enum 'PlotType'
+        :param plot_type: the plot type outputted by the program for the simulation run
+        :type plot_type: enum 'PlotType'
         """
         
         self.sim_id = sim_id
@@ -62,13 +64,13 @@ class Simulation:
 
         #Simulaiton Properties
         self.resevoir_geometry = resevoir_geometry
-        self.permeability_flg = permeability_flg
+        self.permeability_type = permeability_type
         self.mesh = mesh_grid
         self.init_water_saturation_scalar = init_water_saturation
         
         #Model and plotting flags
-        self.mdl_id = mdl_id #Model type
-        self.plt_type = plt_type #types of plots to generate
+        self.model_type = model_type
+        self.plot_type = plot_type #types of plots to generate
 
     ### DEPENDENT VARIABLES OF SIMULATION CLASS:
     _phi_ = None
@@ -197,11 +199,11 @@ class Simulation:
         out = 0
         
         #homogenous
-        if ( self.permeability_flg == PermeabilityType.Homogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
+        if ( self.permeability_type == PermeabilityType.Homogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
             out = y - init_front_hs + 0.01 * (np.cos(80 * np.pi * x))
-        elif ( self.permeability_flg == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
+        elif ( self.permeability_type == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
             out = y - init_front_hs ## Rectilinear Homogenous
-        elif ( self.permeability_flg == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Quarter_Five_Spot ):
+        elif ( self.permeability_type == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Quarter_Five_Spot ):
             out = ( (x)**2 ) + ( (y)**2 ) - 0.015 # Normal unperturbed initial saturation front 
         
         return out
@@ -264,7 +266,7 @@ class Simulation:
             else:
                 raise SimulationCalcInputException("SimulationError: Surfactant and/or Polymer Not Initialized")
 
-            if (self.mdl_id == ModelType.No_Shear_Thinning):
+            if (self.model_type == ModelType.No_Shear_Thinning):
                 # Newtonian Model (NO SHEAR THINNING INVOLVED => MODEL TYPE #1)
                 print("shape of polymer vec concentration:", np.shape(polymer_obj.vec_concentration))
                 n = np.shape(polymer_obj.vec_concentration)[0]
@@ -274,14 +276,14 @@ class Simulation:
                     print('aqueous viscosity: ', self.aqueous_viscosity)
                 else:
                     self.aqueous_viscosity = vis_water * (1 + beta1 * polymer_obj.vec_concentration)
-            elif (self.mdl_id == ModelType.Sourav_Implementation):
+            elif (self.model_type == ModelType.Sourav_Implementation):
                 # Sourav's Implementation (MODEL TYPE #2)
                 n = np.shape((polymer_obj.vec_concentration,1))
                 if(polymer_obj.initial_concentration == 0):
                     self.aqueous_viscosity = vis_water * np.ones(n)
                 else:
                     self.aqueous_viscosity = vis_oil * (0.5 + polymer_obj.vec_concentration)
-            elif(self.mdl_id == ModelType.Shear_Thinning_On):
+            elif(self.model_type == ModelType.Shear_Thinning_On):
                 # Dynamic Viscosity (SHEAR THINNING ON => MODEL TYPE #3)
                 rho_water = SimulationConstants.Water_Density.value # kg/m^3
                 rho_xanthane = PolymerList.Xanthane.Density #kg/m^3
@@ -874,14 +876,14 @@ class Simulation:
 
 
     def KK_def(self, x, y):
-        if(self.permeability_flg == PermeabilityType.Homogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
+        if(self.permeability_type == PermeabilityType.Homogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
             # Represents a homogenous rectilinear model
             Kmax = 1000
             KK = Kmax*np.ones(self.sog+1)
-        elif(self.permeability_flg == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
+        elif(self.permeability_type == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
             Kmax = 100
             KK = Kmax*( 0.5*(1-10^(-7))*(np.sin(6*np.pi*np.cos(x))*np.cos(4*np.pi*np.sin(3*y))-1)+1)
-        elif(self.permeability_flg == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Quarter_Five_Spot):
+        elif(self.permeability_type == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Quarter_Five_Spot):
             # need to load the KK30Tabert.mat file... need to use the scipy.io.loadmat() method
             [Kmax, KK] = sp.io.loadmat('./Resources/KK30Tabert.mat')
 
