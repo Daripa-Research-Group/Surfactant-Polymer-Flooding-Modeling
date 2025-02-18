@@ -55,7 +55,7 @@ class PlotType(Enum):
     Polymer_Concentration_Plot = 2
     Surfactant_Concentration_Plot = 3
 
-class ResevoirGeometry(Enum):
+class ReservoirGeometry(Enum):
     Rectilinear = 1
     Quarter_Five_Spot = 2
 
