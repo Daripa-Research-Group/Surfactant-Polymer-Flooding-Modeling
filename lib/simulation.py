@@ -867,10 +867,17 @@ class Simulation:
         D = KK*lambda_o*f
 
         #Calculating derivative of IFT with respect to surfactant concentration
-        derivative_sigma_g = self.derivative_sigma
+        sigma_g = self.derivative_sigma
         
         #compute the capillary number
-        
+        nca = np.sqrt((u**2)+(v**2))*miua/self.sigma
+        nco = np.sqrt((u**2)+(v**2))*miuo/self.sigma
+        norm_nca = np.linalg.norm(nca, ord=2)
+        norm_nco = np.linalg.norm(nco, ord=2)
+
+        #recalculating derivative of residual saturation with respect to surfactant concentration
+        swr_g = np.zeros((n,m))
+        sor_g = swr_g
 
 
     def KK_def(self, x, y):
