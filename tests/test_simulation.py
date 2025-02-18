@@ -10,7 +10,7 @@ from lib.para import Box
 from lib.simulation import Simulation
 from lib.polymer import Polymer
 from lib.surfactant import Surfactant
-from lib.enumerations import PolymerList, SurfactantList, ResevoirGeometry, PermeabilityType, PlotType, ModelType
+from lib.enumerations import PolymerList, SurfactantList, ReservoirGeometry, PermeabilityType, PlotType, ModelType
 
 #pytest import for unit tests
 import pytest
@@ -42,7 +42,7 @@ def initializing_simulation():
     initial_water_saturation = 0.79
 
     #initializing resevoir geometry
-    resevoir_geometry = ResevoirGeometry.Rectilinear
+    resevoir_geometry = ReservoirGeometry.Rectilinear
 
     #initializing permeability
     permeability_type = PermeabilityType.Homogenous
