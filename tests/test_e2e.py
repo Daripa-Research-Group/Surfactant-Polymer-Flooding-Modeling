@@ -41,7 +41,7 @@ INITIAL_WATER_SATURATION = 0.79
 box = Box()
 
 
-@pytest.mark.integration
+@pytest.mark.e2e
 @pytest.mark.parametrize(
     "sim_id, size_of_grid, polymer, surfactant, init_water_saturation, reservoir_geometry, permeability_type, mesh_grid, model_type, plot_type",
     [
