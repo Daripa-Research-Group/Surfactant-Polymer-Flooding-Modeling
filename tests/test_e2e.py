@@ -27,8 +27,14 @@ SCHIZOPHYLLAN = Polymer(
 )
 
 # default surfactant configurations
+LAMBDA_IFT_EQUATION = lambda GG: 10.001 / (GG + 1) - 0.001
+IFT_EQUATION_DERIVATIVE = lambda GG: (-10.001) / ((GG + 1) ** 2)
 ALKYL_ETHER_SULFATE = Surfactant(
-    SurfactantList.Alkyl_Ether_Sulfate, 0.09, None, None, None
+    SurfactantList.Alkyl_Ether_Sulfate,
+    0.09,
+    LAMBDA_IFT_EQUATION,
+    IFT_EQUATION_DERIVATIVE,
+    None,
 )
 
 INITIAL_WATER_SATURATION = 0.79
