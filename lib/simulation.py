@@ -1,17 +1,13 @@
 """
 This python script contains the class definition for running simulations
 """
-
-import sys
-import os
 import scipy as sp
 import numpy as np
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 #Relevant imports
 from lib.Exceptions import SimulationCalcInputException
 from lib.para import Box
-from lib.enumerations import SimulationConstants, PolymerList, ModelType, ResevoirGeometry, PermeabilityType, PlotType
+from lib.enumerations import SimulationConstants, PolymerList, ModelType, ReservoirGeometry, PermeabilityType, PlotType
 from lib.polymer import Polymer
 from lib.surfactant import Surfactant
 
@@ -20,7 +16,7 @@ class Simulation:
     """
     Class is used to generate an instance of a simulation which will run the SP-flooding model based on the given parameters provided by the user
     """
-    def __init__(self, sim_id : int, size_of_grid : int, polymer : Polymer, surfactant : Surfactant, init_water_saturation : float, resevoir_geometry : ResevoirGeometry, permeability_type : PermeabilityType, mesh_grid : Box, model_type : ModelType, plot_type : PlotType):
+    def __init__(self, sim_id : int, size_of_grid : int, polymer : Polymer, surfactant : Surfactant, init_water_saturation : float, resevoir_geometry : ReservoirGeometry, permeability_type : PermeabilityType, mesh_grid : Box, model_type : ModelType, plot_type : PlotType):
         """
         creates instance of the simulation class which will enable for calculating changes in system parameters at every time-step
 
@@ -40,7 +36,7 @@ class Simulation:
         :type init_water_saturation: float
 
         :param resevoir_geometry: Type of resevoir geometry (is it a rectilinear or quarter-five-spot geometry)
-        :type resevoir_geometry: enum 'ResevoirGeometry'
+        :type resevoir_geometry: enum 'ReservoirGeometry'
 
         :param permeability_type: Homogenous vs. Heterogenous porosity in resevoir
         :type permeability_type: enum 'PermeabilityType'
@@ -199,11 +195,11 @@ class Simulation:
         out = 0
         
         #homogenous
-        if ( self.permeability_type == PermeabilityType.Homogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
+        if ( self.permeability_type == PermeabilityType.Homogenous and self.resevoir_geometry == ReservoirGeometry.Rectilinear):
             out = y - init_front_hs + 0.01 * (np.cos(80 * np.pi * x))
-        elif ( self.permeability_type == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
+        elif ( self.permeability_type == PermeabilityType.Heterogenous and self.resevoir_geometry == ReservoirGeometry.Rectilinear):
             out = y - init_front_hs ## Rectilinear Homogenous
-        elif ( self.permeability_type == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Quarter_Five_Spot ):
+        elif ( self.permeability_type == PermeabilityType.Heterogenous and self.resevoir_geometry == ReservoirGeometry.Quarter_Five_Spot ):
             out = ( (x)**2 ) + ( (y)**2 ) - 0.015 # Normal unperturbed initial saturation front 
         
         return out
@@ -876,14 +872,14 @@ class Simulation:
 
 
     def KK_def(self, x, y):
-        if(self.permeability_type == PermeabilityType.Homogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
+        if(self.permeability_type == PermeabilityType.Homogenous and self.resevoir_geometry == ReservoirGeometry.Rectilinear):
             # Represents a homogenous rectilinear model
             Kmax = 1000
             KK = Kmax*np.ones(self.sog+1)
-        elif(self.permeability_type == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
+        elif(self.permeability_type == PermeabilityType.Heterogenous and self.resevoir_geometry == ReservoirGeometry.Rectilinear):
             Kmax = 100
             KK = Kmax*( 0.5*(1-10^(-7))*(np.sin(6*np.pi*np.cos(x))*np.cos(4*np.pi*np.sin(3*y))-1)+1)
-        elif(self.permeability_type == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Quarter_Five_Spot):
+        elif(self.permeability_type == PermeabilityType.Heterogenous and self.resevoir_geometry == ReservoirGeometry.Quarter_Five_Spot):
             # need to load the KK30Tabert.mat file... need to use the scipy.io.loadmat() method
             [Kmax, KK] = sp.io.loadmat('./Resources/KK30Tabert.mat')
 
