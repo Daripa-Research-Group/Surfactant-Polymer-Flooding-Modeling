@@ -18,7 +18,7 @@ class Simulation:
     """
     Class is used to generate an instance of a simulation which will run the SP-flooding model based on the given parameters provided by the user
     """
-    def __init__(self, sim_id, size_of_grid, polymer, surfactant, init_water_saturation, resevoir_geometry, permeability_flg, mesh_grid, mdl_id, plt_type):
+    def __init__(self, sim_id, size_of_grid, polymer, surfactant, init_water_saturation, init_oleic_saturation, resevoir_geometry, permeability_flg, mesh_grid, mdl_id, plt_type):
         """
         creates instance of the simulation class which will enable for calculating changes in system parameters at every time-step
 
@@ -36,6 +36,9 @@ class Simulation:
 
         :param init_water_saturation: Initial Water Saturation (scalar quantitiy)
         :type init_water_saturation: float
+
+        :param init_oleic_saturation: Initial oleic phase saturation (scalar quantity)
+        :type init_oleic_saturation: float
 
         :param resevoir_geometry: Type of resevoir geometry (is it a rectilinear or quarter-five-spot geometry)
         :type resevoir_geometry: enum 'ResevoirGeometry'
@@ -65,12 +68,15 @@ class Simulation:
         self.permeability_flg = permeability_flg
         self.mesh = mesh_grid
         self.init_water_saturation_scalar = init_water_saturation
+        self.init_oleic_saturation_scalar = init_oleic_saturation
         
         #Model and plotting flags
         self.mdl_id = mdl_id #Model type
         self.plt_type = plt_type #types of plots to generate
 
     ### DEPENDENT VARIABLES OF SIMULATION CLASS:
+
+    #TODO: Need to add oleic viscosity and oleic saturation properties!!!
     _phi_ = None
     @property
     def phi(self):
@@ -812,6 +818,9 @@ class Simulation:
         using explicit formulation (Yuan Yi-Rang 1993) and implicit finite
         difference method
         """
+        miuo = SimulationConstants.Oil_Viscosity.value
+
+
         g1 = self.init_water_saturation_scalar
         g2 = self.init_water_saturation_scalar * self.polymer.initial_concentration
         g3 = self.init_water_saturation_scalar * self.surfactant.concentration
@@ -840,8 +849,8 @@ class Simulation:
         
 
         #Define critical capillary numbers
-        Nco0 = 10**(-5)
-        Nca0 = 10**(-5)
+        norm_nco0 = 10**(-5)
+        norm_nca0 = 10**(-5)
 
         ###PARAMETER DEFINITION
         
@@ -849,6 +858,8 @@ class Simulation:
             # $$ \bar{s} = \frac{s-s_{ra}}{1-s_{ra}} $$
             #
             # $$ \tilde{s} = \frac{s-s_{ra}}{1-s_{ra}-s_{ro}} $$
+        swr0 = SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value
+        sor0 = SimulationConstants.Resid_Oleic_Phase_Saturation_Initial.value
         [swr, sor] = self.compres(u, v)
         nsw = (Q - swr) / (1-swr)
         nso = (Q - swr) / (1-swr-sor)
@@ -870,7 +881,7 @@ class Simulation:
         sigma_g = self.derivative_sigma
         
         #compute the capillary number
-        nca = np.sqrt((u**2)+(v**2))*miua/self.sigma
+        nca = np.sqrt((u**2)+(v**2))*self.aqueous_viscosity/self.sigma
         nco = np.sqrt((u**2)+(v**2))*miuo/self.sigma
         norm_nca = np.linalg.norm(nca, ord=2)
         norm_nco = np.linalg.norm(nco, ord=2)
@@ -878,6 +889,24 @@ class Simulation:
         #recalculating derivative of residual saturation with respect to surfactant concentration
         swr_g = np.zeros((n,m))
         sor_g = swr_g
+
+        if(self.aqueous_viscosity is not None):
+            for i in range(n): #traversing column
+                for j in range(m): #traversing row
+                    if(norm_nca >= norm_nca0):
+                        swr_g[j][i] = - (swr0*0.1534*10.001*norm_nca0**0.1534)/(np.sqrt(u[j][i]**2 + v[j][i]**2)*self.aqueous_viscosity[j][i]**(0.1534)*self.sigma[j][i]**(0.8466)*( self.surfactant.vec_concentration[j][i] + 1 )**2) 
+                    elif(norm_nco >= norm_nco0):
+                        swr_g[j][i] = - (sor0*0.5213*10.001*norm_nco0**0.5213)/(np.sqrt(u[j][i]**2 + v[j][i]**2)*self.aqueous_viscosity[j][i]**(0.5213)*self.sigma[j][i]**(0.4787)*( self.surfactant.vec_concentration[j][i] + 1 )**2) 
+        
+        # Determining the derivatives of normalized saturations with respect to surfactant concentration
+        nsw_g = swr_g * (Q - 1)/ ((1-swr)**2)
+        nso_g = (swr_g*(Q+sor-1)+sor_g*(Q-swr))/(1-swr-sor)**2
+
+        #Determining derivative of relative permeability with respect to saturation
+        kra_g = 2.5*swr_g*(nsw**2-nsw) + (Q - 1)*(2.5*swr*(3*(nsw**2)-1)+1)*nsw_g / ((1-swr)**2)
+        kro_g = 1-5*sor*nso+(1-nso)*(105*nso*sor_g)-(1+5*sor-10*sor*nso)*nso_g
+
+        #Determining derivative of fraction flow function with respect to saturation, concentration, and surfactant concentration
 
 
     def KK_def(self, x, y):
