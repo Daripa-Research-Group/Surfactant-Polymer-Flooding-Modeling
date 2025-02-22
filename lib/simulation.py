@@ -937,7 +937,31 @@ class Simulation:
                                             v=v,
                                             dt=dt
                                         )
+        #performing 2-D interpolation using the scipy.interpolate package
+        interp = sp.interpolate.RegularGridInterpolator((x,y), Q)
+        Qmod = interp((xmod, ymod))
 
+        #Recalculate the normalized saturation of water and oil
+        nso = (Qmod - swr)/(1-swr-sor)
+
+        #Updating coefficients with interpolated saturations
+        lambda_a = self.compmob(sor,swr, 1)
+        lambda_o = self.compmob(sor, swr, 0)
+        lambda_total = lambda_a + lambda_o
+        f = lambda_a/lambda_total #fractional flow of the aqueous phase
+        [Kmax, KK] = self.KK_def(x, y)
+        D = KK*lambda_o*f
+        pc_s = pc/(omega1*(1-nso))# derivative of capillary pressure with respect to saturation
+        pc_g = (pc/self.sigma)*sigma_g + pc_s
+        f_c = (lambda_o*lambda_a*miuo)/(( lambda_total**2 )*self.aqueous_viscosity)
+        f_g = (kra_g*lambda_o)/(( lambda_total**2 )*self.aqueous_viscosity) - (kro_g*lambda_a)/(( lambda_total**2 )*miuo)
+
+        #intermediate calculation of param 'D'
+        D_g = D*pc_g
+        D_s = D*pc_s
+
+        iter = 1
+        # AAA = np.zeros()
 
     def eval_Xsurf_neumann(self, flag, x, y, s, snew, g, f, f_s, D, pc_s, pc_g, u, v, dt):
         x_jump = None
