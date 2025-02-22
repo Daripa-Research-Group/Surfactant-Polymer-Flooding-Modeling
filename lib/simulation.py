@@ -902,12 +902,29 @@ class Simulation:
         nsw_g = swr_g * (Q - 1)/ ((1-swr)**2)
         nso_g = (swr_g*(Q+sor-1)+sor_g*(Q-swr))/(1-swr-sor)**2
 
-        #Determining derivative of relative permeability with respect to saturation
+        # Determining relative permeability with respect to saturation
+        kra_s = 2.5*swr*(3*(nsw)**2-1)+1
+        kro_s = 10*sor*nso-5*sor-1
+
+        # Determining derivative of relative permeability with respect to surfactant concentration
         kra_g = 2.5*swr_g*(nsw**2-nsw) + (Q - 1)*(2.5*swr*(3*(nsw**2)-1)+1)*nsw_g / ((1-swr)**2)
         kro_g = 1-5*sor*nso+(1-nso)*(105*nso*sor_g)-(1+5*sor-10*sor*nso)*nso_g
 
-        #Determining derivative of fraction flow function with respect to saturation, concentration, and surfactant concentration
+        # Determining derivative of fraction flow function with respect to saturation, concentration, and surfactant concentration
+        f_s = kra_s*lambda_o/((lambda_total**2)*self.aqueous_viscosity) - kro_s*lambda_a/(( lambda_total**2 )*miuo)
 
+        # Determining capillary pressure and its derivatives
+        pc = (self.sigma*omega2*self.phi**(0.5))/(KK**(0.5)*(1-nso)**(1/omega1))
+        pc_s = pc/(omega1*(1-nso))# derivative of capillary pressure with respect to saturation
+        pc_g = (pc/self.sigma)*sigma_g + pc_s
+
+        #Solving for saturation
+            #Will use characteristic equations and finite difference discretization
+
+        [xmod, ymod] = self.eval_Xsurf_neumann()
+
+    def eval_Xsurf_neumann(self):
+        pass
 
     def KK_def(self, x, y):
         if(self.permeability_flg == PermeabilityType.Homogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
