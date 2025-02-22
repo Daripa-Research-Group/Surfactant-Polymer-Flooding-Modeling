@@ -921,11 +921,62 @@ class Simulation:
         #Solving for saturation
             #Will use characteristic equations and finite difference discretization
 
-        [xmod, ymod] = self.eval_Xsurf_neumann()
+        [xmod, ymod] = self.eval_Xsurf_neumann(
+                                            flag=1,
+                                            x=x,
+                                            y=y,
+                                            s=Q,
+                                            snew=Q,
+                                            g=self.surfactant.vec_concentration,
+                                            f=f,
+                                            f_s=f_s,
+                                            D=D,
+                                            pc_s=pc_s,
+                                            pc_g=pc_g,
+                                            u=u,
+                                            v=v,
+                                            dt=dt
+                                        )
 
-    def eval_Xsurf_neumann(self):
-        pass
 
+    def eval_Xsurf_neumann(self, flag, x, y, s, snew, g, f, f_s, D, pc_s, pc_g, u, v, dt):
+        x_jump = None
+        y_jump = None
+        if(flag == 1):
+            x_jump = x - f_s * u * dt
+            y_jump = y - f_s * v * dt
+        elif(flag == 2):
+            [sx, sy] = self.get_gradient(s)
+            [gx, gy] = self.get_gradient(g)
+
+            x_jump = x - ((f/snew)*u + (D*pc_s/snew)*sx + (D*pc_g/snew)*gx)*dt
+            y_jump = y - ((f/snew)*v + (D*pc_s/snew)*sy + (D*pc_g/snew)*gy)*dt
+        elif(flag == 3):
+            [sx, sy] = self.get_gradient(s)
+
+            x_jump = x - ((f/snew)*u + (D*pc_s/snew)*sx)*dt
+            y_jump = y - ((f/snew)*v + (D*pc_s/snew)*sy)*dt
+        
+        xmod = x
+        ymod = y
+        if(x_jump is not None and y_jump is not None):
+            for j in range(np.shape(y)[0]):
+                for i in range(np.shape(x)[1]):
+                    if(x_jump[j][i] <= 1 and y_jump[j][i] <= 1):
+                        xmod[j][i] = abs(x_jump[j][i])
+                        ymod[j][i] = abs(y_jump[j][i])
+                    elif(x_jump[j][i] > 1 and y_jump[j][i] <= 1):
+                        xmod[j][i] = 2 - x_jump[j][i]
+                        ymod[j][i] = abs(y_jump[j][i])
+                    elif(x_jump[j][i] <= 1 and y_jump[j][i] > 1):
+                        xmod[j][i] = abs(x_jump[j][i])
+                        ymod[j][i] = 2 - y_jump[j][i]
+                    elif(x_jump[j][i] > 1 and y_jump[j][i] > 1):
+                        xmod[j][i] = 2 - x_jump[j][i]
+                        ymod[j][i] = 2 - y_jump[j][i]
+        
+        return [xmod, ymod]
+                        
     def KK_def(self, x, y):
         if(self.permeability_flg == PermeabilityType.Homogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
             # Represents a homogenous rectilinear model
@@ -968,11 +1019,11 @@ class Simulation:
                     py[j, i] = (vn[j + 1, i] - vn[j - 1, i]) / (2 * dy)
         return [px, py]
     
-    def calculate_shear_effects(self):
-        """
-        Will calculate the change in the aqueous viscosity due to polymer shear thinning (if flag is turned on)
-        """
-        pass
+    # def calculate_shear_effects(self):
+    #     """
+    #     Will calculate the change in the aqueous viscosity due to polymer shear thinning (if flag is turned on)
+    #     """
+    #     pass
 
     ### HELPER FUNCTIONS TO THE SIMULATION CLASS 
     def divergence(self,F1, F2):
