@@ -961,7 +961,11 @@ class Simulation:
         D_s = D*pc_s
 
         iter = 1
-        # AAA = np.zeros()
+        AAA = np.zeros(n*m)
+        DDD = np.zeros(n*m)[0]
+
+
+
 
     def eval_Xsurf_neumann(self, flag, x, y, s, snew, g, f, f_s, D, pc_s, pc_g, u, v, dt):
         x_jump = None
