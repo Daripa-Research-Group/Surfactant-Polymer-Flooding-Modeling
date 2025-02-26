@@ -12,13 +12,14 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from lib.Exceptions import SimulationCalcInputException
 from lib.para import Box
 from lib.enumerations import SimulationConstants, PolymerList, ModelType, ResevoirGeometry, PermeabilityType
-
+from lib.surfactant import Surfactant
+from lib.polymer import Polymer
 
 class Simulation:
     """
     Class is used to generate an instance of a simulation which will run the SP-flooding model based on the given parameters provided by the user
     """
-    def __init__(self, sim_id, size_of_grid, polymer, surfactant, init_water_saturation, init_oleic_saturation, resevoir_geometry, permeability_flg, mesh_grid, mdl_id, plt_type):
+    def __init__(self, sim_id, size_of_grid, polymer : Polymer, surfactant : Surfactant, init_water_saturation, init_oleic_saturation, resevoir_geometry, permeability_flg, mesh_grid, mdl_id, plt_type):
         """
         creates instance of the simulation class which will enable for calculating changes in system parameters at every time-step
 
@@ -890,7 +891,7 @@ class Simulation:
         swr_g = np.zeros((n,m))
         sor_g = swr_g
 
-        if(self.aqueous_viscosity is not None):
+        if(self.aqueous_viscosity is not None and self.surfactant.vec_concentration is not None):
             for i in range(n): #traversing column
                 for j in range(m): #traversing row
                     if(norm_nca >= norm_nca0):
@@ -960,11 +961,25 @@ class Simulation:
         D_g = D*pc_g
         D_s = D*pc_s
 
-        iter = 1
+        idx = 1
         AAA = np.zeros(n*m)
         DDD = np.zeros(n*m)[0]
+        
+        while(idx <= (m)*(n-1)+1 and self.surfactant.vec_concentration is not None):
+            cnt = (idx - 1) / m # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
+            BB = np.zeros((n,m))
+            AA = BB
+            CC = BB
+            DD = np.zeros((m,1))
+            for i in range(m):
+                for j in range(n):
+                    if(idx == 1):
+                        if(i == 0):
+                            DD[i] = (Qmod[cnt][i]/dt[cnt][i]) + g1*(1-f[cnt][i]) \
+                                    + ((D_g[cnt][i]+D_g[cnt][i+1])/(dx**2) + (D_g[cnt+1][i] + D_g[cnt+1][i])/(dx**1) )*self.surfactant.vec_concentration[cnt][i] \
+                                    - (D_g[cnt][i] + D_g[cnt][i+1])/(dx**2)*self.surfactant.vec_concentration[cnt][i+1]
 
-
+            
 
 
     def eval_Xsurf_neumann(self, flag, x, y, s, snew, g, f, f_s, D, pc_s, pc_g, u, v, dt):
