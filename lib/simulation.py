@@ -999,7 +999,8 @@ class Simulation:
 
                             CC[j][i] = (D_s[cnt][i] + D_s[cnt+1][i])/(dy**2)
                         else:
-                            pass
+                            DD[i] = Qmod[cnt][i]/dt[cnt][i] \
+                                    - f_c[cnt][i]*(u[cnt][i])
 
             
 
