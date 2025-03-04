@@ -965,7 +965,7 @@ class Simulation:
         AAA = np.zeros(n*m)
         DDD = np.zeros(n*m)[0]
         
-        while(idx <= (m)*(n-1)+1 and self.surfactant.vec_concentration is not None):
+        while(idx <= (m)*(n-1)+1 and self.surfactant.vec_concentration is not None and self.polymer.vec_concentration is not None):
             cnt = (idx - 1) / m # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
             BB = np.zeros((n,m))
             AA = BB
@@ -1000,7 +1000,11 @@ class Simulation:
                             CC[j][i] = (D_s[cnt][i] + D_s[cnt+1][i])/(dy**2)
                         else:
                             DD[i] = Qmod[cnt][i]/dt[cnt][i] \
-                                    - f_c[cnt][i]*(u[cnt][i])
+                                    - f_c[cnt][i]*(u[cnt][i]*( self.polymer.vec_concentration[cnt][i+1] - self.polymer.vec_concentration[cnt][i-1])/(2*dx)) \
+                                    - f_g[cnt][i]*(u[cnt][i]*( self.surfactant.vec_concentration[cnt][i+1] - self.surfactant.vec_concentration[cnt][i-1])/(2*dx)) \
+                                    + ((D_g[cnt][i+1]+D_g[cnt][i-1] + 2*D_g[cnt][i])/(2*dx**2)+(D_g[cnt][i+1]+D_g[cnt][i])/(dy**2)*self.surfactant.vec_concentration[cnt][i])
+        pass
+
 
             
 
