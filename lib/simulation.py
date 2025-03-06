@@ -1013,9 +1013,10 @@ class Simulation:
 
                             CC[j][i] = (D_s[cnt][i]+D_s[cnt+1][i])/(dy**2)
                     elif(idx == (m)*(n-1)+1): #topmost row of grid
-                        if(i == 1):
+                        if(i == 0):
                             DD[i] = (Qmod[cnt][i]/dt[cnt][i]) \
-                                    + ((D_g[cnt]))
+                                    + ((D_g[cnt][i] + D_g[cnt][i])/(dx**2) + (D_g[cnt-1][i]+D_g[cnt][i])/(dy**2))*self.surfactant.vec_concentration[cnt][i] \
+                                    # + 
 
 
 
