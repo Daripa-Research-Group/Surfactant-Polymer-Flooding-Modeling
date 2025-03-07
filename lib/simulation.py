@@ -1026,7 +1026,12 @@ class Simulation:
                             
                             BB[j][i+1] = (D_s[cnt][i]+D_s[cnt][i+1])/(dx**2)
                         elif(i == m):
-                            pass
+                            DD[i] = (1/dt[cnt][i])*Qmod[cnt][i] \
+                                    - f_c[cnt][i]*(v[cnt][i]*(self.polymer.vec_concentration[cnt+1][i]-self.polymer.vec_concentration[cnt-1][i])/(2*dy)) \
+                                    - f_g[cnt][i]*(v[cnt][i]*(self.surfactant.vec_concentration[cnt+1][i]-self.surfactant.vec_concentration[cnt-1][i])/(2*dy)) \
+                                    + ((D_g[cnt][i+1]+D_g[cnt][i-1])/(dx**2) + (D_g[cnt-1][i]+2*D_g[cnt][i] + D_g[cnt+2][i])/(2*dy**2))*self.surfactant.vec_concentration[cnt][i] \
+
+
 
 
 
