@@ -971,6 +971,8 @@ class Simulation:
             AA = BB
             CC = BB
             DD = np.zeros((m,1))
+
+            #'cnt+1' in matlab is 'cnt' in python as matlab indexes from 1 but python indexes from 0
             for i in range(m):
                 for j in range(n):
                     if(idx == 1):
@@ -1013,9 +1015,9 @@ class Simulation:
 
                             CC[j][i] = (D_s[cnt][i]+D_s[cnt+1][i])/(dy**2)
                     elif(idx == (m)*(n-1)+1): #topmost row of grid
-                        if(i == 0):
+                        if(i == 0): #leftmost column
                             DD[i] = (Qmod[cnt][i]/dt[cnt][i]) \
-                                    + ((D_g[cnt][i] + D_g[cnt][i])/(dx**2) + (D_g[cnt-1][i]+D_g[cnt][i])/(dy**2))*self.surfactant.vec_concentration[cnt][i] \
+                                    + ((D_g[cnt][i] + D_g[cnt][i+1])/(dx**2) + (D_g[cnt-1][i]+D_g[cnt][i])/(dy**2))*self.surfactant.vec_concentration[cnt][i] \
                                     - (D_g[cnt][i]+D_g[cnt][i+1])/(dx**2)*self.surfactant.vec_concentration[cnt][i+1]\
                                     - (D_g[cnt][i] + D_g[cnt-1][i])/(dy**2)*self.surfactant.vec_concentration[cnt-1][i]
 
@@ -1025,10 +1027,8 @@ class Simulation:
                                     -(D_s[cnt-1][i]+D_s[cnt][i])/(dy**2)
                             
                             BB[j][i+1] = (D_s[cnt][i]+D_s[cnt][i+1])/(dx**2)
-                        elif(i == m):
+                        elif(i == m): #rightmost column
                             DD[i] = (1/dt[cnt][i])*Qmod[cnt][i] \
-                                    - f_c[cnt][i]*(v[cnt][i]*(self.polymer.vec_concentration[cnt+1][i]-self.polymer.vec_concentration[cnt-1][i])/(2*dy)) \
-                                    - f_g[cnt][i]*(v[cnt][i]*(self.surfactant.vec_concentration[cnt+1][i]-self.surfactant.vec_concentration[cnt-1][i])/(2*dy)) \
                                     + ((D_g[cnt][i+1]+D_g[cnt][i-1])/(dx**2) + (D_g[cnt-1][i]+2*D_g[cnt][i] + D_g[cnt+2][i])/(2*dy**2))*self.surfactant.vec_concentration[cnt][i] \
 
 
