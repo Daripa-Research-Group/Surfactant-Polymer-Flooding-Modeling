@@ -1004,7 +1004,7 @@ class Simulation:
                             DD[i] = Qmod[cnt][i]/dt[cnt][i] \
                                     - f_c[cnt][i]*(u[cnt][i]*(self.polymer.vec_concentration[cnt][i+1] - self.polymer.vec_concentration[cnt][i-1])/(2*dx)) \
                                     - f_g[cnt][i]*(u[cnt][i]*(self.surfactant.vec_concentration[cnt][i+1] - self.surfactant.vec_concentration[cnt][i-1])/(2*dx)) \
-                                    + ((D_g[cnt][i+1]+D_g[cnt][i-1] + 2*D_g[cnt][i])/(2*dx**2)+(D_g[cnt][i+1]+D_g[cnt][i])/(dy**2)*self.surfactant.vec_concentration[cnt][i]) \
+                                    + ((D_g[cnt][i+1]+D_g[cnt][i-1] + 2*D_g[cnt][i])/(2*dx**2)+(D_g[cnt][i+1]+D_g[cnt][i])/(dy**2))*self.surfactant.vec_concentration[cnt][i] \
                                     - (D_g[cnt][i+1]+D_g[cnt][i])/(2*dx**2)*self.surfactant.vec_concentration[cnt][i+1] \
                                     - (D_g[cnt][i-1]+D_g[cnt][i])/(2*dx**2)*self.surfactant.vec_concentration[cnt][i-1] \
                                     - (D_g[cnt][i]+D_g[cnt+1][i])/(dy**2)*self.surfactant.vec_concentration[cnt+1][i]
@@ -1028,8 +1028,98 @@ class Simulation:
                             
                             BB[j][i+1] = (D_s[cnt][i]+D_s[cnt][i+1])/(dx**2)
                         elif(i == m): #rightmost column
-                            DD[i] = (1/dt[cnt][i])*Qmod[cnt][i] \
-                                    + ((D_g[cnt][i+1]+D_g[cnt][i-1])/(dx**2) + (D_g[cnt-1][i]+2*D_g[cnt][i] + D_g[cnt+2][i])/(2*dy**2))*self.surfactant.vec_concentration[cnt][i] \
+                            DD[i] = (Qmod[cnt][i]/dt[cnt][i])\
+                                    + ((D_g[cnt][i] + D_g[cnt][i-1])/(dx**2) + (D_g[cnt-1][i]+D_g[cnt][i])/(dy**2))*self.surfactant.vec_concentration[cnt][i] \
+                                    - (D_g[cnt][i]+D_g[cnt][i-1])/(dx**2)*self.surfactant.vec_concentration[cnt][i-1]\
+                                    - (D_g[cnt][i] + D_g[cnt-1][i])/(dy**2)*self.surfactant.vec_concentration[cnt-1][i]
+
+                            BB[j][i-1] = (D_s[cnt][i]+D_s[cnt][i-1])/(dy**2)
+
+                            BB[j][i] = 1/dt[cnt][i]-(D_s[cnt][i]+D_s[cnt][i-1])/(dx**2)\
+                                    -(D_s[cnt-1][i]+D_s[cnt][i])/(dy**2)
+
+                            AA[j][i] = (D_s[cnt][i]+D_s[cnt-1][i])/(dy**2)
+                        else:
+                            DD[i] = Qmod[cnt][i]/dt[cnt][i] \
+                                    - f_c[cnt][i]*(u[cnt][i]*(self.polymer.vec_concentration[cnt][i+1] - self.polymer.vec_concentration[cnt][i-1])/(2*dx)) \
+                                    - f_g[cnt][i]*(u[cnt][i]*(self.surfactant.vec_concentration[cnt][i+1] - self.surfactant.vec_concentration[cnt][i-1])/(2*dx)) \
+                                    + ((D_g[cnt][i+1]+D_g[cnt][i-1] + 2*D_g[cnt][i])/(2*dx**2)+(D_g[cnt][i+1]+D_g[cnt][i])/(dy**2))*self.surfactant.vec_concentration[cnt][i] \
+                                    - (D_g[cnt][i+1]+D_g[cnt][i])/(2*dx**2)*self.surfactant.vec_concentration[cnt][i+1] \
+                                    - (D_g[cnt][i-1]+D_g[cnt][i])/(2*dx**2)*self.surfactant.vec_concentration[cnt][i-1] \
+                                    - (D_g[cnt][i]+D_g[cnt-1][i])/(dy**2)*self.surfactant.vec_concentration[cnt-1][i]
+
+                            BB[j][i] = 1/dt[cnt][i]-(D_s[cnt][i+1]+D_s[cnt][i-1]+2*D_s[cnt][i])/(2*dx**2)-(D_s[cnt-1][i]+D_s[cnt][i])/(dy**2)
+                            BB[j][i-1] = (D_s[cnt][i-1]+D_s[cnt][i])/(2*dx**2)
+                            BB[j][i+1] = (D_s[cnt][i+1]+D_s[cnt][i])/(2*dx**2)
+
+                            AA[j][i] = (D_s[cnt][i]+D_s[cnt-1][i])/(dy**2)
+                    else:
+                        if(i == 0):
+                            DD[i] = Qmod[cnt][i]/dt[cnt][i] \
+                                    - f_c[cnt][i]*(v[cnt][i]*(self.polymer.vec_concentration[cnt+1][i] - self.polymer.vec_concentration[cnt][i])/(2*dy)) \
+                                    - f_g[cnt][i]*(v[cnt][i]*(self.surfactant.vec_concentration[cnt+1][i] - self.surfactant.vec_concentration[cnt][i])/(2*dy)) \
+                                    + ((D_g[cnt][i]+D_g[cnt][i+1])/(dx**2)+(D_g[cnt-1][i]+2*D_g[cnt][i]+D_g[cnt+1][i])/(2*dy**2))*self.surfactant.vec_concentration[cnt][i] \
+                                    - (D_g[cnt][i]+D_g[cnt][i+1])/(dx**2)*self.surfactant.vec_concentration[cnt][i+1] \
+                                    - (D_g[cnt][i]+D_g[cnt+1][i])/(2*dy**2)*self.surfactant.vec_concentration[cnt+1][i] \
+                                    - (D_g[cnt][i]+D_g[cnt-1][i])/(2*dy**2)*self.surfactant.vec_concentration[cnt-1][i]
+
+                            AA[j][i] = (D_s[cnt][i]+D_s[cnt-1][i])/(2*dy**2)
+
+                            BB[j][i] = 1/dt[cnt][i]-(D_s[cnt][i]+D_s[cnt][i+1])/(dx**2)-(D_s[cnt-1][i]+2*D_s[cnt][i]+D_s[cnt+1][i])/(2*dy**2)
+                            BB[j][i+1] = (D_s[cnt][i+1]+D_s[cnt][i])/(dx**2)
+
+                            CC[j][i] = (D_s[cnt][i]+D_s[cnt+1][i])/(2*dy**2)
+                        elif(i == m):
+                            DD[i] = Qmod[cnt][i]/dt[cnt][i] \
+                                    - f_c[cnt][i]*(v[cnt][i]*(self.polymer.vec_concentration[cnt+1][i] - self.polymer.vec_concentration[cnt][i])/(2*dy)) \
+                                    - f_g[cnt][i]*(v[cnt][i]*(self.surfactant.vec_concentration[cnt+1][i] - self.surfactant.vec_concentration[cnt][i])/(2*dy)) \
+                                    + ((D_g[cnt][i]+D_g[cnt][i-1])/(dx**2)+(D_g[cnt-1][i]+2*D_g[cnt][i]+D_g[cnt+1][i])/(2*dy**2))*self.surfactant.vec_concentration[cnt][i] \
+                                    - (D_g[cnt][i]+D_g[cnt][i-1])/(dx**2)*self.surfactant.vec_concentration[cnt][i-1] \
+                                    - (D_g[cnt][i]+D_g[cnt+1][i])/(2*dy**2)*self.surfactant.vec_concentration[cnt+1][i] \
+                                    - (D_g[cnt][i]+D_g[cnt-1][i])/(2*dy**2)*self.surfactant.vec_concentration[cnt-1][i]
+
+                            AA[j][i] = (D_s[cnt][i]+D_s[cnt-1][i])/(2*dy**2)
+
+                            BB[j][i] = 1/dt[cnt][i]-(D_s[cnt][i]+D_s[cnt][i-1])/(dx**2)-(D_s[cnt-1][i]+2*D_s[cnt][i]+D_s[cnt+1][i])/(2*dy**2)
+                            BB[j][i-1] = (D_s[cnt][i]+D_s[cnt][i-1])/(dx**2)
+
+                            CC[j][i] = (D_s[cnt][i]+D_s[cnt+1][i])/(2*dy**2)
+                        else:
+                            DD[i] = (Qmod[cnt][i]/dt[cnt][i]) \
+                                    - f_c[cnt][i]*(u[cnt][i]*(self.polymer.vec_concentration[cnt][i+1]-self.polymer.vec_concentration[cnt][i-1])/(2*dx) \
+                                    +v[cnt][i]*(self.polymer.vec_concentration[cnt+1][i]-self.polymer.vec_concentration[cnt-1][i])/(2*dy)) \
+                                    - f_g[cnt][i]*(u[cnt][i]*(self.surfactant.vec_concentration[cnt][i+1] - self.surfactant.vec_concentration[cnt][i-1])/(2*dx) \
+                                    +v[cnt][i]*(self.surfactant.vec_concentration[cnt+1][i]-self.surfactant.vec_concentration[cnt-1][i])/(2*dy)) \
+                                    - (D_g[cnt][i+1]/(2*dx**2)*(self.surfactant.vec_concentration[cnt][i+1]-self.surfactant.vec_concentration[cnt][i]) \
+                                    -D_g[cnt][i-1]/(2*dx**2)*(self.surfactant.vec_concentration[cnt][i-1]-self.surfactant.vec_concentration[cnt][i]) \
+                                    +D_g[cnt][i-1]/(2*dx**2)*(self.surfactant.vec_concentration[cnt][i-1]-self.surfactant.vec_concentration[cnt][i+1]) \
+                                    +D_g[cnt+1][i]/(2*dx**2)*(self.surfactant.vec_concentration[cnt+1][i]-self.surfactant.vec_concentration[cnt][i]) \
+                                    +D_g[cnt-1][i]/(2*dx**2)*(self.surfactant.vec_concentration[cnt-1][i]-self.surfactant.vec_concentration[cnt][i]) \
+                                    +D_g[cnt][i]/(2*dx**2)*(self.surfactant.vec_concentration[cnt+1][i]-self.surfactant.vec_concentration[cnt][i]))
+
+                            AA[j][i] = (D_s[cnt-1][i]+D_s[cnt][i])/(2*dy**2)
+
+                            CC[j][i] = (D_s[cnt][i]+D_s[cnt+1][i])(2*dy**2)
+
+                            BB[j][i] = 1/dt[cnt][i]-((1/(2*dx**2))*(D_s[cnt][i]+2*D_s[cnt][i]+D_s[cnt][i+1])+(1/(2*dy**2))*(D_s[cnt-1][i]+2*D_s[cnt][i]+D_s[cnt+1][i]))
+                            BB[j][i+1] = (D_s[cnt][i]+D_s[cnt][i+1])/(2*dx**2)
+                            BB[j][i-1] = (D_s[cnt][i-1]+D_s[cnt][i])/(2*dx**2)
+            if cnt == 0:
+                AAA[:n, :2*m] = np.hstack([BB, CC])
+            elif cnt == n - 1:
+                AAA[(m-1)*n:m*n, (n-2)*m:n*m] = np.hstack([AA, BB])
+            else:
+                AAA[cnt*n:(cnt+1)*n, (cnt-1)*m:(cnt+2)*m] = np.hstack([AA, BB, CC])
+
+            DDD[cnt*m:(cnt+1)*m] = DD
+            idx += m
+
+
+
+
+
+
+
 
 
 
