@@ -5,6 +5,7 @@ This python script contains the class definition for running simulations
 import sys
 import os
 import scipy as sp
+from scipy.sparse.linalg import bicgstab
 import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -422,7 +423,7 @@ class Simulation:
         else:
             raise SimulationCalcInputException("SimulationError: Need proper statement of is_surfactant (0 for Polymer Flooding Simulation & 1 for Surfactant-Polymer Flooding Simulation). Please try again...")
 
-    def compres(self, u, v):
+    def compres(self, u, v, sigma_mod=None):
         """
         function to compute residual saturations as a function of surfactant
         concentration via capillary number variation. Hence it varies with change
@@ -440,10 +441,16 @@ class Simulation:
         sor0 = SimulationConstants.Resid_Oleic_Phase_Saturation_Initial.value
 
         # compute capillary number
-        nca = np.sqrt(u**2 + v**2) * self.aqueous_viscosity / self.sigma
-        nco = np.sqrt(u**2 + v**2) * miuo / self.sigma
-        Nca = np.linalg.norm(nca)  # compute 2-norm (largest singular value)
-        Nco = np.linalg.norm(nco)
+        if(sigma_mod is None):
+            nca = np.sqrt(u**2 + v**2) * self.aqueous_viscosity / self.sigma
+            nco = np.sqrt(u**2 + v**2) * miuo / self.sigma
+            Nca = np.linalg.norm(nca)  # compute 2-norm (largest singular value)
+            Nco = np.linalg.norm(nco)
+        else:
+            nca = np.sqrt(u**2 + v**2) * self.aqueous_viscosity / sigma_mod
+            nco = np.sqrt(u**2 + v**2) * miuo / sigma_mod
+            Nca = np.linalg.norm(nca)  # compute 2-norm (largest singular value)
+            Nco = np.linalg.norm(nco)
 
         # define residual saturations as functions of capillary numbers
         if Nco < Nco0:
@@ -855,7 +862,7 @@ class Simulation:
 
         ###PARAMETER DEFINITION
         
-        #recompute the residual saturations using (n+1)th time velocities & define the normalized saturrations of water and oil at IFT sigma as:
+        #recompute the residual saturations using (n+1)th time velocities & define the normalized saturations of water and oil at IFT sigma as:
             # $$ \bar{s} = \frac{s-s_{ra}}{1-s_{ra}} $$
             #
             # $$ \tilde{s} = \frac{s-s_{ra}}{1-s_{ra}-s_{ro}} $$
@@ -874,7 +881,12 @@ class Simulation:
         f = lambda_a / lambda_total
         
         #Getting KK and Kmax from KK_def() function
-        [Kmax, KK] = self.KK_def(x, y)
+        KK_info = self.KK_def(x, y)
+        if(KK_info is not None):
+            Kmax = KK_info[0]
+            KK = KK_info[1]
+        else:
+            raise SimulationCalcInputException("SimulationError: KK and Kmax not calculated properly...")
 
         D = KK*lambda_o*f
 
@@ -962,8 +974,8 @@ class Simulation:
         D_s = D*pc_s
 
         idx = 1
-        AAA = np.zeros(n*m)
-        DDD = np.zeros(n*m)[0]
+        AAA = np.zeros((n*m))
+        DDD = np.zeros_like((n*m,1))
         
         while(idx <= (m)*(n-1)+1 and self.surfactant.vec_concentration is not None and self.polymer.vec_concentration is not None):
             cnt = (idx - 1) / m # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
@@ -1113,22 +1125,143 @@ class Simulation:
 
             DDD[cnt*m:(cnt+1)*m] = DD
             idx += m
+        
+        #Entering the bicgstab for the saturation calculations
+            # bicgstab (Biconjugate Gradient Stabilized) - Iterative algorithm to solve large, sparse, and non-symmetric linear systems of the form Ax = b
+
+        Qnew_flat, info = bicgstab(AAA,DDD,rtol=10**(-10),maxiter=600)
+        Qnew = Qnew_flat = Qnew_flat.reshape(m, n)
+
+        Qnew[Qnew > 1] = 1
+
+        Smax = np.max(Qnew)
+        Smin = np.min(Qnew) 
+
+        #Solving for concentration of polymer in resevoir
+        
+        [xmod2, ymod2] = self.eval_Xsurf_neumann(
+                                            flag=2,
+                                            x=x,
+                                            y=y,
+                                            s=Q,
+                                            snew=Qnew,
+                                            g=self.surfactant.vec_concentration,
+                                            f=f,
+                                            f_s=f_s,
+                                            D=D,
+                                            pc_s=pc_s,
+                                            pc_g=pc_g,
+                                            u=u,
+                                            v=v,
+                                            dt=dt
+                                        )
+        
+        interp = sp.interpolate.RegularGridInterpolator((x,y), self.polymer.vec_concentration)
+        Cmod = interp((xmod2, ymod2))
+
+        idx = 1
+        AAA = np.zeros((n*m))
+        DDD = np.zeros_like((n*m,1))
+
+        while(idx <=(m)*(n-1)+1):
+            cnt = (idx - 1) / m # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
+            BB = np.zeros((n,m))
+            AA = BB
+            CC = BB
+            DD = np.zeros((m,1))
+            for i in range(m):
+                for j in range(n):
+                    if(j == i):
+                        if(idx == 1): #lowermost row of grid
+                            if(i == 1): #leftmost point (source)
+                                DD[i] = g2/Qnew[cnt][i]+Cmod[cnt][i]/dt[cnt][i]
+                                BB[j][i] = 1/dt[cnt][i] + g1/Qnew[cnt][i]
+                            else:
+                                DD[i] = Cmod[cnt][i] / dt[cnt][i]
+                                BB[j][i] = 1/dt[cnt][i]
+                        elif(idx == (m)*(n-1)+1):
+                            if(i == m):
+                                DD[i] = Cmod[cnt][i] / dt[cnt][i]
+                                BB[j][i] = 1/dt[cnt][i] - g1*f[cnt][i]/Qnew[cnt][i]
+                            else:
+                                DD[i] = Cmod[cnt][i]/dt[cnt][i]
+                                BB[j][i] = 1/dt[cnt][i]
+                        else:
+                            DD[i] = Cmod[cnt][i]/dt[cnt][i]
+                            BB[j][i] = 1/dt[cnt][i]
+
+            if cnt == 0:
+                AAA[0:n, 0:2*m] = np.hstack([BB, CC])
+            elif cnt == n-1:
+                AAA[(m-1)*n:m*n, (n-2)*m:n*m] = np.hstack([AA, BB])
+            else:
+                AAA[cnt*n:(cnt+1)*n, (cnt-1)*m:(cnt+2)*m] = np.hstack([AA, BB, CC])
+
+            DDD[cnt*m:(cnt+1)*m] = DD
+
+            idx += m
+
+        Cnew_flat, info = bicgstab(AAA, DDD, rtol=10**(-10), maxiter=600)
+        Cnew = Cnew_flat.reshape(m,n)
 
 
+        [xmod2, ymod2] = self.eval_Xsurf_neumann(
+                                            flag=3,
+                                            x=x,
+                                            y=y,
+                                            s=Q,
+                                            snew=Qnew,
+                                            g=self.surfactant.vec_concentration,
+                                            f=f,
+                                            f_s=f_s,
+                                            D=D,
+                                            pc_s=pc_s,
+                                            pc_g=pc_g,
+                                            u=u,
+                                            v=v,
+                                            dt=dt
+                                        )
+        interp = sp.interpolate.RegularGridInterpolator((x,y), self.surfactant.vec_concentration)
+        Gmod = interp((xmod2, ymod2))
+        
+        #Updating coefficients using interpolated surfactant concentration
+        sigma_mod = self.surfactant.IFT_conc_equ(Gmod)
+        sigma_g_mod = self.surfactant.derivative_IFT_conc_equ(Gmod)
+        [swr, sor] = self.compres(u,v,sigma_mod)
+        nso = (Qmod-swr)/(1-swr-sor)
+        lambda_a = self.compmob(sor, swr, 1)
+        lambda_o = self.compmob(sor, swr, 0)
+        lambda_total = lambda_a + lambda_o
+        f = lambda_a/lambda_total
+        KK_info = self.KK_def(x, y)
+        if(KK_info is not None):
+            Kmax = KK_info[0]
+            KK = KK_info[1]
+        else:
+            raise SimulationCalcInputException("SimulationError: KK and Kmax not calculated properly...")
+        D = KK*lambda_o*f
+        pc_s = pc/(omega1*(1-nso))
+        pc_g = (pc/sigma_mod)*sigma_g_mod + pc_s
 
+        #intermediate parameters for code:
+        F = D*pc_g/Qnew
+        idx = 1
+        AAA = np.zeros(n*m)
+        DDD = np.zeros(n*m)[0]
 
-
-
-
-
-
-
-
-
+        while(idx <= (m)*(n-1)+1):
+            cnt = (idx - 1) / m # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
+            BB = np.zeros((n,m))
+            AA = BB
+            CC = BB
+            DD = np.zeros((m,1))
+            for i in range(m):
+                for j in range(n):
+                    if(j == i):
+                        if(idx == 1):
+                            if(i == 1):
+                                pass
         pass
-
-
-            
 
 
     def eval_Xsurf_neumann(self, flag, x, y, s, snew, g, f, f_s, D, pc_s, pc_g, u, v, dt):
@@ -1170,6 +1303,8 @@ class Simulation:
         return [xmod, ymod]
                         
     def KK_def(self, x, y):
+        Kmax = None
+        KK = None
         if(self.permeability_flg == PermeabilityType.Homogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear):
             # Represents a homogenous rectilinear model
             Kmax = 1000
@@ -1180,8 +1315,9 @@ class Simulation:
         elif(self.permeability_flg == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Quarter_Five_Spot):
             # need to load the KK30Tabert.mat file... need to use the scipy.io.loadmat() method
             [Kmax, KK] = sp.io.loadmat('./Resources/KK30Tabert.mat')
-
-        return [Kmax, KK]
+        
+        if(Kmax is not None and KK is not None):
+            return [Kmax, KK]
 
 
 
