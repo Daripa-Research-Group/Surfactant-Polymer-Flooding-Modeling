@@ -1039,7 +1039,7 @@ class Simulation:
                                     -(D_s[cnt-1][i]+D_s[cnt][i])/(dy**2)
                             
                             BB[j][i+1] = (D_s[cnt][i]+D_s[cnt][i+1])/(dx**2)
-                        elif(i == m): #rightmost column
+                        elif(i == m - 1): #rightmost column
                             DD[i] = (Qmod[cnt][i]/dt[cnt][i])\
                                     + ((D_g[cnt][i] + D_g[cnt][i-1])/(dx**2) + (D_g[cnt-1][i]+D_g[cnt][i])/(dy**2))*self.surfactant.vec_concentration[cnt][i] \
                                     - (D_g[cnt][i]+D_g[cnt][i-1])/(dx**2)*self.surfactant.vec_concentration[cnt][i-1]\
@@ -1081,7 +1081,7 @@ class Simulation:
                             BB[j][i+1] = (D_s[cnt][i+1]+D_s[cnt][i])/(dx**2)
 
                             CC[j][i] = (D_s[cnt][i]+D_s[cnt+1][i])/(2*dy**2)
-                        elif(i == m):
+                        elif(i == m - 1):
                             DD[i] = Qmod[cnt][i]/dt[cnt][i] \
                                     - f_c[cnt][i]*(v[cnt][i]*(self.polymer.vec_concentration[cnt+1][i] - self.polymer.vec_concentration[cnt][i])/(2*dy)) \
                                     - f_g[cnt][i]*(v[cnt][i]*(self.surfactant.vec_concentration[cnt+1][i] - self.surfactant.vec_concentration[cnt][i])/(2*dy)) \
@@ -1180,7 +1180,7 @@ class Simulation:
                                 DD[i] = Cmod[cnt][i] / dt[cnt][i]
                                 BB[j][i] = 1/dt[cnt][i]
                         elif(idx == (m)*(n-1)+1):
-                            if(i == m):
+                            if(i == m - 1):
                                 DD[i] = Cmod[cnt][i] / dt[cnt][i]
                                 BB[j][i] = 1/dt[cnt][i] - g1*f[cnt][i]/Qnew[cnt][i]
                             else:
@@ -1259,8 +1259,46 @@ class Simulation:
                 for j in range(n):
                     if(j == i):
                         if(idx == 1):
-                            if(i == 1):
-                                pass
+                            if(i == 0):
+                                DD[i] = g3/Qnew[cnt][i] + Gmod[cnt][i]/dt[cnt][i]
+                                CC[j][i] = 2*F[cnt][i]/(dy**2)
+                                BB[j][i] = 1/dt[cnt][i] - ((2/(dx**2))+(2/(dy**2)))*F[cnt][i] + g1/Qnew[cnt][i]
+                                BB[j][i+1] = 2*F[cnt][i]/(dx**2)
+                            elif(i == m - 1): # Bottom right point
+                                DD[i] = Gmod[cnt][i]/dt[cnt][i]
+                                CC[j][i] = 2*F[cnt][i]/(dy**2)
+                                BB[j][i] = 1/dt[cnt][i] - ((2/(dx**2))+(2/(dy**2)))*F[cnt][i]
+                                BB[j][i-1] = 2*F[cnt][i]/(dx**2)
+                            else:
+                                DD[i] = Gmod[cnt][i]/dt[cnt][i]
+                                CC[j][i] = 2*F[cnt][i]/(dy**2)
+                                BB[j][i] = 1/dt[cnt][i] - ((2/(dx**2))+(2/(dy**2)))*F[cnt][i]
+                                BB[j][i-1] = F[cnt][i]/(dx**2)
+                                BB[j][i+1] = 2*F[cnt][i]/(dx**2)
+                        elif(idx == (m)*(n-1)+1):
+                            if(i == 0):
+                                DD[i] = Gmod[cnt][i]/dt[cnt][i]
+                                AA[j][i] = 2*F[cnt][i]/(dy**2)
+                                BB[j][i] = 1/dt[cnt][i] - ((2/(dx**2))+(2/(dy**2)))*F[cnt][i] + g1/Qnew[cnt][i]
+                                BB[j][i+1] = 2*F[cnt][i]/(dx**2)
+                            elif(i == m-1):
+                                DD[i] = Gmod[cnt][i]/dt[cnt][i]
+                                AA[j][i] = 2*F[cnt][i]/(dy**2)
+                                BB[j][i] = 1/dt[cnt][i] - ((2/(dx**2))+(2/(dy**2)))*F[cnt][i] \
+                                        - (g1*lambda_a[cnt][i])/[lambda_total[cnt][i]])/Qnew[cnt][i] \
+                                        + (g3*lambda_a[cnt][i])/[lambda_total[cnt][i]])/(Qnew[cnt][i]*self.surfactant.concentration)
+                                BB[j][i-1] = 2*F[cnt][i]/(dx**2)
+                            else:
+                                DD[i] = Gmod[cnt][i]/dt[cnt][i]
+                                AA[j][i] = 2*F[cnt][i]/(dy**2)
+                                BB[j][i+1] = F[cnt][i]/(dx**2)
+                                BB[j][i] = 1/dt[cnt][i] - ((2/(dx**2))+(2/(dy**2)))*F[cnt][i]
+                                BB[j][i-1] = F[cnt][i]/(dx**2)
+                        else:
+                            pass
+
+
+
         pass
 
 
