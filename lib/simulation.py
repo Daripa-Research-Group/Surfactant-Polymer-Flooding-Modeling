@@ -1295,11 +1295,56 @@ class Simulation:
                                 BB[j][i] = 1/dt[cnt][i] - ((2/(dx**2))+(2/(dy**2)))*F[cnt][i]
                                 BB[j][i-1] = F[cnt][i]/(dx**2)
                         else:
-                            pass
+                            if(i == 0):
+                                DD[i] = Gmod[cnt][i]/dt[cnt][i]
+                                AA[j][i] = F[cnt][i]/(dy**2)
+                                BB[j][i] = 1/dt[cnt][i] - ((2/(dx**2))+(2/(dy**2)))*F[cnt][i]
+                                BB[j][i+1] = 2*F[cnt][i]/(dx**2)
+                                CC[j][i] = F[cnt][i]/(dy**2)
+                            elif(i == m - 1):
+                                DD[i] = Gmod[cnt][i]/dt[cnt][i]
+                                AA[j][i] = F[cnt][i]/(dy**2)
+                                BB[j][i] = 1/dt[cnt][i] - ((2/(dx**2))+(2/(dy**2)))*F[cnt][i]
+                                BB[j][i-1] = 2*F[cnt][i]/(dx**2)
+                                CC[j][i] = F[cnt][i]/(dy**2)
+                            else:
+                                DD[i] = Gmod[cnt][i]/dt[cnt][i]
+                                AA[j][i] = F[cnt][i]/(dy**2)
+                                BB[j][i] = 1/dt[cnt][i] - ((2/(dx**2))+(2/(dy**2)))*F[cnt][i]
+                                BB[j][i-1] = 2*F[cnt][i]/(dx**2)
+                                BB[j][i+1] = 2*F[cnt][i]/(dx**2)
+                                CC[j][i] = F[cnt][i]/(dy**2)
+            if cnt == 0:
+                AAA[:n, :2*m] = np.hstack([BB, CC])
+            elif cnt == n - 1:
+                AAA[(m-1)*n:m*n, (n-2)*m:n*m] = np.hstack([AA, BB])
+            else:
+                AAA[cnt*n:(cnt+1)*n, (cnt-1)*m:(cnt+2)*m] = np.hstack([AA, BB, CC])
 
+            DDD[cnt*m:(cnt+1)*m] = DD
+            idx += m
 
+        Gnew_flat, info = bicgstab(AAA,DDD,rtol=10**(-10),maxiter=600)
+        Gnew = Gnew_flat.reshape(m, n)
 
-        pass
+        self.water_saturation = Qnew
+        self.polymer.vec_concentration = Cnew
+        self.surfactant.vec_concentration = Gnew
+
+        ocut = lambda_o[n][m]*self.init_water_saturation_scalar/lambda_total[n][m] # volume of oil recovered in production well
+        wcut = lambda_a[n][m]*self.init_water_saturation_scalar/lambda_total[n][m] # volume of water recovered in production well
+        roip = 100*np.sum(np.sum(1-Qnew))/sum(np.ones((n*m,1))) # Oil still in place as a percentage of volume fraction
+
+        return_dict = {
+                'water_saturation' : self.water_saturation,
+                'polymer_vec_saturation' : self.polymer.vec_concentration,
+                'surfactant_vec_saturation' : self.surfactant.vec_concentration,
+                'prod_oil_vol' : ocut,
+                'prod_water_vol' : wcut,
+                'ROIP' : roip
+                }
+        
+        return return_dict
 
 
     def eval_Xsurf_neumann(self, flag, x, y, s, snew, g, f, f_s, D, pc_s, pc_g, u, v, dt):
