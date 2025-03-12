@@ -20,7 +20,7 @@ class Simulation:
     """
     Class is used to generate an instance of a simulation which will run the SP-flooding model based on the given parameters provided by the user
     """
-    def __init__(self, sim_id, size_of_grid, polymer : Polymer, surfactant : Surfactant, init_water_saturation, init_oleic_saturation, resevoir_geometry, permeability_flg, mesh_grid, mdl_id, plt_type):
+    def __init__(self, sim_id, size_of_grid, polymer : Polymer, surfactant : Surfactant, init_water_saturation, init_oleic_saturation, resevoir_geometry, permeability_flg, mdl_id, plt_type):
         """
         creates instance of the simulation class which will enable for calculating changes in system parameters at every time-step
 
@@ -68,7 +68,6 @@ class Simulation:
         #Simulaiton Properties
         self.resevoir_geometry = resevoir_geometry
         self.permeability_flg = permeability_flg
-        self.mesh = mesh_grid
         self.init_water_saturation_scalar = init_water_saturation
         self.init_oleic_saturation_scalar = init_oleic_saturation
         
@@ -79,6 +78,14 @@ class Simulation:
     ### DEPENDENT VARIABLES OF SIMULATION CLASS:
 
     #TODO: Need to add oleic viscosity and oleic saturation properties!!!
+    _mesh_ = None
+    @property
+    def mesh(self):
+        if(self._mesh_ is None):
+            self._mesh_ = Box()
+            self._mesh_.calculate_spacing
+        return self._mesh_
+
     _phi_ = None
     @property
     def phi(self):
@@ -144,6 +151,53 @@ class Simulation:
             else:
                 self._is_surfactant_ = True
         return self._is_surfactant_
+
+    def execute_simulation(self):
+        """
+        This method will run the simulation under the parameters provided by the user. This will be the only method called within the 'main' function
+        """
+        
+        #initialize the mesh
+        self.mesh
+        [x, y] = np.meshgrid(
+            np.arange(self.mesh.left, self.mesh.right + self.mesh.dx, self.mesh.dx), 
+            np.arange(self.mesh.bottom, self.mesh.top + self.mesh.dy, self.mesh.dy))
+
+        #running the 'get_phi_value' method:
+        phi_test = self.get_phi_value()
+
+        #defining rhs of elliptic system (source terms)
+        f = np.zeros((self.mesh.n+1,self.mesh.m+1))
+        MFW = 0
+        iterX_save = 0
+
+        #magnitude of flowrate at source
+        mag_source_flow = SimulationConstants.Source_Flow_Magnitude.value
+
+        #setting the permeability state
+        bool_rectilinear_homogenous = self.permeability_flg == PermeabilityType.Homogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear
+        bool_rectilinear_heterogenous = self.permeability_flg == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear
+        bool_quarterfivespot_heterogenous = self.permeability_flg == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Quarter_Five_Spot
+ 
+        if(bool_rectilinear_homogenous or bool_rectilinear_heterogenous):
+            f[:,0] = mag_source_flow #intensity of injection well
+            f[:,self.mesh.m] = -1*mag_source_flow #intensity of production well
+        elif(bool_quarterfivespot_heterogenous):
+            f[0,0] = mag_source_flow #intensity of injection well
+            f[self.mesh.n, self.mesh.m] = -1*mag_source_flow #intensity of production well
+
+        #Developing the permeability matrix
+        Kinfo = self.KK_def(x,y)
+        if(Kinfo is not None):
+            Kmax = Kinfo[0]
+            KK = Kinfo[1]
+
+        #Preparing run session
+        
+
+
+
+        pass
 
 
     def get_phi_value(self):
