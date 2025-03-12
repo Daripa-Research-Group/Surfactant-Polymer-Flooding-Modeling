@@ -8,13 +8,17 @@ class SimulationConstants(Enum):
     Water_Viscosity = 1.26
     Water_Density = 1000 #kg/m^3
     Oil_Viscosity = 10
+
     Initial_Resident_Water_Saturation = 0.21
     Resid_Aqueous_Phase_Saturation_Initial = 0.1
-    Resid_Oleic_Phase_Saturation_Initial = 0.2
+    Resid_Oleic_Phase_Saturation_Initial = 0.3
+
     Aqueous_Phase_Critical_Capillary_Num = 10**(-5)
     Oleic_Phase_Critical_Capillary_Num = 10**(-5)
+
     Capillary_Pressure_Param_1 = 0.1 # omega_1
     Capillary_Pressure_Param_2 = 0.4 # omega_2
+
     Injection_Rate = 200
     Time_Step = 1/50
     Grid_Size = 29

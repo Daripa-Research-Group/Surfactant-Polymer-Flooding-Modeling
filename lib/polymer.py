@@ -4,7 +4,7 @@ This python script contains the class definition for polymers for the surfactant
 """
 
 class Polymer:
-    def __init__(self, name, initial_concentration, e_coeff, n_coeff, viscosity = None, vec_concentration = None):
+    def __init__(self, name, initial_concentration, e_coeff, n_coeff, viscosity_scalar = None, viscosity_matrix = None, vec_concentration = None):
         """
         Initializes a instance of the polymer class
 
@@ -20,8 +20,11 @@ class Polymer:
         :param n_coeff:  The coefficients used to determine epsilon for the empirical power law expression used to determine the viscosity of the aqueous phase
         :type n_coeff: List<int>
 
-        :param viscosity: viscosity matrix of the polymer
-        :type viscosity: np.array, None
+        :param viscosity_scalar: scalar quantitiey of the polymer viscosity
+        :type viscosity_matrix: float, None
+
+        :param viscosity_matrix: viscosity matrix of the polymer
+        :type viscosity_matrix: np.array, None
 
         :param vec_concentration: vector representation of polymer concentration within resevoir
         :type vec_concentration: np.array, None
@@ -30,7 +33,8 @@ class Polymer:
         self.name = name
         self.initial_concentration = initial_concentration
         self.vec_concentration = vec_concentration
-        self.viscosity = viscosity
+        self.viscosity_matrix = viscosity_matrix
+        self.viscosity_scalar = viscosity_scalar
         self.e_coeff = e_coeff
         self.n_coeff = n_coeff
     

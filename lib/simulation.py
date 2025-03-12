@@ -20,7 +20,7 @@ class Simulation:
     """
     Class is used to generate an instance of a simulation which will run the SP-flooding model based on the given parameters provided by the user
     """
-    def __init__(self, sim_id, size_of_grid, polymer : Polymer, surfactant : Surfactant, init_water_saturation, init_oleic_saturation, resevoir_geometry, permeability_flg, mdl_id, plt_type):
+    def __init__(self, sim_id, size_of_grid, polymer : Polymer, surfactant : Surfactant, resevoir_geometry, permeability_flg, mdl_id, plt_type, init_water_saturation = SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value, init_oleic_saturation = SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value):
         """
         creates instance of the simulation class which will enable for calculating changes in system parameters at every time-step
 
@@ -171,10 +171,10 @@ class Simulation:
         MFW = 0
         iterX_save = 0
 
-        #magnitude of flowrate at source
+        # Magnitude of flowrate at source
         mag_source_flow = SimulationConstants.Source_Flow_Magnitude.value
 
-        #setting the permeability state
+        # Setting the permeability state
         bool_rectilinear_homogenous = self.permeability_flg == PermeabilityType.Homogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear
         bool_rectilinear_heterogenous = self.permeability_flg == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Rectilinear
         bool_quarterfivespot_heterogenous = self.permeability_flg == PermeabilityType.Heterogenous and self.resevoir_geometry == ResevoirGeometry.Quarter_Five_Spot
@@ -186,13 +186,24 @@ class Simulation:
             f[0,0] = mag_source_flow #intensity of injection well
             f[self.mesh.n, self.mesh.m] = -1*mag_source_flow #intensity of production well
 
-        #Developing the permeability matrix
+        # Developing the permeability matrix
         Kinfo = self.KK_def(x,y)
         if(Kinfo is not None):
             Kmax = Kinfo[0]
             KK = Kinfo[1]
 
-        #Preparing run session
+        # Initializing the water saturation, polymer concentration, and surfactant concentration matrix
+        [water_sat_matrix, polymer_matrix, surfactant_matrix] = self.initial_concentration_matrix()
+
+        # Determining viscosities of oil, water, and polymer
+        viscosity_oil = SimulationConstants.Oil_Viscosity.value
+        viscosity_water = SimulationConstants.Water_Viscosity.value
+        beta_1 = 15000
+        self.polymer.viscosity_scalar = viscosity_water*(1*beta_1*polymer_matrix)
+        self.polymer.viscosity_matrix = self.polymer.viscosity_scalar*np.ones((SimulationConstants.Grid_Size.value+1,SimulationConstants.Grid_Size.value+1))
+
+        # Defining parameters that need to be updated during each iteration of the while loop
+        
         
 
 
