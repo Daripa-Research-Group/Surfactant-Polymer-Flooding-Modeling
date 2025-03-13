@@ -203,7 +203,12 @@ class Simulation:
         self.polymer.viscosity_matrix = self.polymer.viscosity_scalar*np.ones((SimulationConstants.Grid_Size.value+1,SimulationConstants.Grid_Size.value+1))
 
         # Defining parameters that need to be updated during each iteration of the while loop
-        
+        t = 0
+        t_cal = 0
+        dt = self.mesh.dx/mag_source_flow
+        tf = 500
+        COC = np.zeros((1, 2000))
+        ProdRate = np.zeros((1, np.floor(tf/dt)))
         
 
 
