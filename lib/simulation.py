@@ -6,6 +6,7 @@ import sys
 import os
 import scipy as sp
 from scipy.sparse.linalg import bicgstab
+from scipy.sparse import coo_matrix
 import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -72,7 +73,7 @@ class Simulation:
         self.init_oleic_saturation_scalar = init_oleic_saturation
         
         #Model and plotting flags
-        self.mdl_id = mdl_id #Model type
+        self.mdl_id = mdl_id #Model type (shear thinning on or off type model)
         self.plt_type = plt_type #types of plots to generate
 
     ### DEPENDENT VARIABLES OF SIMULATION CLASS:
@@ -188,12 +189,19 @@ class Simulation:
 
         # Developing the permeability matrix
         Kinfo = self.KK_def(x,y)
+        KK = None
+        Kmax = None
         if(Kinfo is not None):
             Kmax = Kinfo[0]
             KK = Kinfo[1]
+        else:
+            raise SimulationCalcInputException("SimulationError: 'KK' and 'Kmax' variables not instantiated...")
+
 
         # Initializing the water saturation, polymer concentration, and surfactant concentration matrix
+        c0_array = self.polymer.initial_concentration*np.ones((SimulationConstants.Grid_Size.value+1,SimulationConstants.Grid_Size.value+1))
         [water_sat_matrix, polymer_matrix, surfactant_matrix] = self.initial_concentration_matrix()
+        interface = np.zeros((60,1))
 
         # Determining viscosities of oil, water, and polymer
         viscosity_oil = SimulationConstants.Oil_Viscosity.value
@@ -206,10 +214,12 @@ class Simulation:
         t = 0
         t_cal = 0
         dt = self.mesh.dx/mag_source_flow
+        if(bool_quarterfivespot_heterogenous):
+            dt = (self.mesh.dx/mag_source_flow)*100
         tf = 500
+        tSave = 0
         u = np.zeros((self.mesh.n+1, self.mesh.m+1))
         v = u
-        c0_array = self.polymer.initial_concentration*np.ones((SimulationConstants.Grid_Size.value+1,SimulationConstants.Grid_Size.value+1))
         COC = np.zeros((1, 2000)) #cumulative oil captured
         ProdRate = np.zeros((1, np.floor(tf/dt))) #rate of production
         CROIP = np.zeros((1, np.floor(tf/dt))) #cummulative residual oil in place
@@ -218,20 +228,71 @@ class Simulation:
         concentration_save = 0
         source_flow_magnitude_total = 0
         sum_of_saturation_matrix = 0
+        innerIter_save = []
 
         #while loop to update parameters during each iteration
             #while t is < tf and water isn't starting to show up at production well, keep iterating:
-        while(t < tf and self.water_saturation[self.mesh.n+1, self.mesh.m+1] <=0.70):
-            #updating source flow magnitude:
-            source_flow_magnitude_total += mag_source_flow
+        if(self.water_saturation is not None and self.aqueous_viscosity is not None):
+            while(t < tf and self.water_saturation[self.mesh.n+1, self.mesh.m+1] <=0.70):
+                #updating source flow magnitude:
+                source_flow_magnitude_total += mag_source_flow
 
-            #updating time index:
-            t += dt
-            innerIter = 0
-            epsilon = 10
+                #updating time index:
+                t += dt
+                innerIter = 0
+                epsilon = 10
 
-            #computing viscosities:
-            shear_force = self.compvis(u, v, x, y, beta_1, c0_array)[1]
+                #computing viscosities:
+                shear_force = self.compvis(u, v, x, y, beta_1, c0_array)[1]
+
+                if(self.mdl_id == ModelType.Shear_Thinning_On):
+                    self.polymer.viscosity_scalar = max(self.aqueous_viscosity[1, :])
+                self.polymer.viscosity_matrix = self.polymer.viscosity_scalar*np.ones((SimulationConstants.Grid_Size.value+1,SimulationConstants.Grid_Size.value+1))
+                
+                #updating tSave
+                tSave += t_cal
+
+                #determining size of shear force matrix
+                [m_shear, n_shear] = np.shape(shear_force)
+
+                #compute residual saturations
+                [swr, sor] = self.compres(u, v)
+
+                #compute mobilities
+                lambda_a = self.compmob(swr=swr, sor=sor, flag=1)
+                lambda_o = self.compmob(swr=swr, sor=sor, flag=0)
+                lambda_total = lambda_a + lambda_o
+
+                #update 'beta' value for polymer flow:
+                beta = KK*lambda_total
+
+                #updating grid
+                [U, L] = self.setTri()
+                grid_size = self.set_grid(U, L, beta)
+                rh = self.setRightHand(f, U, L)
+                A = self.setA(grid_size)
+                A = coo_matrix(A)
+                B = self.setB(grid_size, rh)
+                uOld = u
+                vOld = v
+                u = self.get_u_val(A, B)
+                vn = self.get_vn_val(u)
+                [px, py] = self.get_gradient(vn)
+                u = -1*beta*px
+                v = -1*beta*py
+                if(innerIter > 1000):
+                    break
+                innerIter+=1
+                innerIter_save[t_cal+1] = innerIter
+
+                #Solving transport problem:
+
+
+                #Save relevant results in each iteration for plotting
+
+
+
+
 
 
 
