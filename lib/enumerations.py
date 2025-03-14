@@ -10,8 +10,8 @@ class SimulationConstants(Enum):
     Oil_Viscosity = 10
 
     Initial_Resident_Water_Saturation = 0.21
-    Resid_Aqueous_Phase_Saturation_Initial = 0.1
-    Resid_Oleic_Phase_Saturation_Initial = 0.3
+    Resid_Aqueous_Phase_Saturation_Initial = 0.1 #wetting phase
+    Resid_Oleic_Phase_Saturation_Initial = 0.3 #non-wetting phase
 
     Aqueous_Phase_Critical_Capillary_Num = 10**(-5)
     Oleic_Phase_Critical_Capillary_Num = 10**(-5)

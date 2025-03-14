@@ -207,9 +207,34 @@ class Simulation:
         t_cal = 0
         dt = self.mesh.dx/mag_source_flow
         tf = 500
-        COC = np.zeros((1, 2000))
-        ProdRate = np.zeros((1, np.floor(tf/dt)))
-        
+        u = np.zeros((self.mesh.n+1, self.mesh.m+1))
+        v = u
+        c0_array = self.polymer.initial_concentration*np.ones((SimulationConstants.Grid_Size.value+1,SimulationConstants.Grid_Size.value+1))
+        COC = np.zeros((1, 2000)) #cumulative oil captured
+        ProdRate = np.zeros((1, np.floor(tf/dt))) #rate of production
+        CROIP = np.zeros((1, np.floor(tf/dt))) #cummulative residual oil in place
+        viscosity_aqueous_save = 0
+        shear_force_save = 0
+        concentration_save = 0
+        source_flow_magnitude_total = 0
+        sum_of_saturation_matrix = 0
+
+        #while loop to update parameters during each iteration
+            #while t is < tf and water isn't starting to show up at production well, keep iterating:
+        while(t < tf and self.water_saturation[self.mesh.n+1, self.mesh.m+1] <=0.70):
+            #updating source flow magnitude:
+            source_flow_magnitude_total += mag_source_flow
+
+            #updating time index:
+            t += dt
+            innerIter = 0
+            epsilon = 10
+
+            #computing viscosities:
+            shear_force = self.compvis(u, v, x, y, beta_1, c0_array)[1]
+
+
+
 
 
 
