@@ -286,19 +286,22 @@ class Simulation:
                 innerIter_save[t_cal+1] = innerIter
 
                 #Solving transport problem:
+                transport_result_dict = self.saturation_equ_solver(dt, u, v)
+                production_oil_volume = transport_result_dict['prod_oil_vol']
+                production_water_volume = transport_result_dict['prod_water_vol']
+                ROIP = transport_result_dict['ROIP']
 
+                t_cal+=1
+
+                if(t_cal == 1):
+                    COC[1, t_cal] = production_oil_volume
+                else:
+                    COC[1, t_cal] += production_oil_volume
+
+                ProdRate[1, t_cal] = production_oil_volume/dt
+                CROIP[1, t_cal] = ROIP
 
                 #Save relevant results in each iteration for plotting
-
-
-
-
-
-
-
-
-
-
         pass
 
 
