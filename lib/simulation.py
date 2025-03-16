@@ -1444,8 +1444,8 @@ class Simulation:
                                 DD[i] = Gmod[cnt][i]/dt[cnt][i]
                                 AA[j][i] = 2*F[cnt][i]/(dy**2)
                                 BB[j][i] = 1/dt[cnt][i] - ((2/(dx**2))+(2/(dy**2)))*F[cnt][i] \
-                                        - (g1*lambda_a[cnt][i])/[lambda_total[cnt][i]])/Qnew[cnt][i] \
-                                        + (g3*lambda_a[cnt][i])/[lambda_total[cnt][i]])/(Qnew[cnt][i]*self.surfactant.concentration)
+                                        - ((g1*lambda_a[cnt][i])/[lambda_total[cnt][i]])/Qnew[cnt][i] \
+                                        + ((g3*lambda_a[cnt][i])/[lambda_total[cnt][i]])/(Qnew[cnt][i]*self.surfactant.concentration)
                                 BB[j][i-1] = 2*F[cnt][i]/(dx**2)
                             else:
                                 DD[i] = Gmod[cnt][i]/dt[cnt][i]
