@@ -10,7 +10,6 @@ This code was derived from EOR repository developed by Sourav Dutta and Prabir D
 #### IMPORT STATEMENTS
 import numpy as np
 import tkinter as tk
-import seaborn as sb
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'lib'))
