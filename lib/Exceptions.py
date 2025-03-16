@@ -9,3 +9,13 @@ class OutOfRangeError(Exception):
 
     def __str__(self):
         return f'{self.value} -> {self.message}'
+
+
+
+#Exception Classes
+class SimulationCalcInputException(Exception):
+    def __init__(self, message):
+        self.message = message
+
+    def __str__(self):
+        return self.message

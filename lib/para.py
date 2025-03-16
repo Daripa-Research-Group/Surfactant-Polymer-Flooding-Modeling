@@ -19,10 +19,11 @@ class Box(Para):
         self.right = 1   # x_max
         self.bottom = 0  # y_min
         self.top = 1     # y_max
+        self.calculate_spacing
 
     @property
     def calculate_spacing(self):
         # Calculate dx and dy based on the box dimensions
-        self.dx = (self.right - self.left) / (self.m - 1)
-        self.dy = (self.top - self.bottom) / (self.n - 1)
+        self.dx = (self.right - self.left) / (self.m)
+        self.dy = (self.top - self.bottom) / (self.n)
 
