@@ -207,7 +207,7 @@ class Simulation:
         viscosity_oil = SimulationConstants.Oil_Viscosity.value
         viscosity_water = SimulationConstants.Water_Viscosity.value
         beta_1 = 15000
-        self.polymer.viscosity_scalar = viscosity_water*(1*beta_1*polymer_matrix)
+        self.polymer.viscosity_scalar = viscosity_water*(1*beta_1*self.polymer.initial_concentration) 
         self.polymer.viscosity_matrix = self.polymer.viscosity_scalar*np.ones((SimulationConstants.Grid_Size.value+1,SimulationConstants.Grid_Size.value+1))
 
         # Defining parameters that need to be updated during each iteration of the while loop
@@ -221,8 +221,8 @@ class Simulation:
         u = np.zeros((self.mesh.n+1, self.mesh.m+1))
         v = u
         COC = np.zeros((1, 2000)) #cumulative oil captured
-        ProdRate = np.zeros((1, np.floor(tf/dt))) #rate of production
-        CROIP = np.zeros((1, np.floor(tf/dt))) #cummulative residual oil in place
+        ProdRate = np.zeros((1, int(np.floor(tf/dt)))) #rate of production
+        CROIP = np.zeros((1, int(np.floor(tf/dt)))) #cummulative residual oil in place
         viscosity_aqueous_save = 0
         shear_force_save = 0
         concentration_save = 0
