@@ -207,7 +207,7 @@ class Simulation:
         viscosity_oil = SimulationConstants.Oil_Viscosity.value
         viscosity_water = SimulationConstants.Water_Viscosity.value
         beta_1 = 15000
-        self.polymer.viscosity_scalar = viscosity_water*(1*beta_1*polymer_matrix)
+        self.polymer.viscosity_scalar = viscosity_water*(1*beta_1*self.polymer.initial_concentration) 
         self.polymer.viscosity_matrix = self.polymer.viscosity_scalar*np.ones((SimulationConstants.Grid_Size.value+1,SimulationConstants.Grid_Size.value+1))
 
         # Defining parameters that need to be updated during each iteration of the while loop
@@ -221,8 +221,8 @@ class Simulation:
         u = np.zeros((self.mesh.n+1, self.mesh.m+1))
         v = u
         COC = np.zeros((1, 2000)) #cumulative oil captured
-        ProdRate = np.zeros((1, np.floor(tf/dt))) #rate of production
-        CROIP = np.zeros((1, np.floor(tf/dt))) #cummulative residual oil in place
+        ProdRate = np.zeros((1, int(np.floor(tf/dt)))) #rate of production
+        CROIP = np.zeros((1, int(np.floor(tf/dt)))) #cummulative residual oil in place
         viscosity_aqueous_save = 0
         shear_force_save = 0
         concentration_save = 0
@@ -1444,8 +1444,8 @@ class Simulation:
                                 DD[i] = Gmod[cnt][i]/dt[cnt][i]
                                 AA[j][i] = 2*F[cnt][i]/(dy**2)
                                 BB[j][i] = 1/dt[cnt][i] - ((2/(dx**2))+(2/(dy**2)))*F[cnt][i] \
-                                        - (g1*lambda_a[cnt][i])/[lambda_total[cnt][i]])/Qnew[cnt][i] \
-                                        + (g3*lambda_a[cnt][i])/[lambda_total[cnt][i]])/(Qnew[cnt][i]*self.surfactant.concentration)
+                                        - ((g1*lambda_a[cnt][i])/[lambda_total[cnt][i]])/Qnew[cnt][i] \
+                                        + ((g3*lambda_a[cnt][i])/[lambda_total[cnt][i]])/(Qnew[cnt][i]*self.surfactant.concentration)
                                 BB[j][i-1] = 2*F[cnt][i]/(dx**2)
                             else:
                                 DD[i] = Gmod[cnt][i]/dt[cnt][i]
