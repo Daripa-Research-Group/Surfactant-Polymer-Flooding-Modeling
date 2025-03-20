@@ -3,8 +3,18 @@ This python script contains the class definition for polymers for the surfactant
 
 """
 
+
 class Polymer:
-    def __init__(self, name, initial_concentration, e_coeff, n_coeff, viscosity_scalar = None, viscosity_matrix = None, vec_concentration = None):
+    def __init__(
+        self,
+        name,
+        initial_concentration,
+        e_coeff,
+        n_coeff,
+        viscosity_scalar=None,
+        viscosity_matrix=None,
+        vec_concentration=None,
+    ):
         """
         Initializes a instance of the polymer class
 
@@ -37,4 +47,3 @@ class Polymer:
         self.viscosity_scalar = viscosity_scalar
         self.e_coeff = e_coeff
         self.n_coeff = n_coeff
-    

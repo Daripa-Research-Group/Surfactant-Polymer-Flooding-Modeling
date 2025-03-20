@@ -3,8 +3,16 @@ This python script will contain the class definition for surfactants
 
 """
 
+
 class Surfactant:
-    def __init__(self, name, initial_concentration, IFT_conc_equ, derivative_IFT_conc_equ, vec_concentration = None):
+    def __init__(
+        self,
+        name,
+        initial_concentration,
+        IFT_conc_equ,
+        derivative_IFT_conc_equ,
+        vec_concentration=None,
+    ):
         """
         Creates instance of Surfactant class
 
@@ -28,5 +36,3 @@ class Surfactant:
         self.vec_concentration = vec_concentration
         self.IFT_conc_equ = IFT_conc_equ
         self.derivative_IFT_conc_equ = derivative_IFT_conc_equ
-
-
