@@ -30,7 +30,6 @@ from lib.enumerations import (
 
 
 def sim_condition_initialization(simulation_ID: int, usr_input_dict: dict) -> dict:
-    # dummy configurations for now
     # TODO: Update user input collection to adhere to class structure
     model_type = ModelType.No_Shear_Thinning
     plot_type = PlotType.Saturation_Plot
