@@ -30,8 +30,8 @@ from lib.enumerations import (
 
 
 def sim_condition_initialization(simulation_ID: int, usr_input_dict: dict) -> dict:
-    plot_type = PlotType.Saturation_Plot # TODO: MAKE DYNAMIC
-    
+    plot_type = PlotType.Saturation_Plot  # TODO: MAKE DYNAMIC
+
     model_type = ModelType(usr_input_dict["model_type"])
     reservoir_geometry = ResevoirGeometry(usr_input_dict["reservoir_geometry"])
     permeability_flag = PermeabilityType(usr_input_dict["permeability"])

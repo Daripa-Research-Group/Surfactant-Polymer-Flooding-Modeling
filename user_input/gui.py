@@ -83,22 +83,25 @@ class UserInputGUI:
         model_menu.config(width=18)
         model_menu.grid(row=row, column=1, padx=5, pady=5, sticky="ew")
         self.scrollable_frame.columnconfigure(1, weight=1)
-        
+
         # Geometry dropdown
         reservoir_geometry_options = {
             "Rectilinear": 1,
             "Quarter Five Spot": 2,
         }
-        reservoir_geometry_var = tk.StringVar(value=list(reservoir_geometry_options.keys())[0])
+        reservoir_geometry_var = tk.StringVar(
+            value=list(reservoir_geometry_options.keys())[0]
+        )
         input_vars["reservoir_geometry"] = reservoir_geometry_var
-         
+
         geometry_menu = tk.OptionMenu(
-            self.scrollable_frame, reservoir_geometry_var, *reservoir_geometry_options.keys()
+            self.scrollable_frame,
+            reservoir_geometry_var,
+            *reservoir_geometry_options.keys(),
         )
         geometry_menu.config(width=18)
         geometry_menu.grid(row=row, column=2, padx=5, pady=5, sticky="ew")
         self.scrollable_frame.columnconfigure(2, weight=1)
-         
 
         # Permeability dropdown
         permeability_options = {
@@ -202,7 +205,7 @@ class UserInputGUI:
             "Sourav Implementation": 2,
             "Shear Thinning": 3,
         }
-        
+
         geometry_options = {
             "Rectilinear": 1,
             "Quarter Five Spot": 2,
