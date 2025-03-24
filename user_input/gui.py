@@ -41,6 +41,7 @@ class UserInputGUI:
         headers = [
             "Simulation",
             "Model",
+            "Geometry",
             "Permeability",
             "Polymer Type",
             "Polymer Concentration",
@@ -82,6 +83,22 @@ class UserInputGUI:
         model_menu.config(width=18)
         model_menu.grid(row=row, column=1, padx=5, pady=5, sticky="ew")
         self.scrollable_frame.columnconfigure(1, weight=1)
+        
+        # Geometry dropdown
+        reservoir_geometry_options = {
+            "Rectilinear": 1,
+            "Quarter Five Spot": 2,
+        }
+        reservoir_geometry_var = tk.StringVar(value=list(reservoir_geometry_options.keys())[0])
+        input_vars["reservoir_geometry"] = reservoir_geometry_var
+         
+        geometry_menu = tk.OptionMenu(
+            self.scrollable_frame, reservoir_geometry_var, *reservoir_geometry_options.keys()
+        )
+        geometry_menu.config(width=18)
+        geometry_menu.grid(row=row, column=2, padx=5, pady=5, sticky="ew")
+        self.scrollable_frame.columnconfigure(2, weight=1)
+         
 
         # Permeability dropdown
         permeability_options = {
@@ -95,8 +112,8 @@ class UserInputGUI:
             self.scrollable_frame, permeability_var, *permeability_options.keys()
         )
         perm_menu.config(width=15)
-        perm_menu.grid(row=row, column=2, padx=5, pady=5, sticky="ew")
-        self.scrollable_frame.columnconfigure(2, weight=1)
+        perm_menu.grid(row=row, column=3, padx=5, pady=5, sticky="ew")
+        self.scrollable_frame.columnconfigure(3, weight=1)
 
         # Polymer Type dropdown
         polymer_type_options = {
@@ -111,16 +128,16 @@ class UserInputGUI:
             self.scrollable_frame, polymer_type_var, *polymer_type_options.keys()
         )
         polymer_menu.config(width=15)
-        polymer_menu.grid(row=row, column=3, padx=5, pady=5, sticky="ew")
-        self.scrollable_frame.columnconfigure(3, weight=1)
+        polymer_menu.grid(row=row, column=4, padx=5, pady=5, sticky="ew")
+        self.scrollable_frame.columnconfigure(4, weight=1)
 
         # Polymer Concentration Entry
         poly_conc_var = tk.DoubleVar()
         input_vars["polymer_concentration"] = poly_conc_var
         poly_entry = self.create_numeric_input(
-            self.scrollable_frame, row, 4, poly_conc_var
+            self.scrollable_frame, row, 5, poly_conc_var
         )
-        self.scrollable_frame.columnconfigure(4, weight=1)
+        self.scrollable_frame.columnconfigure(5, weight=1)
 
         # Surfactant Type dropdown
         surfactant_type_options = {
@@ -136,16 +153,16 @@ class UserInputGUI:
             self.scrollable_frame, surfactant_type_var, *surfactant_type_options.keys()
         )
         surfactant_menu.config(width=15)
-        surfactant_menu.grid(row=row, column=5, padx=5, pady=5, sticky="ew")
-        self.scrollable_frame.columnconfigure(5, weight=1)
+        surfactant_menu.grid(row=row, column=6, padx=5, pady=5, sticky="ew")
+        self.scrollable_frame.columnconfigure(6, weight=1)
 
         # Surfactant Concentration Entry
         surf_conc_var = tk.DoubleVar()
         input_vars["surfactant_concentration"] = surf_conc_var
         surf_entry = self.create_numeric_input(
-            self.scrollable_frame, row, 6, surf_conc_var
+            self.scrollable_frame, row, 7, surf_conc_var
         )
-        self.scrollable_frame.columnconfigure(6, weight=1)
+        self.scrollable_frame.columnconfigure(7, weight=1)
 
         self.inputs.append(input_vars)
         self.row_count += 1
