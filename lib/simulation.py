@@ -370,7 +370,10 @@ class Simulation:
                 CROIP[1, t_cal] = ROIP
 
                 # Save relevant results in each iteration for plotting
-        pass
+        
+        return {
+            "COC": COC
+        }
 
     def get_phi_value(self):
         """
