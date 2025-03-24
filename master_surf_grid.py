@@ -30,40 +30,36 @@ from lib.enumerations import (
 
 
 def sim_condition_initialization(simulation_ID: int, usr_input_dict: dict) -> dict:
-    # dummy configurations for now
-    # TODO: Update user input collection to adhere to class structure
-    model_type = ModelType.No_Shear_Thinning
-    plot_type = PlotType.Saturation_Plot
-    permeability_flag = PermeabilityType.Homogenous
-    polymer_type = PolymerList.Xanthane
-    # model_type = ModelType(usr_input_dict['model_type'])
-    # plot_type = PlotType(usr_input_dict['plot_type'])
-    # permeability_flag = PermeabilityType(usr_input_dict['permeability_flag'])
-    # polymer_type = PolymerList(usr_input_dict['polymer'])
+    plot_type = PlotType.Saturation_Plot  # TODO: MAKE DYNAMIC
 
-    polymer = Polymer(
+    model_type = ModelType(usr_input_dict["model_type"])
+    reservoir_geometry = ResevoirGeometry(usr_input_dict["reservoir_geometry"])
+    permeability_flag = PermeabilityType(usr_input_dict["permeability"])
+    polymer_type = PolymerList.get_by_value(usr_input_dict["polymer_type"])
+    polymer_concentration = usr_input_dict["polymer_concentration"]
+    surfactant_type = SurfactantList(usr_input_dict["surfactant_type"])
+    surfactant_concentration = usr_input_dict["surfactant_concentration"]
+
+    polymer_obj = Polymer(
         name=polymer_type,
-        initial_concentration=polymer_type.Density,
+        initial_concentration=polymer_concentration,
         e_coeff=polymer_type.e_coeff,
         n_coeff=polymer_type.n_coeff,
     )
 
-    surfactant = SurfactantList.No_Surfactant  # Defaulting to no surfactant
     surfactant_obj = Surfactant(
-        name=surfactant,
-        initial_concentration=0,  # No surfactant present
-        IFT_conc_equ=lambda x: 0,  # Dummy lambda function
-        derivative_IFT_conc_equ=lambda x: 0,  # Dummy lambda function
+        name=surfactant_type,
+        initial_concentration=surfactant_concentration,
+        IFT_conc_equ=None,  # Dummy lambda function
+        derivative_IFT_conc_equ=None,  # Dummy lambda function
     )
-
-    reservoir_geometry = ResevoirGeometry.Rectilinear
 
     SOG = SimulationConstants.Grid_Size.value
 
     simulation = Simulation(
         sim_id=simulation_ID,
         size_of_grid=SOG,
-        polymer=polymer,
+        polymer=polymer_obj,
         surfactant=surfactant_obj,
         resevoir_geometry=reservoir_geometry,
         permeability_flg=permeability_flag,
@@ -71,7 +67,7 @@ def sim_condition_initialization(simulation_ID: int, usr_input_dict: dict) -> di
         plt_type=plot_type,
     )
 
-    simulation.execute_simulation()
+    # simulation.execute_simulation()
 
     return simulation
 

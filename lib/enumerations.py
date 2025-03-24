@@ -47,6 +47,11 @@ class PolymerList(Enum):
     @property
     def e_coeff(self):
         return self.value[3]
+    
+    @classmethod
+    def get_by_value(cls, value):
+        member = next((member for member in cls if member.value[0] == value), None)
+        return member
 
 
 class SurfactantList(Enum):
