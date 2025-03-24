@@ -50,8 +50,10 @@ def sim_condition_initialization(simulation_ID: int, usr_input_dict: dict) -> di
     surfactant_obj = Surfactant(
         name=surfactant_type,
         initial_concentration=surfactant_concentration,
-        IFT_conc_equ=None,  # Dummy lambda function
-        derivative_IFT_conc_equ=None,  # Dummy lambda function
+        IFT_conc_equ=lambda GG: 10.001 / (GG + 1)
+        - 0.001,  # TODO: make dynamic depending on the surfactant type
+        derivative_IFT_conc_equ=lambda GG: (-10.001)
+        / ((GG + 1) ** 2),  # TODO: make dynamic depending on the surfactant type
     )
 
     SOG = SimulationConstants.Grid_Size.value
@@ -67,9 +69,9 @@ def sim_condition_initialization(simulation_ID: int, usr_input_dict: dict) -> di
         plt_type=plot_type,
     )
 
-    # simulation.execute_simulation()
+    simulation_outputs = simulation.execute_simulation()
 
-    return simulation
+    return simulation_outputs
 
 
 def main() -> None:
