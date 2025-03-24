@@ -11,7 +11,7 @@ from lib.enumerations import (
     PlotType,
     SurfactantList,
     ResevoirGeometry,
-    SimulationConstants
+    SimulationConstants,
 )
 
 MODEL = {
@@ -41,6 +41,7 @@ SURFACTANT = {
     "No Surfactant": 2,
 }
 
+
 def load_true_values(sim_id):
     base = f"true_values/sim_{sim_id}_"
     return {
@@ -48,11 +49,12 @@ def load_true_values(sim_id):
         "MFW": np.load(base + "MFW.npy"),
     }
 
+
 @pytest.mark.e2e
 @pytest.mark.parametrize(
     "simulation_id, model_type, reservoir_geometry, permeability, polymer_type, polymer_concentration, surfactant_type, surfactant_concentration",
     [
-        (  
+        (
             1,
             MODEL["Shear Thinning"],
             GEOMETRY["Rectilinear"],
@@ -60,7 +62,7 @@ def load_true_values(sim_id):
             POLYMER["Xanthane"],
             0.001,
             SURFACTANT["No Surfactant"],
-            0
+            0,
         ),
         (
             2,
@@ -70,8 +72,8 @@ def load_true_values(sim_id):
             POLYMER["Schizophyllan"],
             0.001,
             SURFACTANT["No Surfactant"],
-            0
-        )
+            0,
+        ),
     ],
 )
 def test_e2e(
@@ -82,7 +84,7 @@ def test_e2e(
     polymer_type,
     polymer_concentration,
     surfactant_type,
-    surfactant_concentration
+    surfactant_concentration,
 ):
     plot_type = PlotType.Saturation_Plot  # TODO: MAKE DYNAMIC
 
@@ -104,10 +106,12 @@ def test_e2e(
     surfactant_obj = Surfactant(
         name=surfactant_type,
         initial_concentration=surfactant_concentration,
-        IFT_conc_equ=lambda GG: 10.001 / (GG + 1) - 0.001,  # TODO: make dynamic depending on the surfactant type
-        derivative_IFT_conc_equ=lambda GG: (-10.001) / ((GG + 1) ** 2) # TODO: make dynamic depending on the surfactant type
+        IFT_conc_equ=lambda GG: 10.001 / (GG + 1)
+        - 0.001,  # TODO: make dynamic depending on the surfactant type
+        derivative_IFT_conc_equ=lambda GG: (-10.001)
+        / ((GG + 1) ** 2),  # TODO: make dynamic depending on the surfactant type
     )
-    
+
     SOG = SimulationConstants.Grid_Size.value
 
     simulation = Simulation(
@@ -123,6 +127,12 @@ def test_e2e(
 
     simulation_output = simulation.execute_simulation()
     expected_output = load_true_values(simulation_id)
-    
+
     # compare simulation output with expected output
-    assert_allclose(simulation_output["COC"], expected_output["COC"], rtol=1e-5, atol=1e-8, err_msg=f"COC mismatch in e2e test for simulation id = {simulation_id}")
+    assert_allclose(
+        simulation_output["COC"],
+        expected_output["COC"],
+        rtol=1e-5,
+        atol=1e-8,
+        err_msg=f"COC mismatch in e2e test for simulation id = {simulation_id}",
+    )
