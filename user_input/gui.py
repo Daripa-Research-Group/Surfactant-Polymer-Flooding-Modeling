@@ -202,6 +202,11 @@ class UserInputGUI:
             "Sourav Implementation": 2,
             "Shear Thinning": 3,
         }
+        
+        geometry_options = {
+            "Rectilinear": 1,
+            "Quarter Five Spot": 2,
+        }
 
         permeability_options = {
             "Homogeneous": 1,
@@ -225,6 +230,8 @@ class UserInputGUI:
             for key, var in input_vars.items():
                 if key == "model_type":
                     input_values[key] = model_options[var.get()]
+                elif key == "reservoir_geometry":
+                    input_values[key] = geometry_options[var.get()]
                 elif key == "permeability":
                     input_values[key] = permeability_options[var.get()]
                 elif key == "polymer_type":
