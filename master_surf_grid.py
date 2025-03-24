@@ -67,9 +67,9 @@ def sim_condition_initialization(simulation_ID: int, usr_input_dict: dict) -> di
         plt_type=plot_type,
     )
 
-    # simulation.execute_simulation()
-
-    return simulation
+    simulation_outputs = simulation.execute_simulation()
+    
+    return simulation_outputs
 
 
 def main() -> None:
