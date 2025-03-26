@@ -8,7 +8,6 @@ This code was derived from EOR repository developed by Sourav Dutta and Prabir D
 """
 
 #### IMPORT STATEMENTS
-import numpy as np
 import tkinter as tk
 import sys
 import os
@@ -33,13 +32,20 @@ def sim_condition_initialization(simulation_ID: int, usr_input_dict: dict) -> di
     plot_type = PlotType.Saturation_Plot  # TODO: MAKE DYNAMIC
 
     model_type = ModelType(usr_input_dict["model_type"])
+    assert model_type is not None, "Model Type not selected. Please try again"
     reservoir_geometry = ResevoirGeometry(usr_input_dict["reservoir_geometry"])
+    assert reservoir_geometry is not None, "Resevoir Geometry  not selected. Please try again"
     permeability_flag = PermeabilityType(usr_input_dict["permeability"])
+    assert permeability_flag is not None, "Permeability not properly selected. Please try again"
     polymer_type = PolymerList.get_by_value(usr_input_dict["polymer_type"])
+    assert polymer_type is not None, "Polymer not properly selected. Please try again"
     polymer_concentration = usr_input_dict["polymer_concentration"]
+    assert polymer_concentration is not None, "Polymer concentration not given. Please try again"
     surfactant_type = SurfactantList(usr_input_dict["surfactant_type"])
+    assert surfactant_type is not None, "Surfactant not properly selected. Please try again"
     surfactant_concentration = usr_input_dict["surfactant_concentration"]
-
+    assert surfactant_concentration is not None, "Surfactant concentration not given. Please try again"
+    
     polymer_obj = Polymer(
         name=polymer_type,
         initial_concentration=polymer_concentration,
