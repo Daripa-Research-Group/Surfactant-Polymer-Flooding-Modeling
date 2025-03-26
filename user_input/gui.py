@@ -276,6 +276,7 @@ class UserInputGUI:
             )
 
     def get_input(self) -> list[dict]:
+        assert self.all_inputs is not None, "'all_inputs' is none. Please initialize..."
         return self.all_inputs
 
     def _is_valid_concentration(self, concentration):
