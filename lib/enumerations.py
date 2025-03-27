@@ -11,7 +11,7 @@ class SimulationConstants(Enum):
     Water_Density = 1000  # kg/m^3
     Oil_Viscosity = 10
 
-    Initial_Resident_Water_Saturation = 0.21
+    Initial_Residual_Water_Saturation = 0.79
     Resid_Aqueous_Phase_Saturation_Initial = 0.1  # wetting phase
     Resid_Oleic_Phase_Saturation_Initial = 0.3  # non-wetting phase
 

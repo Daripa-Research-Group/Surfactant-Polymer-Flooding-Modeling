@@ -41,7 +41,7 @@ class Simulation:
         mdl_id,
         plt_type,
         init_water_saturation=SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value,
-        init_oleic_saturation=SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value,
+        init_oleic_saturation=SimulationConstants.Resid_Oleic_Phase_Saturation_Initial.value,
     ):
         """
         creates instance of the simulation class which will enable for calculating changes in system parameters at every time-step
@@ -292,10 +292,11 @@ class Simulation:
 
         # while loop to update parameters during each iteration
         # while t is < tf and water isn't starting to show up at production well, keep iterating:
-        if self.water_saturation is not None and self.aqueous_viscosity is not None:
+        if self.water_saturation is not None:
+            print(self.water_saturation[self.mesh.n, self.mesh.n])
             while (
                 t < tf
-                and self.water_saturation[self.mesh.n + 1, self.mesh.m + 1] <= 0.70
+                and self.water_saturation[self.mesh.n, self.mesh.m] <= 0.70
             ):
                 # updating source flow magnitude:
                 source_flow_magnitude_total += mag_source_flow
@@ -308,6 +309,7 @@ class Simulation:
                 # computing viscosities:
                 shear_force = self.compvis(u, v, x, y, beta_1, c0_array)[1]
 
+                print('aqueous viscosity: ', self.aqueous_viscosity)
                 if self.mdl_id == ModelType.Shear_Thinning_On:
                     self.polymer.viscosity_scalar = max(self.aqueous_viscosity[1, :])
                 self.polymer.viscosity_matrix = self.polymer.viscosity_scalar * np.ones(
@@ -360,9 +362,11 @@ class Simulation:
                 ROIP = transport_result_dict["ROIP"]
 
                 t_cal += 1
-
+                
+                print('t_cal: ', t_cal)
                 if t_cal == 1:
                     COC[1, t_cal] = production_oil_volume
+                    print('what is the current production oil volume?', production_oil_volume)
                 else:
                     COC[1, t_cal] += production_oil_volume
 
@@ -473,11 +477,11 @@ class Simulation:
             ):
                 # retrieving scalar quantities of concentration for surfactant and polymer
                 # scalar quantity of initial water saturation (fraction of pore space filled with water)
-                print("reaches here")
-                s_0 = self.init_water_saturation_scalar
+                s_0 = SimulationConstants.Initial_Residual_Water_Saturation.value
                 c_0 = self.polymer.initial_concentration
                 g_0 = self.surfactant.concentration
                 self.water_saturation = np.zeros((self.mesh.m + 1, self.mesh.n + 1))
+                print('water saturation shape: ', np.shape(self.water_saturation))
                 self.polymer.vec_concentration = np.copy(self.water_saturation)
             else:
                 raise SimulationCalcInputException(
@@ -511,6 +515,8 @@ class Simulation:
         displacing phase containing polymer
         """
         ### Initializing variables:
+        print("I'm in Compvis function")
+        assert self.surfactant is not None, "Surfactant Object is None!!!"
         try:
             if self.polymer is not None and self.surfactant is not None:
                 gamma_dot = np.zeros_like(self.polymer.vec_concentration)
@@ -533,7 +539,7 @@ class Simulation:
                 )
                 n = np.shape(polymer_obj.vec_concentration)[0]
                 m = np.shape(polymer_obj.vec_concentration)[1]
-                if polymer_obj.vec_concentration.all() == 0:
+                if np.all(polymer_obj.vec_concentration == 0):
                     self.aqueous_viscosity = vis_water * np.ones((n, m))
                     print("aqueous viscosity: ", self.aqueous_viscosity)
                 else:
@@ -639,12 +645,6 @@ class Simulation:
 
         :param swr: residual water saturation at IFT sigma (matrix)
         :type swr: float
-
-        :param sor0: residual oil saturation at IFT sigma0 (constant)
-        :type sor0: float
-
-        :param swr0: residual water saturation at IFT sigma0 (constant)
-        :type swr0: float
 
         :param flag: denotes which phase 0=oleic and 1=aqueous
         :type flag: int
@@ -785,6 +785,7 @@ class Simulation:
         for j in range(m + 1):
             for l in range(n + 1):
                 if j == 0 and l != 0 and l != n:
+                    print('reaches here 1')
                     t1 = self.weak(L[j][l], [1, 0, 0], beta)
                     t2 = [0, 0, 0, 0]
                     t3 = [0, 0, 0, 0]
@@ -792,6 +793,7 @@ class Simulation:
                     t5 = self.weak(L[j][l - 1], [0, 0, 1], beta)
                     t6 = self.weak(U[j][l - 1], [0, 1, 0], beta)
                 elif j == m and l != 0 and l != n:
+                    print('reaches here 2')
                     t1 = [0, 0, 0, 0]
                     t2 = self.weak(U[j - 1][l], [0, 0, 1], beta)
                     t3 = self.weak(L[j - 1][l], [0, 1, 0], beta)
@@ -799,6 +801,7 @@ class Simulation:
                     t5 = [0, 0, 0, 0]
                     t6 = [0, 0, 0, 0]
                 elif j != 0 and j != m and l == 0:
+                    print('reaches here 3')
                     t1 = self.weak(L[j][l], [1, 0, 0], beta)
                     t2 = self.weak(U[j - 1][l], [0, 0, 1], beta)
                     t3 = self.weak(L[j - 1][l], [0, 1, 0], beta)
@@ -806,6 +809,7 @@ class Simulation:
                     t5 = [0, 0, 0, 0]
                     t6 = [0, 0, 0, 0]
                 elif j != 0 and j != m and l == n:
+                    print('reaches here 4')
                     t1 = [0, 0, 0, 0]
                     t2 = [0, 0, 0, 0]
                     t3 = [0, 0, 0, 0]
@@ -813,6 +817,7 @@ class Simulation:
                     t5 = self.weak(L[j][l - 1], [0, 0, 1], beta)
                     t6 = self.weak(U[j][l - 1], [0, 1, 0], beta)
                 elif j == 0 and l == 0:
+                    print('reaches here 5')
                     t1 = self.weak(L[j][l], [1, 0, 0], beta)
                     t2 = [0, 0, 0, 0]
                     t3 = [0, 0, 0, 0]
@@ -820,6 +825,7 @@ class Simulation:
                     t5 = [0, 0, 0, 0]
                     t6 = [0, 0, 0, 0]
                 elif j == 0 and l == n:
+                    print('reaches here 6')
                     t1 = [0, 0, 0, 0]
                     t2 = [0, 0, 0, 0]
                     t3 = [0, 0, 0, 0]
@@ -827,6 +833,7 @@ class Simulation:
                     t5 = self.weak(L[j][l - 1], [0, 0, 1], beta)
                     t6 = self.weak(U[j][l - 1], [0, 1, 0], beta)
                 elif j == m and l == 0:
+                    print('reaches here 7')
                     t1 = [0, 0, 0, 0]
                     t2 = self.weak(U[j - 1][l], [0, 0, 1], beta)
                     t3 = self.weak(L[j - 1][l], [0, 1, 0], beta)
@@ -834,6 +841,7 @@ class Simulation:
                     t5 = [0, 0, 0, 0]
                     t6 = [0, 0, 0, 0]
                 elif j == m and l == n:
+                    print('reaches here 8')
                     t1 = [0, 0, 0, 0]
                     t2 = [0, 0, 0, 0]
                     t3 = [0, 0, 0, 0]
@@ -841,13 +849,20 @@ class Simulation:
                     t5 = [0, 0, 0, 0]
                     t6 = [0, 0, 0, 0]
                 else:
+                    print('reaches here 9')
                     t1 = self.weak(L[j][l], [1, 0, 0], beta)
                     t2 = self.weak(U[j - 1][l], [0, 0, 1], beta)
                     t3 = self.weak(L[j - 1][l], [0, 1, 0], beta)
                     t4 = self.weak(U[j - 1][l - 1], [1, 0, 0], beta)
                     t5 = self.weak(L[j][l - 1], [0, 0, 1], beta)
                     t6 = self.weak(U[j][l - 1], [0, 1, 0], beta)
-
+                
+                print('t1',t1)
+                print('t2',t2)
+                print('t3',t3)
+                print('t4',t4)
+                print('t5',t5)
+                print('t6',t6)
                 grid = {
                     "c": t1[0] + t2[2] + t3[1] + t4[0] + t5[2] + t6[1],
                     "w": t3[0] + t4[1],
@@ -864,26 +879,26 @@ class Simulation:
         return out
 
     def weak(self, T, v, beta):
-        b1 = self.beta_func(T.x[0], T.y[0], beta)
-        b2 = self.beta_func(T.x[1], T.y[1], beta)
-        b3 = self.beta_func(T.x[2], T.y[2], beta)
+        b1 = self.beta_func(T['x'][0], T['y'][0], beta)
+        b2 = self.beta_func(T['x'][1], T['y'][1], beta)
+        b3 = self.beta_func(T['x'][2], T['y'][2], beta)
         b_avg = (b1 + b2 + b3) / 3
 
-        s = self.polyarea(T.x, T.y)
+        s = self.polyarea(T['x'], T['y'])
 
         # Create and manipulate matrix M
-        M = np.vstack((T.x, T.y, [1, 1, 1])).T
+        M = np.vstack((T['x'], T['y'], [1, 1, 1])).T
         M_inv = np.linalg.inv(M)
         M = M_inv[:2, :]  # Extract the first two rows of M_inv
-
+        print(np.shape(M))
         # Calculate vdiff and inte
         vdiff = np.dot(M, v)
-        inte = np.dot(vdiff.T, beta * np.dot(M, s))
+        inte = np.dot(vdiff.T, b_avg * np.dot(M, s))
 
         # Output result
-        out = [inte, 0]
+        inte = np.append(inte, [0])
 
-        return out
+        return inte
 
     def beta_func(self, x, y, beta):
         dx = self.mesh.dx
@@ -892,10 +907,10 @@ class Simulation:
         left = self.mesh.left
         bottom = self.mesh.bottom
 
-        nn = np.round((x - left) / dx) + 1
-        mm = np.round((y - bottom) / dy) + 1
+        nn = np.round((x - left) / dx)
+        mm = np.round((y - bottom) / dy)
 
-        out = beta[nn][mm]
+        out = beta[int(nn)][int(mm)]
         return out
 
     def setRightHand(self, src_matrix, U, L):
@@ -904,8 +919,8 @@ class Simulation:
 
         rh = np.zeros((m + 1) * (n + 1))
 
-        for j in range(1, m + 2):
-            for l in range(1, n + 2):
+        for j in range(m):
+            for l in range(n):
                 id = j + (l - 1) * (m + 1) - 1  # Adjust for Python 0-based indexing
 
                 if j == 1 and l != 1 and l != (n + 1):
@@ -966,14 +981,14 @@ class Simulation:
         return rh
 
     def fInt(self, T, src_matrix, v):
-        f0 = self.f_func(T.x[0], T.y[0], src_matrix)
-        f1 = self.f_func(T.x[1], T.y[1], src_matrix)
-        f2 = self.f_func(T.x[2], T.y[2], src_matrix)
+        f0 = self.f_func(T['x'][0], T['y'][0], src_matrix)
+        f1 = self.f_func(T['x'][1], T['y'][1], src_matrix)
+        f2 = self.f_func(T['x'][2], T['y'][2], src_matrix)
 
-        s = self.polyarea(T.x, T.y)
+        s = self.polyarea(T['x'], T['y'])
 
         f_avg = (f0 + f1 + f2) / 3
-        v_avg = (v[0], v[1] + v[2]) / 3
+        v_avg = (v[0] + v[1] + v[2]) / 3
 
         f3 = (f1 + f2) / 2
         f4 = (f0 + f2) / 2
@@ -994,10 +1009,10 @@ class Simulation:
         left = self.mesh.left
         bottom = self.mesh.bottom
 
-        nn = np.round((x - left) / dx) + 1
-        mm = np.round((y - bottom) / dy) + 1
+        nn = np.round((x - left) / dx) 
+        mm = np.round((y - bottom) / dy) 
 
-        out = src_matrix[nn][mm]
+        out = src_matrix[int(nn)][int(mm)]
         return out
 
     def setA(self, grid):
@@ -1005,49 +1020,51 @@ class Simulation:
         n = self.mesh.n
 
         A = np.zeros(((m + 1) * (n + 1) * 7, 3))
+        print('in SetA func', np.shape(A))
         list_index = 0
 
-        for j in range(1, m + 2):
-            for l in range(1, n + 2):
+        for j in range(m):
+            for l in range(n):
                 a = grid[j][l]
-                id_ = j + (l - 1) * (m + 1)
+                id_ = j + (l-1) * (m+1)
 
                 # Center
-                A[list_index, :] = [id_, id_, a["c"]]
                 list_index += 1
+                A[list_index, :] = [id_, id_, a["c"]]
 
                 # West
-                if j != 1:
-                    A[list_index, :] = [id_, id_ - 1, a["w"]]
+                if j != 0:
                     list_index += 1
+                    A[list_index, :] = [id_, id_ - 1, a["w"]]
 
                 # Northwest
-                if j != 1 and l != (n + 1):
-                    A[list_index, :] = [id_, id_ + m, a["nw"]]
+                if j != 0 and l != n:
                     list_index += 1
+                    A[list_index, :] = [id_, id_ + m, a["nw"]]
 
                 # North
-                if l != (n + 1):
-                    A[list_index, :] = [id_, id_ + m + 1, a["n"]]
+                if l != n:
                     list_index += 1
+                    A[list_index, :] = [id_, id_ + m + 1, a["n"]]
 
                 # East
-                if j != (m + 1):
-                    A[list_index, :] = [id_, id_ + 1, a["e"]]
+                if j != m:
                     list_index += 1
+                    A[list_index, :] = [id_, id_ + 1, a["e"]]
 
                 # South
-                if l != 1:
-                    A[list_index, :] = [id_, id_ - m - 1, a["s"]]
+                if l != 0:
                     list_index += 1
+                    A[list_index, :] = [id_, id_ - m - 1, a["s"]]
 
                 # Southeast
-                if j != (m + 1) and l != 1:
-                    A[list_index, :] = [id_, id_ - m, a["se"]]
+                if j != m and l != 0:
                     list_index += 1
+                    A[list_index, :] = [id_, id_ - m, a["se"]]
 
         # Trim the array to remove unused rows
         A = A[:list_index, :]
+        print('end of setA', np.shape(A))
         return A
 
     def setB(self, grid, rh):
@@ -1056,8 +1073,8 @@ class Simulation:
 
         B = np.zeros((m + 1) * (n + 1))
 
-        for j in range(1, m + 2):
-            for l in range(1, n + 2):
+        for j in range(m):
+            for l in range(n):
                 a = grid[j][l]
                 id_ = j + (l - 1) * (m + 1)
                 B[id_ - 1] = a["const"]  # Adjust for zero-indexing
@@ -1070,6 +1087,8 @@ class Simulation:
         This method is a helper functtion to formulate the mesh
         """
         maximum_iterations = 300
+        print(np.shape(A))
+        print(np.shape(B))
         out = bicgstab(A, B, maxiter=maximum_iterations)
 
         return out

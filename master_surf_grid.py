@@ -76,7 +76,7 @@ def sim_condition_initialization(simulation_ID: int, usr_input_dict: dict) -> di
     )
 
     simulation_outputs = simulation.execute_simulation()
-
+    print(simulation_outputs['COC'])
     return simulation_outputs
 
 
