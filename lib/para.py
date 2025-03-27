@@ -4,12 +4,20 @@ This class hold the para and box classes which will be used to formulate the mes
 @author: Bhargav Akula Ramesh Kumar
 """
 
+import sys
+import os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
+
+from lib.enumerations import (
+    SimulationConstants,
+)
 
 class Para:
     def __init__(self):
         """Initializing default values for generating mesh grid for simulation"""
-        self.m = 100  # Number of points in x-direction
-        self.n = 100  # Number of points in y-direction
+        self.m = SimulationConstants.Grid_Size.value   # Number of points in x-direction
+        self.n =  SimulationConstants.Grid_Size.value # Number of points in y-direction
         self.dx = None  # Spacing in x-direction (to be calculated later)
         self.dy = None  # Spacing in y-direction (to be calculated later)
 
