@@ -6,7 +6,7 @@ import sys
 import os
 import scipy as sp
 from scipy.sparse.linalg import bicgstab
-from scipy.sparse import coo_matrix
+from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
 import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -341,11 +341,22 @@ class Simulation:
                 grid_size = self.set_grid(U, L, beta)
                 rh = self.setRightHand(f, U, L)
                 A = self.setA(grid_size)
-                A = coo_matrix(A)
                 B = self.setB(grid_size, rh)
+                r = np.ravel(A[:,0].reshape(1,-1))
+                print('r_min: ', np.min(r))
+                print('r_max: ', np.max(r))
+                c = np.ravel(A[:,1].reshape(1,-1))
+                print('c_min: ', np.min(c))
+                print('c_max:', np.max(c))
+                v = np.ravel(A[:,2].reshape(1,-1))
+                print('v_min: ', np.min(v))
+                print('v_max: ', np.max(v))
+                A = csc_matrix((v, (r, c)), shape=(np.shape(B)[0], np.shape(B)[0]))
+                # B = self.setB(grid_size, rh)
                 uOld = u
                 vOld = v
-                u = self.get_u_val(A, B)
+                u = self.get_u_val(A, B)[0]
+                print('u: ', u) 
                 vn = self.get_vn_val(u)
                 [px, py] = self.get_gradient(vn)
                 u = -1 * beta * px
@@ -353,7 +364,7 @@ class Simulation:
                 if innerIter > 1000:
                     break
                 innerIter += 1
-                innerIter_save[t_cal + 1] = innerIter
+                innerIter_save.append(innerIter)
 
                 # Solving transport problem:
                 transport_result_dict = self.saturation_equ_solver(dt, u, v)
@@ -1019,47 +1030,46 @@ class Simulation:
         m = self.mesh.m
         n = self.mesh.n
 
-        A = np.zeros(((m + 1) * (n + 1) * 7, 3))
-        print('in SetA func', np.shape(A))
+        A = np.zeros(((m+1) * (n+1) * 7, 3))
         list_index = 0
 
-        for j in range(m):
-            for l in range(n):
+        for j in range(m+1):
+            for l in range(n+1):
                 a = grid[j][l]
-                id_ = j + (l-1) * (m+1)
+                id_ = (j+1) + (l) * (m)
 
                 # Center
-                list_index += 1
+                list_index +=1
                 A[list_index, :] = [id_, id_, a["c"]]
 
                 # West
                 if j != 0:
-                    list_index += 1
+                    list_index +=1
                     A[list_index, :] = [id_, id_ - 1, a["w"]]
 
                 # Northwest
                 if j != 0 and l != n:
-                    list_index += 1
+                    list_index +=1
                     A[list_index, :] = [id_, id_ + m, a["nw"]]
 
                 # North
                 if l != n:
-                    list_index += 1
+                    list_index +=1
                     A[list_index, :] = [id_, id_ + m + 1, a["n"]]
 
                 # East
                 if j != m:
-                    list_index += 1
+                    list_index +=1
                     A[list_index, :] = [id_, id_ + 1, a["e"]]
 
                 # South
                 if l != 0:
-                    list_index += 1
+                    list_index +=1
                     A[list_index, :] = [id_, id_ - m - 1, a["s"]]
 
                 # Southeast
                 if j != m and l != 0:
-                    list_index += 1
+                    list_index +=1
                     A[list_index, :] = [id_, id_ - m, a["se"]]
 
         # Trim the array to remove unused rows
@@ -1073,13 +1083,14 @@ class Simulation:
 
         B = np.zeros((m + 1) * (n + 1))
 
-        for j in range(m):
-            for l in range(n):
+        for j in range(m+1):
+            for l in range(n+1):
                 a = grid[j][l]
                 id_ = j + (l - 1) * (m + 1)
                 B[id_ - 1] = a["const"]  # Adjust for zero-indexing
 
         B = rh - B
+        print('shape B', np.shape(B))
         return B
 
     def get_u_val(self, A, B):
@@ -1101,9 +1112,11 @@ class Simulation:
         n = self.mesh.n
 
         vn = np.zeros((n + 1, m + 1))
+
+        print('vn shape:', np.shape(vn))
         for ii in range(m + 1):
             for jj in range(n + 1):
-                vn[ii, jj] = u[(jj - 1) * (m + 1) + ii]
+                vn[ii][jj] = u[(jj) * (m + 1) + ii]
 
         return vn
 
@@ -2086,8 +2099,8 @@ class Simulation:
         px = np.zeros((n + 1, m + 1))
         py = px
 
-        for i in range(m + 2):
-            for j in range(n + 2):
+        for i in range(m + 1):
+            for j in range(n + 1):
                 if i != 0:
                     px[j, i] = (vn[j, i] - vn[j, i - 1]) / dx
                 if i != m:
