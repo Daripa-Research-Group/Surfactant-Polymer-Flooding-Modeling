@@ -276,13 +276,20 @@ class Simulation:
             dt = (self.mesh.dx / mag_source_flow) * 100
         tf = 500
         tSave = 0
+        
+        # determining shapes
+        n, m = self.mesh.n, self.mesh.n
+        timestamps = int(np.floor(tf / dt))
+        
         u = np.zeros((self.mesh.n + 1, self.mesh.m + 1))
         v = u
         COC = np.zeros((1, 2000))  # cumulative oil captured
-        ProdRate = np.zeros((1, int(np.floor(tf / dt))))  # rate of production
-        CROIP = np.zeros(
-            (1, int(np.floor(tf / dt)))
-        )  # cummulative residual oil in place
+        
+        # declaring memory mapped arrays for RAM optimization
+        os.makedirs('memmaps', exist_ok=True)
+        ProdRate = np.memmap("memmaps/ProdRate.dat", dtype="float64", mode="w+", shape=(1, timestamps)) # rate of production
+        CROIP = np.memmap("memmaps/CROIP.dat", dtype="float64", mode="w+", shape=(1, timestamps)) # cumulative residual oil in place
+        
         viscosity_aqueous_save = 0
         shear_force_save = 0
         concentration_save = 0
