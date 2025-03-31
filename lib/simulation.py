@@ -6,7 +6,7 @@ import sys
 import os
 import scipy as sp
 from scipy.sparse.linalg import bicgstab
-from scipy.sparse import coo_matrix
+from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
 import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -276,13 +276,20 @@ class Simulation:
             dt = (self.mesh.dx / mag_source_flow) * 100
         tf = 500
         tSave = 0
+        
+        # determining shapes
+        n, m = self.mesh.n, self.mesh.n
+        timestamps = int(np.floor(tf / dt))
+        
         u = np.zeros((self.mesh.n + 1, self.mesh.m + 1))
         v = u
         COC = np.zeros((1, 2000))  # cumulative oil captured
-        ProdRate = np.zeros((1, int(np.floor(tf / dt))))  # rate of production
-        CROIP = np.zeros(
-            (1, int(np.floor(tf / dt)))
-        )  # cummulative residual oil in place
+        
+        # declaring memory mapped arrays for RAM optimization
+        os.makedirs('memmaps', exist_ok=True)
+        ProdRate = np.memmap("memmaps/ProdRate.dat", dtype="float64", mode="w+", shape=(1, timestamps)) # rate of production
+        CROIP = np.memmap("memmaps/CROIP.dat", dtype="float64", mode="w+", shape=(1, timestamps)) # cumulative residual oil in place
+        
         viscosity_aqueous_save = 0
         shear_force_save = 0
         concentration_save = 0
@@ -341,11 +348,22 @@ class Simulation:
                 grid_size = self.set_grid(U, L, beta)
                 rh = self.setRightHand(f, U, L)
                 A = self.setA(grid_size)
-                A = coo_matrix(A)
                 B = self.setB(grid_size, rh)
+                r = np.ravel(A[:,0].reshape(1,-1))
+                print('r_min: ', np.min(r))
+                print('r_max: ', np.max(r))
+                c = np.ravel(A[:,1].reshape(1,-1))
+                print('c_min: ', np.min(c))
+                print('c_max:', np.max(c))
+                v = np.ravel(A[:,2].reshape(1,-1))
+                print('v_min: ', np.min(v))
+                print('v_max: ', np.max(v))
+                A = coo_matrix((v, (r, c)), shape=(np.shape(B)[0], np.shape(B)[0]))
+                # B = self.setB(grid_size, rh)
                 uOld = u
                 vOld = v
-                u = self.get_u_val(A, B)
+                u = self.get_u_val(A, B)[0]
+                print('u: ', u) 
                 vn = self.get_vn_val(u)
                 [px, py] = self.get_gradient(vn)
                 u = -1 * beta * px
@@ -353,7 +371,7 @@ class Simulation:
                 if innerIter > 1000:
                     break
                 innerIter += 1
-                innerIter_save[t_cal + 1] = innerIter
+                innerIter_save.append(innerIter)
 
                 # Solving transport problem:
                 transport_result_dict = self.saturation_equ_solver(dt, u, v)
@@ -1019,47 +1037,46 @@ class Simulation:
         m = self.mesh.m
         n = self.mesh.n
 
-        A = np.zeros(((m + 1) * (n + 1) * 7, 3))
-        print('in SetA func', np.shape(A))
+        A = np.zeros(((m+1) * (n+1) * 7, 3))
         list_index = 0
 
-        for j in range(m):
-            for l in range(n):
+        for j in range(m+1):
+            for l in range(n+1):
                 a = grid[j][l]
-                id_ = j + (l-1) * (m+1)
+                id_ = (j+1) + (l) * (m)
 
                 # Center
-                list_index += 1
+                list_index +=1
                 A[list_index, :] = [id_, id_, a["c"]]
 
                 # West
                 if j != 0:
-                    list_index += 1
+                    list_index +=1
                     A[list_index, :] = [id_, id_ - 1, a["w"]]
 
                 # Northwest
                 if j != 0 and l != n:
-                    list_index += 1
+                    list_index +=1
                     A[list_index, :] = [id_, id_ + m, a["nw"]]
 
                 # North
                 if l != n:
-                    list_index += 1
+                    list_index +=1
                     A[list_index, :] = [id_, id_ + m + 1, a["n"]]
 
                 # East
                 if j != m:
-                    list_index += 1
+                    list_index +=1
                     A[list_index, :] = [id_, id_ + 1, a["e"]]
 
                 # South
                 if l != 0:
-                    list_index += 1
+                    list_index +=1
                     A[list_index, :] = [id_, id_ - m - 1, a["s"]]
 
                 # Southeast
                 if j != m and l != 0:
-                    list_index += 1
+                    list_index +=1
                     A[list_index, :] = [id_, id_ - m, a["se"]]
 
         # Trim the array to remove unused rows
@@ -1073,13 +1090,14 @@ class Simulation:
 
         B = np.zeros((m + 1) * (n + 1))
 
-        for j in range(m):
-            for l in range(n):
+        for j in range(m+1):
+            for l in range(n+1):
                 a = grid[j][l]
                 id_ = j + (l - 1) * (m + 1)
                 B[id_ - 1] = a["const"]  # Adjust for zero-indexing
 
         B = rh - B
+        print('shape B', np.shape(B))
         return B
 
     def get_u_val(self, A, B):
@@ -1101,9 +1119,11 @@ class Simulation:
         n = self.mesh.n
 
         vn = np.zeros((n + 1, m + 1))
+
+        print('vn shape:', np.shape(vn))
         for ii in range(m + 1):
             for jj in range(n + 1):
-                vn[ii, jj] = u[(jj - 1) * (m + 1) + ii]
+                vn[ii][jj] = u[(jj) * (m + 1) + ii]
 
         return vn
 
@@ -1142,8 +1162,8 @@ class Simulation:
 
         phi = 1  # porosity
         [x, y] = np.meshgrid(
-            np.arange(self.mesh.left, self.mesh.right + self.mesh.dx, self.mesh.dx),
-            np.arange(self.mesh.bottom, self.mesh.top + self.mesh.dy, self.mesh.dy),
+            np.linspace(self.mesh.left, self.mesh.right + self.mesh.dx, SimulationConstants.Grid_Size.value+1),
+            np.linspace(self.mesh.bottom, self.mesh.top + self.mesh.dy, SimulationConstants.Grid_Size.value+1),
         )
 
         # Define critical capillary numbers
@@ -1269,8 +1289,10 @@ class Simulation:
             dt=dt,
         )
         # performing 2-D interpolation using the scipy.interpolate package
-        interp = sp.interpolate.RegularGridInterpolator((x, y), Q)
-        Qmod = interp((xmod, ymod))
+        # interp = sp.interpolate.interpn((x, y), Q)
+        # Qmod = interp(xmod, ymod)
+        print('xmod shape: ', np.shape(xmod))
+        Qmod = sp.interpolate.griddata((x,y), Q, (xmod,ymod))
 
         # Recalculate the normalized saturation of water and oil
         nso = (Qmod - swr) / (1 - swr - sor)
@@ -2000,6 +2022,8 @@ class Simulation:
         x_jump = None
         y_jump = None
         if flag == 1:
+            print('x shape: ', np.shape(x))
+            print('f_s shape: ', np.shape(f_s))
             x_jump = x - f_s * u * dt
             y_jump = y - f_s * v * dt
         elif flag == 2:
@@ -2086,8 +2110,8 @@ class Simulation:
         px = np.zeros((n + 1, m + 1))
         py = px
 
-        for i in range(m + 2):
-            for j in range(n + 2):
+        for i in range(m + 1):
+            for j in range(n + 1):
                 if i != 0:
                     px[j, i] = (vn[j, i] - vn[j, i - 1]) / dx
                 if i != m:

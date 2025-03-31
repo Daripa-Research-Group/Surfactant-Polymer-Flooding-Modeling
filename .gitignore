@@ -3,3 +3,4 @@ results/figures/*.png
 results/*.xlsx
 __pycache__/
 *.egg-info
+memmaps
