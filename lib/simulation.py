@@ -1155,8 +1155,8 @@ class Simulation:
 
         phi = 1  # porosity
         [x, y] = np.meshgrid(
-            np.arange(self.mesh.left, self.mesh.right + self.mesh.dx, self.mesh.dx),
-            np.arange(self.mesh.bottom, self.mesh.top + self.mesh.dy, self.mesh.dy),
+            np.linspace(self.mesh.left, self.mesh.right + self.mesh.dx, SimulationConstants.Grid_Size.value+1),
+            np.linspace(self.mesh.bottom, self.mesh.top + self.mesh.dy, SimulationConstants.Grid_Size.value+1),
         )
 
         # Define critical capillary numbers
@@ -1282,8 +1282,10 @@ class Simulation:
             dt=dt,
         )
         # performing 2-D interpolation using the scipy.interpolate package
-        interp = sp.interpolate.RegularGridInterpolator((x, y), Q)
-        Qmod = interp((xmod, ymod))
+        # interp = sp.interpolate.interpn((x, y), Q)
+        # Qmod = interp(xmod, ymod)
+        print('xmod shape: ', np.shape(xmod))
+        Qmod = sp.interpolate.griddata((x,y), Q, (xmod,ymod))
 
         # Recalculate the normalized saturation of water and oil
         nso = (Qmod - swr) / (1 - swr - sor)
@@ -2013,6 +2015,8 @@ class Simulation:
         x_jump = None
         y_jump = None
         if flag == 1:
+            print('x shape: ', np.shape(x))
+            print('f_s shape: ', np.shape(f_s))
             x_jump = x - f_s * u * dt
             y_jump = y - f_s * v * dt
         elif flag == 2:
