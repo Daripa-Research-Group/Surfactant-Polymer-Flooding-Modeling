@@ -351,7 +351,7 @@ class Simulation:
                 v = np.ravel(A[:,2].reshape(1,-1))
                 print('v_min: ', np.min(v))
                 print('v_max: ', np.max(v))
-                A = csc_matrix((v, (r, c)), shape=(np.shape(B)[0], np.shape(B)[0]))
+                A = coo_matrix((v, (r, c)), shape=(np.shape(B)[0], np.shape(B)[0]))
                 # B = self.setB(grid_size, rh)
                 uOld = u
                 vOld = v
