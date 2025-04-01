@@ -383,13 +383,13 @@ class Simulation:
                 
                 print('t_cal: ', t_cal)
                 if t_cal == 1:
-                    COC[1, t_cal] = production_oil_volume
+                    COC[0, t_cal] = production_oil_volume
                     print('what is the current production oil volume?', production_oil_volume)
                 else:
-                    COC[1, t_cal] += production_oil_volume
+                    COC[0, t_cal] += production_oil_volume
 
-                ProdRate[1, t_cal] = production_oil_volume / dt
-                CROIP[1, t_cal] = ROIP
+                ProdRate[0, t_cal] = production_oil_volume / dt
+                CROIP[0, t_cal] = ROIP
 
                 # Save relevant results in each iteration for plotting
 
@@ -1286,13 +1286,34 @@ class Simulation:
             pc_g=pc_g,
             u=u,
             v=v,
-            dt=dt,
+            dt=dt_array,
         )
         # performing 2-D interpolation using the scipy.interpolate package
         # interp = sp.interpolate.interpn((x, y), Q)
         # Qmod = interp(xmod, ymod)
         print('xmod shape: ', np.shape(xmod))
-        Qmod = sp.interpolate.griddata((x,y), Q, (xmod,ymod))
+        
+        
+        # Qmod = sp.interpolate.griddata((x,y), Q, (xmod,ymod))
+        x1d = x[0, :]
+        y1d = y[:, 0]
+        x_sorted = np.all(np.diff(x1d) > 0)
+        y_sorted = np.all(np.diff(y1d) > 0)   
+        
+        # reorder Q if a dimension isn't sorted
+        if not x_sorted:
+            x_sort_idx = np.argsort(x1d)
+            x1d = x1d[x_sort_idx]
+            Q = Q[:, x_sort_idx]  # Sort columns of Q
+        if not y_sorted:
+            y_sort_idx = np.argsort(y1d)
+            y1d = y1d[y_sort_idx]
+            Q = Q[y_sort_idx, :]  # Sort rows of Q
+            
+        interp_func = sp.interpolate.RegularGridInterpolator((y1d, x1d), Q, method='linear', bounds_error=False, fill_value=None)
+
+        query_points = np.stack([ymod.ravel(), xmod.ravel()], axis=-1)
+        Qmod = interp_func(query_points).reshape(xmod.shape)
 
         # Recalculate the normalized saturation of water and oil
         nso = (Qmod - swr) / (1 - swr - sor)
@@ -1320,27 +1341,28 @@ class Simulation:
         D_s = D * pc_s
 
         idx = 1
-        AAA = np.zeros((n * m))
-        DDD = np.zeros_like((n * m, 1))
+        AAA = np.zeros((n * m, n * m))
+        DDD = np.zeros((n * m, 1))
 
         while (
             idx <= (m) * (n - 1) + 1
             and self.surfactant.vec_concentration is not None
             and self.polymer.vec_concentration is not None
         ):
-            cnt = (idx - 1) / m  # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
+            cnt = (idx - 1) // m  # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
             BB = np.zeros((n, m))
             AA = BB
             CC = BB
             DD = np.zeros((m, 1))
 
             #'cnt+1' in matlab is 'cnt' in python as matlab indexes from 1 but python indexes from 0
-            for i in range(m):
-                for j in range(n):
+            print(f"DT is of this type: {type(dt)} of value = {dt}")
+            for i in range(m - 1):
+                for j in range(n - 1):
                     if idx == 1:
                         if i == 0:  # first/left column
                             DD[i] = (
-                                (Qmod[cnt][i] / dt[cnt][i])
+                                (Qmod[cnt][i] / dt_array[cnt][i])
                                 + g1 * (1 - f[cnt][i])
                                 + (
                                     (D_g[cnt][i] + D_g[cnt][i + 1]) / (dx**2)
@@ -1358,7 +1380,7 @@ class Simulation:
                             CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (dy**2)
 
                             BB[j][i] = (
-                                1 / dt[cnt][i]
+                                1 / dt_array[cnt][i]
                                 - (D_s[cnt + 1][i] + D_s[cnt][i + 1]) / (dx**2)
                                 - (D_s[cnt + 1][i] + D_s[cnt][i]) / (dy**2)
                             )
@@ -1366,7 +1388,7 @@ class Simulation:
                             BB[j][i + 1] = (D_s[cnt][i] + D_s[cnt][i + 1]) * (dx**2)
                         elif i == m:  # last/rightmost column
                             DD[i] = (
-                                Qmod[cnt][i] / dt[cnt][i]
+                                Qmod[cnt][i] / dt_array[cnt][i]
                                 + (
                                     (D_g[cnt][i] + D_g[cnt][i - 1]) / (dx**2)
                                     + (D_g[cnt + 1][i] + D_g[cnt][i]) / (dy**2)
@@ -1383,7 +1405,7 @@ class Simulation:
                             BB[j][i - 1] = (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
 
                             BB[i][i] = (
-                                1 / dt[cnt][i]
+                                1 / dt_array[cnt][i]
                                 - (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
                                 - (D_s[cnt + 1][i] + D_s[cnt][i]) / (dy**2)
                             )
@@ -1391,7 +1413,7 @@ class Simulation:
                             CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (dy**2)
                         else:
                             DD[i] = (
-                                Qmod[cnt][i] / dt[cnt][i]
+                                Qmod[cnt][i] / dt_array[cnt][i]
                                 - f_c[cnt][i]
                                 * (
                                     u[cnt][i]
@@ -1432,7 +1454,7 @@ class Simulation:
                             )
 
                             BB[j][i] = (
-                                1 / dt[cnt][i]
+                                1 / dt_array[cnt][i]
                                 - (D_s[cnt][i + 1] + D_s[cnt][i - 1] + 2 * D_s[cnt][i])
                                 / (2 * dx**2)
                                 - (D_s[cnt + 1][i] + D_s[cnt][i]) / (dy**2)
@@ -1444,7 +1466,7 @@ class Simulation:
                     elif idx == (m) * (n - 1) + 1:  # topmost row of grid
                         if i == 0:  # leftmost column
                             DD[i] = (
-                                (Qmod[cnt][i] / dt[cnt][i])
+                                (Qmod[cnt][i] / dt_array[cnt][i])
                                 + (
                                     (D_g[cnt][i] + D_g[cnt][i + 1]) / (dx**2)
                                     + (D_g[cnt - 1][i] + D_g[cnt][i]) / (dy**2)
@@ -1461,7 +1483,7 @@ class Simulation:
                             AA[j][i] = (D_s[cnt][i] + D_s[cnt - 1][i]) / (dy**2)
 
                             BB[j][i] = (
-                                1 / dt[cnt][i]
+                                1 / dt_array[cnt][i]
                                 - (D_s[cnt][i] + D_s[cnt][i + 1]) / (dx**2)
                                 - (D_s[cnt - 1][i] + D_s[cnt][i]) / (dy**2)
                             )
@@ -1469,7 +1491,7 @@ class Simulation:
                             BB[j][i + 1] = (D_s[cnt][i] + D_s[cnt][i + 1]) / (dx**2)
                         elif i == m - 1:  # rightmost column
                             DD[i] = (
-                                (Qmod[cnt][i] / dt[cnt][i])
+                                (Qmod[cnt][i] / dt_array[cnt][i])
                                 + (
                                     (D_g[cnt][i] + D_g[cnt][i - 1]) / (dx**2)
                                     + (D_g[cnt - 1][i] + D_g[cnt][i]) / (dy**2)
@@ -1486,7 +1508,7 @@ class Simulation:
                             BB[j][i - 1] = (D_s[cnt][i] + D_s[cnt][i - 1]) / (dy**2)
 
                             BB[j][i] = (
-                                1 / dt[cnt][i]
+                                1 / dt_array[cnt][i]
                                 - (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
                                 - (D_s[cnt - 1][i] + D_s[cnt][i]) / (dy**2)
                             )
@@ -1494,7 +1516,7 @@ class Simulation:
                             AA[j][i] = (D_s[cnt][i] + D_s[cnt - 1][i]) / (dy**2)
                         else:
                             DD[i] = (
-                                Qmod[cnt][i] / dt[cnt][i]
+                                Qmod[cnt][i] / dt_array[cnt][i]
                                 - f_c[cnt][i]
                                 * (
                                     u[cnt][i]
@@ -1535,7 +1557,7 @@ class Simulation:
                             )
 
                             BB[j][i] = (
-                                1 / dt[cnt][i]
+                                1 / dt_array[cnt][i]
                                 - (D_s[cnt][i + 1] + D_s[cnt][i - 1] + 2 * D_s[cnt][i])
                                 / (2 * dx**2)
                                 - (D_s[cnt - 1][i] + D_s[cnt][i]) / (dy**2)
@@ -1547,7 +1569,7 @@ class Simulation:
                     else:
                         if i == 0:
                             DD[i] = (
-                                Qmod[cnt][i] / dt[cnt][i]
+                                Qmod[cnt][i] / dt_array[cnt][i]
                                 - f_c[cnt][i]
                                 * (
                                     v[cnt][i]
@@ -1590,7 +1612,7 @@ class Simulation:
                             AA[j][i] = (D_s[cnt][i] + D_s[cnt - 1][i]) / (2 * dy**2)
 
                             BB[j][i] = (
-                                1 / dt[cnt][i]
+                                1 / dt_array[cnt][i]
                                 - (D_s[cnt][i] + D_s[cnt][i + 1]) / (dx**2)
                                 - (D_s[cnt - 1][i] + 2 * D_s[cnt][i] + D_s[cnt + 1][i])
                                 / (2 * dy**2)
@@ -1600,7 +1622,7 @@ class Simulation:
                             CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (2 * dy**2)
                         elif i == m - 1:
                             DD[i] = (
-                                Qmod[cnt][i] / dt[cnt][i]
+                                Qmod[cnt][i] / dt_array[cnt][i]
                                 - f_c[cnt][i]
                                 * (
                                     v[cnt][i]
@@ -1643,7 +1665,7 @@ class Simulation:
                             AA[j][i] = (D_s[cnt][i] + D_s[cnt - 1][i]) / (2 * dy**2)
 
                             BB[j][i] = (
-                                1 / dt[cnt][i]
+                                1 / dt_array[cnt][i]
                                 - (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
                                 - (D_s[cnt - 1][i] + 2 * D_s[cnt][i] + D_s[cnt + 1][i])
                                 / (2 * dy**2)
@@ -1653,7 +1675,7 @@ class Simulation:
                             CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (2 * dy**2)
                         else:
                             DD[i] = (
-                                (Qmod[cnt][i] / dt[cnt][i])
+                                (Qmod[cnt][i] / dt_array[cnt][i])
                                 - f_c[cnt][i]
                                 * (
                                     u[cnt][i]
@@ -1723,12 +1745,11 @@ class Simulation:
                                     )
                                 )
                             )
-
                             AA[j][i] = (D_s[cnt - 1][i] + D_s[cnt][i]) / (2 * dy**2)
+                            
+                            CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (2 * dy**2)
 
-                            CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i])(2 * dy**2)
-
-                            BB[j][i] = 1 / dt[cnt][i] - (
+                            BB[j][i] = 1 / dt_array[cnt][i] - (
                                 (1 / (2 * dx**2))
                                 * (D_s[cnt][i] + 2 * D_s[cnt][i] + D_s[cnt][i + 1])
                                 + (1 / (2 * dy**2))
@@ -1775,46 +1796,61 @@ class Simulation:
             pc_g=pc_g,
             u=u,
             v=v,
-            dt=dt,
+            dt=dt_array,
         )
-
+        
+        x1d = x[0, :]
+        y1d = y[:, 0]
+        x_sorted = np.all(np.diff(x1d) > 0)
+        y_sorted = np.all(np.diff(y1d) > 0)   
+        
+        # reorder vec_concentration if a dimension isn't sorted
+        if not x_sorted:
+            x_sort_idx = np.argsort(x1d)
+            x1d = x1d[x_sort_idx]
+            self.polymer.vec_concentration = self.polymer.vec_concentration[:, x_sort_idx]  # Sort columns of vec_concentration
+        if not y_sorted:
+            y_sort_idx = np.argsort(y1d)
+            y1d = y1d[y_sort_idx]
+            self.polymer.vec_concentration = self.polymer.vec_concentration[y_sort_idx, :]  # Sort rows of vec_concentration
+            
         interp = sp.interpolate.RegularGridInterpolator(
-            (x, y), self.polymer.vec_concentration
+            (y1d, x1d), self.polymer.vec_concentration, method='linear', bounds_error=False, fill_value=None
         )
         Cmod = interp((xmod2, ymod2))
 
         idx = 1
-        AAA = np.zeros((n * m))
-        DDD = np.zeros_like((n * m, 1))
+        AAA = np.zeros((n * m, n * m))
+        DDD = np.zeros((n * m, 1))
 
         while idx <= (m) * (n - 1) + 1:
-            cnt = (idx - 1) / m  # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
+            cnt = (idx - 1) // m  # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
             BB = np.zeros((n, m))
             AA = BB
             CC = BB
             DD = np.zeros((m, 1))
-            for i in range(m):
-                for j in range(n):
+            for i in range(m - 1):
+                for j in range(n - 1):
                     if j == i:
                         if idx == 1:  # lowermost row of grid
                             if i == 1:  # leftmost point (source)
-                                DD[i] = g2 / Qnew[cnt][i] + Cmod[cnt][i] / dt[cnt][i]
-                                BB[j][i] = 1 / dt[cnt][i] + g1 / Qnew[cnt][i]
+                                DD[i] = g2 / Qnew[cnt][i] + Cmod[cnt][i] / dt_array[cnt][i]
+                                BB[j][i] = 1 / dt_array[cnt][i] + g1 / Qnew[cnt][i]
                             else:
-                                DD[i] = Cmod[cnt][i] / dt[cnt][i]
-                                BB[j][i] = 1 / dt[cnt][i]
+                                DD[i] = Cmod[cnt][i] / dt_array[cnt][i]
+                                BB[j][i] = 1 / dt_array[cnt][i]
                         elif idx == (m) * (n - 1) + 1:
                             if i == m - 1:
-                                DD[i] = Cmod[cnt][i] / dt[cnt][i]
+                                DD[i] = Cmod[cnt][i] / dt_array[cnt][i]
                                 BB[j][i] = (
-                                    1 / dt[cnt][i] - g1 * f[cnt][i] / Qnew[cnt][i]
+                                    1 / dt_array[cnt][i] - g1 * f[cnt][i] / Qnew[cnt][i]
                                 )
                             else:
-                                DD[i] = Cmod[cnt][i] / dt[cnt][i]
-                                BB[j][i] = 1 / dt[cnt][i]
+                                DD[i] = Cmod[cnt][i] / dt_array[cnt][i]
+                                BB[j][i] = 1 / dt_array[cnt][i]
                         else:
-                            DD[i] = Cmod[cnt][i] / dt[cnt][i]
-                            BB[j][i] = 1 / dt[cnt][i]
+                            DD[i] = Cmod[cnt][i] / dt_array[cnt][i]
+                            BB[j][i] = 1 / dt_array[cnt][i]
 
             if cnt == 0:
                 AAA[0:n, 0 : 2 * m] = np.hstack([BB, CC])
@@ -1846,10 +1882,26 @@ class Simulation:
             pc_g=pc_g,
             u=u,
             v=v,
-            dt=dt,
+            dt=dt_array,
         )
+
+        x1d = x[0, :]
+        y1d = y[:, 0]
+        x_sorted = np.all(np.diff(x1d) > 0)
+        y_sorted = np.all(np.diff(y1d) > 0)   
+        
+        # reorder surfactant.vec_concentration if a dimension isn't sorted
+        if not x_sorted:
+            x_sort_idx = np.argsort(x1d)
+            x1d = x1d[x_sort_idx]
+            self.surfactant.vec_concentration = self.surfactant.vec_concentration[:, x_sort_idx]  # Sort columns of surfactant.vec_concentration
+        if not y_sorted:
+            y_sort_idx = np.argsort(y1d)
+            y1d = y1d[y_sort_idx]
+            self.surfactant.vec_concentration = self.surfactant.vec_concentration[y_sort_idx, :]  # Sort rows of surfactant.vec_concentration
+            
         interp = sp.interpolate.RegularGridInterpolator(
-            (x, y), self.surfactant.vec_concentration
+            (y1d, x1d), self.surfactant.vec_concentration ,method='linear', bounds_error=False, fill_value=None
         )
         Gmod = interp((xmod2, ymod2))
 
@@ -1877,60 +1929,60 @@ class Simulation:
         # intermediate parameters for code:
         F = D * pc_g / Qnew
         idx = 1
-        AAA = np.zeros(n * m)
-        DDD = np.zeros(n * m)[0]
+        AAA = np.zeros((n * m, n * m))
+        DDD = np.zeros((n * m, 1))
 
         while idx <= (m) * (n - 1) + 1:
-            cnt = (idx - 1) / m  # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
+            cnt = (idx - 1) // m  # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
             BB = np.zeros((n, m))
             AA = BB
             CC = BB
             DD = np.zeros((m, 1))
-            for i in range(m):
-                for j in range(n):
+            for i in range(m - 1):
+                for j in range(n - 1):
                     if j == i:
                         if idx == 1:
                             if i == 0:
-                                DD[i] = g3 / Qnew[cnt][i] + Gmod[cnt][i] / dt[cnt][i]
+                                DD[i] = g3 / Qnew[cnt][i] + Gmod[cnt][i] / dt_array[cnt][i]
                                 CC[j][i] = 2 * F[cnt][i] / (dy**2)
                                 BB[j][i] = (
-                                    1 / dt[cnt][i]
+                                    1 / dt_array[cnt][i]
                                     - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
                                     + g1 / Qnew[cnt][i]
                                 )
                                 BB[j][i + 1] = 2 * F[cnt][i] / (dx**2)
                             elif i == m - 1:  # Bottom right point
-                                DD[i] = Gmod[cnt][i] / dt[cnt][i]
+                                DD[i] = Gmod[cnt][i] / dt_array[cnt][i]
                                 CC[j][i] = 2 * F[cnt][i] / (dy**2)
                                 BB[j][i] = (
-                                    1 / dt[cnt][i]
+                                    1 / dt_array[cnt][i]
                                     - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
                                 )
                                 BB[j][i - 1] = 2 * F[cnt][i] / (dx**2)
                             else:
-                                DD[i] = Gmod[cnt][i] / dt[cnt][i]
+                                DD[i] = Gmod[cnt][i] / dt_array[cnt][i]
                                 CC[j][i] = 2 * F[cnt][i] / (dy**2)
                                 BB[j][i] = (
-                                    1 / dt[cnt][i]
+                                    1 / dt_array[cnt][i]
                                     - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
                                 )
                                 BB[j][i - 1] = F[cnt][i] / (dx**2)
                                 BB[j][i + 1] = 2 * F[cnt][i] / (dx**2)
                         elif idx == (m) * (n - 1) + 1:
                             if i == 0:
-                                DD[i] = Gmod[cnt][i] / dt[cnt][i]
+                                DD[i] = Gmod[cnt][i] / dt_array[cnt][i]
                                 AA[j][i] = 2 * F[cnt][i] / (dy**2)
                                 BB[j][i] = (
-                                    1 / dt[cnt][i]
+                                    1 / dt_array[cnt][i]
                                     - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
                                     + g1 / Qnew[cnt][i]
                                 )
                                 BB[j][i + 1] = 2 * F[cnt][i] / (dx**2)
                             elif i == m - 1:
-                                DD[i] = Gmod[cnt][i] / dt[cnt][i]
+                                DD[i] = Gmod[cnt][i] / dt_array[cnt][i]
                                 AA[j][i] = 2 * F[cnt][i] / (dy**2)
                                 BB[j][i] = (
-                                    1 / dt[cnt][i]
+                                    1 / dt_array[cnt][i]
                                     - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
                                     - ((g1 * lambda_a[cnt][i]) / [lambda_total[cnt][i]])
                                     / Qnew[cnt][i]
@@ -1939,38 +1991,38 @@ class Simulation:
                                 )
                                 BB[j][i - 1] = 2 * F[cnt][i] / (dx**2)
                             else:
-                                DD[i] = Gmod[cnt][i] / dt[cnt][i]
+                                DD[i] = Gmod[cnt][i] / dt_array[cnt][i]
                                 AA[j][i] = 2 * F[cnt][i] / (dy**2)
                                 BB[j][i + 1] = F[cnt][i] / (dx**2)
                                 BB[j][i] = (
-                                    1 / dt[cnt][i]
+                                    1 / dt_array[cnt][i]
                                     - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
                                 )
                                 BB[j][i - 1] = F[cnt][i] / (dx**2)
                         else:
                             if i == 0:
-                                DD[i] = Gmod[cnt][i] / dt[cnt][i]
+                                DD[i] = Gmod[cnt][i] / dt_array[cnt][i]
                                 AA[j][i] = F[cnt][i] / (dy**2)
                                 BB[j][i] = (
-                                    1 / dt[cnt][i]
+                                    1 / dt_array[cnt][i]
                                     - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
                                 )
                                 BB[j][i + 1] = 2 * F[cnt][i] / (dx**2)
                                 CC[j][i] = F[cnt][i] / (dy**2)
                             elif i == m - 1:
-                                DD[i] = Gmod[cnt][i] / dt[cnt][i]
+                                DD[i] = Gmod[cnt][i] / dt_array[cnt][i]
                                 AA[j][i] = F[cnt][i] / (dy**2)
                                 BB[j][i] = (
-                                    1 / dt[cnt][i]
+                                    1 / dt_array[cnt][i]
                                     - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
                                 )
                                 BB[j][i - 1] = 2 * F[cnt][i] / (dx**2)
                                 CC[j][i] = F[cnt][i] / (dy**2)
                             else:
-                                DD[i] = Gmod[cnt][i] / dt[cnt][i]
+                                DD[i] = Gmod[cnt][i] / dt_array[cnt][i]
                                 AA[j][i] = F[cnt][i] / (dy**2)
                                 BB[j][i] = (
-                                    1 / dt[cnt][i]
+                                    1 / dt_array[cnt][i]
                                     - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
                                 )
                                 BB[j][i - 1] = 2 * F[cnt][i] / (dx**2)
@@ -1996,10 +2048,10 @@ class Simulation:
         self.surfactant.vec_concentration = Gnew
 
         ocut = (
-            lambda_o[n][m] * self.init_water_saturation_scalar / lambda_total[n][m]
+            lambda_o[n - 1][m - 1] * self.init_water_saturation_scalar / lambda_total[n - 1][m - 1]
         )  # volume of oil recovered in production well
         wcut = (
-            lambda_a[n][m] * self.init_water_saturation_scalar / lambda_total[n][m]
+            lambda_a[n - 1][m - 1] * self.init_water_saturation_scalar / lambda_total[n - 1][m - 1]
         )  # volume of water recovered in production well
         roip = (
             100 * np.sum(np.sum(1 - Qnew)) / sum(np.ones((n * m, 1)))
