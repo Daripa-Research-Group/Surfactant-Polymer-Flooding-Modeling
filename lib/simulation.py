@@ -161,7 +161,6 @@ class Simulation:
     def sigma(
         self,
     ):  # TODO: Need to update to make sure that i calculate the concentration using the lambda function within the surfactant object
-        # print(type(self.surfactant.vec_concentration))
         return self.surfactant.IFT_conc_equ(np.array(self.surfactant.vec_concentration))
 
     @property
@@ -296,11 +295,12 @@ class Simulation:
         source_flow_magnitude_total = 0
         sum_of_saturation_matrix = 0
         innerIter_save = []
-
+        
         # while loop to update parameters during each iteration
         # while t is < tf and water isn't starting to show up at production well, keep iterating:
+        print(f"This is the before value: {self.water_saturation[self.mesh.n][self.mesh.m]}")
+
         if self.water_saturation is not None:
-            print(self.water_saturation[self.mesh.n, self.mesh.n])
             while (
                 t < tf
                 and self.water_saturation[self.mesh.n, self.mesh.m] <= 0.70
@@ -316,7 +316,6 @@ class Simulation:
                 # computing viscosities:
                 shear_force = self.compvis(u, v, x, y, beta_1, c0_array)[1]
 
-                print('aqueous viscosity: ', self.aqueous_viscosity)
                 if self.mdl_id == ModelType.Shear_Thinning_On:
                     self.polymer.viscosity_scalar = max(self.aqueous_viscosity[1, :])
                 self.polymer.viscosity_matrix = self.polymer.viscosity_scalar * np.ones(
@@ -350,20 +349,13 @@ class Simulation:
                 A = self.setA(grid_size)
                 B = self.setB(grid_size, rh)
                 r = np.ravel(A[:,0].reshape(1,-1))
-                print('r_min: ', np.min(r))
-                print('r_max: ', np.max(r))
                 c = np.ravel(A[:,1].reshape(1,-1))
-                print('c_min: ', np.min(c))
-                print('c_max:', np.max(c))
                 v = np.ravel(A[:,2].reshape(1,-1))
-                print('v_min: ', np.min(v))
-                print('v_max: ', np.max(v))
                 A = csc_matrix((v, (r, c)), shape=(np.shape(B)[0], np.shape(B)[0]))
                 # B = self.setB(grid_size, rh)
                 uOld = u
                 vOld = v
                 u = self.get_u_val(A, B)[0]
-                print('u: ', u) 
                 vn = self.get_vn_val(u)
                 [px, py] = self.get_gradient(vn)
                 u = -1 * beta * px
@@ -381,10 +373,8 @@ class Simulation:
 
                 t_cal += 1
                 
-                print('t_cal: ', t_cal)
                 if t_cal == 1:
                     COC[0, t_cal] = production_oil_volume
-                    print('what is the current production oil volume?', production_oil_volume)
                 else:
                     COC[0, t_cal] += production_oil_volume
 
@@ -392,6 +382,8 @@ class Simulation:
                 CROIP[0, t_cal] = ROIP
 
                 # Save relevant results in each iteration for plotting
+                print(f"This is at end of iteration: {self.water_saturation[self.mesh.n][self.mesh.m]}")
+
 
         return {"COC": COC}
 
@@ -499,7 +491,6 @@ class Simulation:
                 c_0 = self.polymer.initial_concentration
                 g_0 = self.surfactant.concentration
                 self.water_saturation = np.zeros((self.mesh.m + 1, self.mesh.n + 1))
-                print('water saturation shape: ', np.shape(self.water_saturation))
                 self.polymer.vec_concentration = np.copy(self.water_saturation)
             else:
                 raise SimulationCalcInputException(
@@ -533,12 +524,10 @@ class Simulation:
         displacing phase containing polymer
         """
         ### Initializing variables:
-        print("I'm in Compvis function")
         assert self.surfactant is not None, "Surfactant Object is None!!!"
         try:
             if self.polymer is not None and self.surfactant is not None:
                 gamma_dot = np.zeros_like(self.polymer.vec_concentration)
-                print("reaches here")
                 vis_water = (
                     SimulationConstants.Water_Viscosity.value
                 )  # viscosity['water']
@@ -551,15 +540,10 @@ class Simulation:
 
             if self.mdl_id == ModelType.No_Shear_Thinning:
                 # Newtonian Model (NO SHEAR THINNING INVOLVED => MODEL TYPE #1)
-                print(
-                    "shape of polymer vec concentration:",
-                    np.shape(polymer_obj.vec_concentration),
-                )
                 n = np.shape(polymer_obj.vec_concentration)[0]
                 m = np.shape(polymer_obj.vec_concentration)[1]
                 if np.all(polymer_obj.vec_concentration == 0):
                     self.aqueous_viscosity = vis_water * np.ones((n, m))
-                    print("aqueous viscosity: ", self.aqueous_viscosity)
                 else:
                     self.aqueous_viscosity = vis_water * (
                         1 + beta1 * polymer_obj.vec_concentration
@@ -803,7 +787,6 @@ class Simulation:
         for j in range(m + 1):
             for l in range(n + 1):
                 if j == 0 and l != 0 and l != n:
-                    print('reaches here 1')
                     t1 = self.weak(L[j][l], [1, 0, 0], beta)
                     t2 = [0, 0, 0, 0]
                     t3 = [0, 0, 0, 0]
@@ -811,7 +794,6 @@ class Simulation:
                     t5 = self.weak(L[j][l - 1], [0, 0, 1], beta)
                     t6 = self.weak(U[j][l - 1], [0, 1, 0], beta)
                 elif j == m and l != 0 and l != n:
-                    print('reaches here 2')
                     t1 = [0, 0, 0, 0]
                     t2 = self.weak(U[j - 1][l], [0, 0, 1], beta)
                     t3 = self.weak(L[j - 1][l], [0, 1, 0], beta)
@@ -819,7 +801,6 @@ class Simulation:
                     t5 = [0, 0, 0, 0]
                     t6 = [0, 0, 0, 0]
                 elif j != 0 and j != m and l == 0:
-                    print('reaches here 3')
                     t1 = self.weak(L[j][l], [1, 0, 0], beta)
                     t2 = self.weak(U[j - 1][l], [0, 0, 1], beta)
                     t3 = self.weak(L[j - 1][l], [0, 1, 0], beta)
@@ -827,7 +808,6 @@ class Simulation:
                     t5 = [0, 0, 0, 0]
                     t6 = [0, 0, 0, 0]
                 elif j != 0 and j != m and l == n:
-                    print('reaches here 4')
                     t1 = [0, 0, 0, 0]
                     t2 = [0, 0, 0, 0]
                     t3 = [0, 0, 0, 0]
@@ -835,7 +815,6 @@ class Simulation:
                     t5 = self.weak(L[j][l - 1], [0, 0, 1], beta)
                     t6 = self.weak(U[j][l - 1], [0, 1, 0], beta)
                 elif j == 0 and l == 0:
-                    print('reaches here 5')
                     t1 = self.weak(L[j][l], [1, 0, 0], beta)
                     t2 = [0, 0, 0, 0]
                     t3 = [0, 0, 0, 0]
@@ -843,7 +822,6 @@ class Simulation:
                     t5 = [0, 0, 0, 0]
                     t6 = [0, 0, 0, 0]
                 elif j == 0 and l == n:
-                    print('reaches here 6')
                     t1 = [0, 0, 0, 0]
                     t2 = [0, 0, 0, 0]
                     t3 = [0, 0, 0, 0]
@@ -851,7 +829,6 @@ class Simulation:
                     t5 = self.weak(L[j][l - 1], [0, 0, 1], beta)
                     t6 = self.weak(U[j][l - 1], [0, 1, 0], beta)
                 elif j == m and l == 0:
-                    print('reaches here 7')
                     t1 = [0, 0, 0, 0]
                     t2 = self.weak(U[j - 1][l], [0, 0, 1], beta)
                     t3 = self.weak(L[j - 1][l], [0, 1, 0], beta)
@@ -859,7 +836,6 @@ class Simulation:
                     t5 = [0, 0, 0, 0]
                     t6 = [0, 0, 0, 0]
                 elif j == m and l == n:
-                    print('reaches here 8')
                     t1 = [0, 0, 0, 0]
                     t2 = [0, 0, 0, 0]
                     t3 = [0, 0, 0, 0]
@@ -867,7 +843,6 @@ class Simulation:
                     t5 = [0, 0, 0, 0]
                     t6 = [0, 0, 0, 0]
                 else:
-                    print('reaches here 9')
                     t1 = self.weak(L[j][l], [1, 0, 0], beta)
                     t2 = self.weak(U[j - 1][l], [0, 0, 1], beta)
                     t3 = self.weak(L[j - 1][l], [0, 1, 0], beta)
@@ -875,12 +850,6 @@ class Simulation:
                     t5 = self.weak(L[j][l - 1], [0, 0, 1], beta)
                     t6 = self.weak(U[j][l - 1], [0, 1, 0], beta)
                 
-                print('t1',t1)
-                print('t2',t2)
-                print('t3',t3)
-                print('t4',t4)
-                print('t5',t5)
-                print('t6',t6)
                 grid = {
                     "c": t1[0] + t2[2] + t3[1] + t4[0] + t5[2] + t6[1],
                     "w": t3[0] + t4[1],
@@ -908,7 +877,6 @@ class Simulation:
         M = np.vstack((T['x'], T['y'], [1, 1, 1])).T
         M_inv = np.linalg.inv(M)
         M = M_inv[:2, :]  # Extract the first two rows of M_inv
-        print(np.shape(M))
         # Calculate vdiff and inte
         vdiff = np.dot(M, v)
         inte = np.dot(vdiff.T, b_avg * np.dot(M, s))
@@ -1081,7 +1049,6 @@ class Simulation:
 
         # Trim the array to remove unused rows
         A = A[:list_index, :]
-        print('end of setA', np.shape(A))
         return A
 
     def setB(self, grid, rh):
@@ -1097,7 +1064,6 @@ class Simulation:
                 B[id_ - 1] = a["const"]  # Adjust for zero-indexing
 
         B = rh - B
-        print('shape B', np.shape(B))
         return B
 
     def get_u_val(self, A, B):
@@ -1105,8 +1071,6 @@ class Simulation:
         This method is a helper functtion to formulate the mesh
         """
         maximum_iterations = 300
-        print(np.shape(A))
-        print(np.shape(B))
         out = bicgstab(A, B, maxiter=maximum_iterations)
 
         return out
@@ -1120,7 +1084,6 @@ class Simulation:
 
         vn = np.zeros((n + 1, m + 1))
 
-        print('vn shape:', np.shape(vn))
         for ii in range(m + 1):
             for jj in range(n + 1):
                 vn[ii][jj] = u[(jj) * (m + 1) + ii]
@@ -1291,7 +1254,6 @@ class Simulation:
         # performing 2-D interpolation using the scipy.interpolate package
         # interp = sp.interpolate.interpn((x, y), Q)
         # Qmod = interp(xmod, ymod)
-        print('xmod shape: ', np.shape(xmod))
         
         
         # Qmod = sp.interpolate.griddata((x,y), Q, (xmod,ymod))
@@ -1351,12 +1313,11 @@ class Simulation:
         ):
             cnt = (idx - 1) // m  # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
             BB = np.zeros((n, m))
-            AA = BB
-            CC = BB
+            AA = np.copy(BB)
+            CC = np.copy(BB)
             DD = np.zeros((m, 1))
 
             #'cnt+1' in matlab is 'cnt' in python as matlab indexes from 1 but python indexes from 0
-            print(f"DT is of this type: {type(dt)} of value = {dt}")
             for i in range(m - 1):
                 for j in range(n - 1):
                     if idx == 1:
@@ -1773,7 +1734,9 @@ class Simulation:
         # bicgstab (Biconjugate Gradient Stabilized) - Iterative algorithm to solve large, sparse, and non-symmetric linear systems of the form Ax = b
 
         Qnew_flat, info = bicgstab(AAA, DDD, rtol=10 ** (-10), maxiter=600)
-        Qnew = Qnew_flat = Qnew_flat.reshape(m, n)
+        Qnew = Qnew_flat.reshape(m, n)
+        
+        print(f"Qnew = {Qnew[self.mesh.n][self.mesh.m]}")
 
         Qnew[Qnew > 1] = 1
 
@@ -2074,8 +2037,6 @@ class Simulation:
         x_jump = None
         y_jump = None
         if flag == 1:
-            print('x shape: ', np.shape(x))
-            print('f_s shape: ', np.shape(f_s))
             x_jump = x - f_s * u * dt
             y_jump = y - f_s * v * dt
         elif flag == 2:
