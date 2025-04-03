@@ -1122,8 +1122,8 @@ class Simulation:
         # Defining const. parameters for Pc
         omega1 = 0.1
         omega2 = 0.4
+        porosity_value = 1 #'phi' in the matlab code
 
-        phi = 1  # porosity
         [x, y] = np.meshgrid(
             np.linspace(self.mesh.left, self.mesh.right + self.mesh.dx, SimulationConstants.Grid_Size.value+1),
             np.linspace(self.mesh.bottom, self.mesh.top + self.mesh.dy, SimulationConstants.Grid_Size.value+1),
@@ -1224,7 +1224,7 @@ class Simulation:
         ) - kro_s * lambda_a / ((lambda_total**2) * miuo)
 
         # Determining capillary pressure and its derivatives
-        pc = (self.sigma * omega2 * self.phi ** (0.5)) / (
+        pc = (self.sigma * omega2 * porosity_value ** (0.5)) / (
             KK ** (0.5) * (1 - nso) ** (1 / omega1)
         )
         pc_s = pc / (
