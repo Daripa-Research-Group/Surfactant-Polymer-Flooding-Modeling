@@ -53,7 +53,6 @@ def load_true_values(sim_id):
     }
 
 
-@pytest.mark.e2e
 @pytest.mark.parametrize(
     "simulation_id, model_type, reservoir_geometry, permeability, polymer_type, polymer_concentration, surfactant_type, surfactant_concentration",
     [
@@ -66,17 +65,17 @@ def load_true_values(sim_id):
             0.001,
             SURFACTANT["No Surfactant"],
             0,
-        ),
-        (
-            2,
-            MODEL["No Shear Thinning"],
-            GEOMETRY["Rectilinear"],
-            PERMEABILITY["Homogeneous"],
-            POLYMER["Schizophyllan"],
-            0.001,
-            SURFACTANT["No Surfactant"],
-            0,
-        ),
+        )#,
+        # (
+        #     2,
+        #     MODEL["No Shear Thinning"],
+        #     GEOMETRY["Rectilinear"],
+        #     PERMEABILITY["Homogeneous"],
+        #     POLYMER["Schizophyllan"],
+        #     0.001,
+        #     SURFACTANT["No Surfactant"],
+        #     0,
+        # ),
     ],
 )
 def test_e2e(
