@@ -1122,8 +1122,8 @@ class Simulation:
         # Defining const. parameters for Pc
         omega1 = 0.1
         omega2 = 0.4
+        porosity_value = 1 #'phi' in the matlab code
 
-        phi = 1  # porosity
         [x, y] = np.meshgrid(
             np.linspace(self.mesh.left, self.mesh.right + self.mesh.dx, SimulationConstants.Grid_Size.value+1),
             np.linspace(self.mesh.bottom, self.mesh.top + self.mesh.dy, SimulationConstants.Grid_Size.value+1),
@@ -1224,7 +1224,7 @@ class Simulation:
         ) - kro_s * lambda_a / ((lambda_total**2) * miuo)
 
         # Determining capillary pressure and its derivatives
-        pc = (self.sigma * omega2 * self.phi ** (0.5)) / (
+        pc = (self.sigma * omega2 * porosity_value ** (0.5)) / (
             KK ** (0.5) * (1 - nso) ** (1 / omega1)
         )
         pc_s = pc / (
@@ -1852,19 +1852,19 @@ class Simulation:
         y1d = y[:, 0]
         x_sorted = np.all(np.diff(x1d) > 0)
         y_sorted = np.all(np.diff(y1d) > 0)   
-        
+        surfactant_vec_concentration = np.copy(self.surfactant.vec_concentration)
         # reorder surfactant.vec_concentration if a dimension isn't sorted
         if not x_sorted:
             x_sort_idx = np.argsort(x1d)
             x1d = x1d[x_sort_idx]
-            self.surfactant.vec_concentration = self.surfactant.vec_concentration[:, x_sort_idx]  # Sort columns of surfactant.vec_concentration
+            surfactant_vec_concentration = surfactant_vec_concentration[:, x_sort_idx]  # Sort columns of surfactant.vec_concentration
         if not y_sorted:
             y_sort_idx = np.argsort(y1d)
             y1d = y1d[y_sort_idx]
-            self.surfactant.vec_concentration = self.surfactant.vec_concentration[y_sort_idx, :]  # Sort rows of surfactant.vec_concentration
+            surfactant_vec_concentration = surfactant_vec_concentration[y_sort_idx, :]  # Sort rows of surfactant.vec_concentration
             
         interp = sp.interpolate.RegularGridInterpolator(
-            (y1d, x1d), self.surfactant.vec_concentration ,method='linear', bounds_error=False, fill_value=None
+            (y1d, x1d), surfactant_vec_concentration ,method='linear', bounds_error=False, fill_value=None
         )
         Gmod = interp((xmod2, ymod2))
 

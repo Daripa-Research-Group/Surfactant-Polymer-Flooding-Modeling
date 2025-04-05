@@ -1,10 +1,12 @@
 """
-This is the main program for a full flooding simulationdisp
+This is the main program for a full flooding simulation
     -- Grid sizes used 15x15, 20x20, 30x30, 40x40
 
-This code was derived from EOR repository developed by Sourav Dutta and Prabir Daripa
+This code was derived from EOR repository developed by Sourav Dutta, Rohit Mishra, and Prabir Daripa
 
-@author: Bhargav Akula Ramesh Kumar
+Code Refactoring to the Python programming language was done by Bhargav Akula Ramesh Kumar and Carlos Acosta Caripo
+
+@author: Bhargav Akula Ramesh Kumar, Carlos Acosta Caripo
 """
 
 #### IMPORT STATEMENTS
