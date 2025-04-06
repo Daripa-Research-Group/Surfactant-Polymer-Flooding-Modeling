@@ -125,7 +125,7 @@ class Simulation:
 
     @water_saturation.setter
     def water_saturation(self, value):
-        self._water_saturation_vector_form_ = value
+        self._water_saturation_vector_form_ = value.astype(complex)
 
     _aqueous_viscosity_ = None
 
@@ -135,7 +135,7 @@ class Simulation:
 
     @aqueous_viscosity.setter
     def aqueous_viscosity(self, value):
-        self._aqueous_viscosity_ = value
+        self._aqueous_viscosity_ = value.astype(complex)
 
     _oleic_mobility_ = None
 
@@ -145,7 +145,7 @@ class Simulation:
 
     @oleic_mobility.setter
     def oleic_mobility(self, value):
-        self._oleic_mobility_ = value
+        self._oleic_mobility_ = value.astype(complex)
 
     _aqueous_mobility_ = None
 
@@ -155,7 +155,7 @@ class Simulation:
 
     @aqueous_mobility.setter
     def aqueous_mobility(self, value):
-        self._aqueous_mobility_ = value
+        self._aqueous_mobility_ = value.astype(complex)
 
     @property
     def sigma(
@@ -199,7 +199,7 @@ class Simulation:
         phi_test = self.get_phi_value()
 
         # defining rhs of elliptic system (source terms)
-        f = np.zeros((self.mesh.n + 1, self.mesh.m + 1))
+        f = np.zeros((self.mesh.n + 1, self.mesh.m + 1), dtype=complex)
         MFW = 0
         iterX_save = 0
 
@@ -246,12 +246,12 @@ class Simulation:
             (
                 SimulationConstants.Grid_Size.value + 1,
                 SimulationConstants.Grid_Size.value + 1,
-            )
+            ), dtype=complex
         )
         [water_sat_matrix, polymer_matrix, surfactant_matrix] = (
             self.initial_concentration_matrix()
         )
-        interface = np.zeros((60, 1))
+        interface = np.zeros((60, 1), dtype=complex)
 
         # Determining viscosities of oil, water, and polymer
         viscosity_oil = SimulationConstants.Oil_Viscosity.value
@@ -264,7 +264,7 @@ class Simulation:
             (
                 SimulationConstants.Grid_Size.value + 1,
                 SimulationConstants.Grid_Size.value + 1,
-            )
+            ), dtype=complex
         )
 
         # Defining parameters that need to be updated during each iteration of the while loop
@@ -280,9 +280,9 @@ class Simulation:
         n, m = self.mesh.n, self.mesh.n
         timestamps = int(np.floor(tf / dt))
         
-        u = np.zeros((self.mesh.n + 1, self.mesh.m + 1))
+        u = np.zeros((self.mesh.n + 1, self.mesh.m + 1), dtype=complex)
         v = u
-        COC = np.zeros((1, 2000))  # cumulative oil captured
+        COC = np.zeros((1, 2000), dtype=complex)  # cumulative oil captured
         
         # declaring memory mapped arrays for RAM optimization
         os.makedirs('memmaps', exist_ok=True)
@@ -322,7 +322,7 @@ class Simulation:
                     (
                         SimulationConstants.Grid_Size.value + 1,
                         SimulationConstants.Grid_Size.value + 1,
-                    )
+                    ), dtype=complex
                 )
 
                 # updating tSave
@@ -379,7 +379,7 @@ class Simulation:
                     COC[0, t_cal] += production_oil_volume
 
                 ProdRate[0, t_cal] = production_oil_volume / dt
-                CROIP[0, t_cal] = ROIP
+                CROIP[0, t_cal] = ROIP[0]
 
                 # Save relevant results in each iteration for plotting
                 print(f"This is at end of iteration: {self.water_saturation[self.mesh.n][self.mesh.m]}")
@@ -490,7 +490,7 @@ class Simulation:
                 s_0 = SimulationConstants.Initial_Residual_Water_Saturation.value
                 c_0 = self.polymer.initial_concentration
                 g_0 = self.surfactant.concentration
-                self.water_saturation = np.zeros((self.mesh.m + 1, self.mesh.n + 1))
+                self.water_saturation = np.zeros((self.mesh.m + 1, self.mesh.n + 1), dtype=complex)
                 self.polymer.vec_concentration = np.copy(self.water_saturation)
             else:
                 raise SimulationCalcInputException(
@@ -527,7 +527,7 @@ class Simulation:
         assert self.surfactant is not None, "Surfactant Object is None!!!"
         try:
             if self.polymer is not None and self.surfactant is not None:
-                gamma_dot = np.zeros_like(self.polymer.vec_concentration)
+                gamma_dot = np.zeros_like(self.polymer.vec_concentration, dtype=complex)
                 vis_water = (
                     SimulationConstants.Water_Viscosity.value
                 )  # viscosity['water']
@@ -543,7 +543,7 @@ class Simulation:
                 n = np.shape(polymer_obj.vec_concentration)[0]
                 m = np.shape(polymer_obj.vec_concentration)[1]
                 if np.all(polymer_obj.vec_concentration == 0):
-                    self.aqueous_viscosity = vis_water * np.ones((n, m))
+                    self.aqueous_viscosity = vis_water * np.ones((n, m), dtype=complex)
                 else:
                     self.aqueous_viscosity = vis_water * (
                         1 + beta1 * polymer_obj.vec_concentration
@@ -552,7 +552,7 @@ class Simulation:
                 # Sourav's Implementation (MODEL TYPE #2)
                 n = np.shape((polymer_obj.vec_concentration, 1))
                 if polymer_obj.initial_concentration == 0:
-                    self.aqueous_viscosity = vis_water * np.ones(n)
+                    self.aqueous_viscosity = vis_water * np.ones(n, dtype=complex)
                 else:
                     self.aqueous_viscosity = vis_oil * (
                         0.5 + polymer_obj.vec_concentration
@@ -594,7 +594,7 @@ class Simulation:
                 n = np.shape((polymer_obj.vec_concentration, 1))
                 m = np.shape((polymer_obj.vec_concentration, 2))
 
-                self.aqueous_viscosity = vis_water * np.ones((n, m))
+                self.aqueous_viscosity = vis_water * np.ones((n, m), dtype=complex)
 
                 dList = []
                 dList[0] = self.divergence(X, V)
@@ -665,8 +665,10 @@ class Simulation:
             nso0 = (self.water_saturation - swr0) / (1 - swr0 - sor0)
 
             # Corey type relative permeability in the absence of surfactant
-            krw0 = nsw0**3.5
-            kro0 = ((1 - nso0) ** 2) * (1 - nso0**1.5)
+            krw0 = nsw0.astype(complex) ** 3.5
+            nso0_complex = nso0.astype(complex)
+            kro0 = ((1 - nso0_complex) ** 2) * (1 - nso0_complex ** 1.5)
+            # kro0 = ((1 - nso0) ** 2) * (1 - nso0**1.5)
 
             if flag == 0:  # calculating mobility in oleic phase
                 self.oleic_mobility = kro0 / oil_viscosity
@@ -903,7 +905,7 @@ class Simulation:
         m = self.mesh.m
         n = self.mesh.n
 
-        rh = np.zeros((m + 1) * (n + 1))
+        rh = np.zeros((m + 1) * (n + 1), dtype=complex)
 
         for j in range(m):
             for l in range(n):
@@ -1005,7 +1007,7 @@ class Simulation:
         m = self.mesh.m
         n = self.mesh.n
 
-        A = np.zeros(((m+1) * (n+1) * 7, 3))
+        A = np.zeros(((m+1) * (n+1) * 7, 3), dtype=complex)
         list_index = 0
 
         for j in range(m+1):
@@ -1055,7 +1057,7 @@ class Simulation:
         m = self.mesh.m
         n = self.mesh.n
 
-        B = np.zeros((m + 1) * (n + 1))
+        B = np.zeros((m + 1) * (n + 1), dtype=complex)
 
         for j in range(m+1):
             for l in range(n+1):
@@ -1082,7 +1084,7 @@ class Simulation:
         m = self.mesh.m
         n = self.mesh.n
 
-        vn = np.zeros((n + 1, m + 1))
+        vn = np.zeros((n + 1, m + 1), dtype=complex)
 
         for ii in range(m + 1):
             for jj in range(n + 1):
@@ -1117,7 +1119,7 @@ class Simulation:
 
         Q = self.water_saturation
 
-        dt_array = dt * np.ones((n, m))
+        dt_array = dt * np.ones((n, m), dtype=complex)
 
         # Defining const. parameters for Pc
         omega1 = 0.1
@@ -1175,8 +1177,8 @@ class Simulation:
         norm_nco = np.linalg.norm(nco, ord=2)
 
         # recalculating derivative of residual saturation with respect to surfactant concentration
-        swr_g = np.zeros((n, m))
-        sor_g = swr_g
+        swr_g = np.zeros((n, m), dtype=complex)
+        sor_g = np.copy(swr_g)
 
         if (
             self.aqueous_viscosity is not None
@@ -1303,8 +1305,8 @@ class Simulation:
         D_s = D * pc_s
 
         idx = 1
-        AAA = np.zeros((n * m, n * m))
-        DDD = np.zeros((n * m, 1))
+        AAA = np.zeros((n * m, n * m), dtype=complex)
+        DDD = np.zeros((n * m, 1), dtype=complex)
 
         while (
             idx <= (m) * (n - 1) + 1
@@ -1312,10 +1314,10 @@ class Simulation:
             and self.polymer.vec_concentration is not None
         ):
             cnt = (idx - 1) // m  # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
-            BB = np.zeros((n, m))
+            BB = np.zeros((n, m), dtype=complex)
             AA = np.copy(BB)
             CC = np.copy(BB)
-            DD = np.zeros((m, 1))
+            DD = np.zeros((m, 1), dtype=complex)
 
             #'cnt+1' in matlab is 'cnt' in python as matlab indexes from 1 but python indexes from 0
             for i in range(m - 1):
@@ -1783,15 +1785,15 @@ class Simulation:
         Cmod = interp((xmod2, ymod2))
 
         idx = 1
-        AAA = np.zeros((n * m, n * m))
-        DDD = np.zeros((n * m, 1))
+        AAA = np.zeros((n * m, n * m), dtype=complex)
+        DDD = np.zeros((n * m, 1), dtype=complex)
 
         while idx <= (m) * (n - 1) + 1:
             cnt = (idx - 1) // m  # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
-            BB = np.zeros((n, m))
+            BB = np.zeros((n, m), dtype=complex)
             AA = BB
             CC = BB
-            DD = np.zeros((m, 1))
+            DD = np.zeros((m, 1), dtype=complex)
             for i in range(m - 1):
                 for j in range(n - 1):
                     if j == i:
@@ -1848,25 +1850,28 @@ class Simulation:
             dt=dt_array,
         )
 
-        x1d = x[0, :]
-        y1d = y[:, 0]
-        x_sorted = np.all(np.diff(x1d) > 0)
-        y_sorted = np.all(np.diff(y1d) > 0)   
-        surfactant_vec_concentration = np.copy(self.surfactant.vec_concentration)
-        # reorder surfactant.vec_concentration if a dimension isn't sorted
-        if not x_sorted:
-            x_sort_idx = np.argsort(x1d)
-            x1d = x1d[x_sort_idx]
-            surfactant_vec_concentration = surfactant_vec_concentration[:, x_sort_idx]  # Sort columns of surfactant.vec_concentration
-        if not y_sorted:
-            y_sort_idx = np.argsort(y1d)
-            y1d = y1d[y_sort_idx]
-            surfactant_vec_concentration = surfactant_vec_concentration[y_sort_idx, :]  # Sort rows of surfactant.vec_concentration
-            
-        interp = sp.interpolate.RegularGridInterpolator(
-            (y1d, x1d), surfactant_vec_concentration ,method='linear', bounds_error=False, fill_value=None
-        )
-        Gmod = interp((xmod2, ymod2))
+        if self.surfactant.concentration != 0:
+            x1d = x[0, :]
+            y1d = y[:, 0]
+            x_sorted = np.all(np.diff(x1d) > 0)
+            y_sorted = np.all(np.diff(y1d) > 0)   
+            surfactant_vec_concentration = np.copy(self.surfactant.vec_concentration)
+            # reorder surfactant.vec_concentration if a dimension isn't sorted
+            if not x_sorted:
+                x_sort_idx = np.argsort(x1d)
+                x1d = x1d[x_sort_idx]
+                surfactant_vec_concentration = surfactant_vec_concentration[:, x_sort_idx]  # Sort columns of surfactant.vec_concentration
+            if not y_sorted:
+                y_sort_idx = np.argsort(y1d)
+                y1d = y1d[y_sort_idx]
+                surfactant_vec_concentration = surfactant_vec_concentration[y_sort_idx, :]  # Sort rows of surfactant.vec_concentration
+                
+            interp = sp.interpolate.RegularGridInterpolator(
+                (y1d, x1d), surfactant_vec_concentration ,method='linear', bounds_error=False, fill_value=None
+            )
+            Gmod = interp((xmod2, ymod2))
+        else:
+            Gmod = np.zeros((m, n), dtype=complex)
 
         # Updating coefficients using interpolated surfactant concentration
         sigma_mod = self.surfactant.IFT_conc_equ(Gmod)
@@ -1892,15 +1897,15 @@ class Simulation:
         # intermediate parameters for code:
         F = D * pc_g / Qnew
         idx = 1
-        AAA = np.zeros((n * m, n * m))
-        DDD = np.zeros((n * m, 1))
+        AAA = np.zeros((n * m, n * m), dtype=complex)
+        DDD = np.zeros((n * m, 1), dtype=complex)
 
         while idx <= (m) * (n - 1) + 1:
             cnt = (idx - 1) // m  # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
-            BB = np.zeros((n, m))
+            BB = np.zeros((n, m), dtype=complex)
             AA = BB
             CC = BB
-            DD = np.zeros((m, 1))
+            DD = np.zeros((m, 1), dtype=complex)
             for i in range(m - 1):
                 for j in range(n - 1):
                     if j == i:
@@ -2017,7 +2022,7 @@ class Simulation:
             lambda_a[n - 1][m - 1] * self.init_water_saturation_scalar / lambda_total[n - 1][m - 1]
         )  # volume of water recovered in production well
         roip = (
-            100 * np.sum(np.sum(1 - Qnew)) / sum(np.ones((n * m, 1)))
+            100 * np.sum(np.sum(1 - Qnew)) / sum(np.ones((n * m, 1), dtype=complex))
         )  # Oil still in place as a percentage of volume fraction
 
         return_dict = {
@@ -2088,7 +2093,7 @@ class Simulation:
         ):
             # Represents a homogenous rectilinear model
             Kmax = 1000
-            KK = Kmax * np.ones(self.sog + 1)
+            KK = Kmax * np.ones(self.sog + 1, dtype=complex)
         elif (
             self.permeability_flg == PermeabilityType.Heterogenous
             and self.resevoir_geometry == ResevoirGeometry.Rectilinear
@@ -2120,7 +2125,7 @@ class Simulation:
         dx = self.mesh.dx
         dy = self.mesh.dy
 
-        px = np.zeros((n + 1, m + 1))
+        px = np.zeros((n + 1, m + 1), dtype=complex)
         py = px
 
         for i in range(m + 1):
