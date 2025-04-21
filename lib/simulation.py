@@ -1068,6 +1068,7 @@ class Simulation:
         B = rh - B
         return B
 
+
     def get_u_val(self, A, B):
         """
         This method is a helper functtion to formulate the mesh
@@ -1173,6 +1174,7 @@ class Simulation:
         # compute the capillary number
         nca = np.sqrt((u**2) + (v**2)) * self.aqueous_viscosity / self.sigma
         nco = np.sqrt((u**2) + (v**2)) * miuo / self.sigma
+
         norm_nca = np.linalg.norm(nca, ord=2)
         norm_nco = np.linalg.norm(nco, ord=2)
 
@@ -1180,26 +1182,26 @@ class Simulation:
         swr_g = np.zeros((n, m), dtype=complex)
         sor_g = np.copy(swr_g)
 
+        ep = 1e-8  # small value to prevent division by zero or invalid roots
         if (
             self.aqueous_viscosity is not None
             and self.surfactant.vec_concentration is not None
         ):
-            for i in range(n):  # traversing column
-                for j in range(m):  # traversing row
+            for i in range(n):  # column
+                for j in range(m):  # row
+                    vel_mag = np.sqrt(u[j][i] ** 2 + v[j][i] ** 2)
+                    visc = np.maximum(self.aqueous_viscosity[j][i], ep)
+                    sigma_val = np.maximum(self.sigma[j][i], ep)
+                    conc_val = np.maximum(self.surfactant.vec_concentration[j][i] + 1, ep)
+                    vel_mag = np.maximum(vel_mag, ep)
+
                     if norm_nca >= norm_nca0:
-                        swr_g[j][i] = -(swr0 * 0.1534 * 10.001 * norm_nca0**0.1534) / (
-                            np.sqrt(u[j][i] ** 2 + v[j][i] ** 2)
-                            * self.aqueous_viscosity[j][i] ** (0.1534)
-                            * self.sigma[j][i] ** (0.8466)
-                            * (self.surfactant.vec_concentration[j][i] + 1) ** 2
-                        )
+                        denom = vel_mag * visc ** 0.1534 * sigma_val ** 0.8466 * conc_val ** 2
+                        swr_g[j][i] = -(swr0 * 0.1534 * 10.001 * norm_nca0 ** 0.1534) / denom
                     elif norm_nco >= norm_nco0:
-                        swr_g[j][i] = -(sor0 * 0.5213 * 10.001 * norm_nco0**0.5213) / (
-                            np.sqrt(u[j][i] ** 2 + v[j][i] ** 2)
-                            * self.aqueous_viscosity[j][i] ** (0.5213)
-                            * self.sigma[j][i] ** (0.4787)
-                            * (self.surfactant.vec_concentration[j][i] + 1) ** 2
-                        )
+                        denom = vel_mag * visc ** 0.5213 * sigma_val ** 0.4787 * conc_val ** 2
+                        swr_g[j][i] = -(sor0 * 0.5213 * 10.001 * norm_nco0 ** 0.5213) / denom
+
 
         # Determining the derivatives of normalized saturations with respect to surfactant concentration
         nsw_g = swr_g * (Q - 1) / ((1 - swr) ** 2)
