@@ -68,18 +68,17 @@ def sim_condition_initialization(simulation_ID: int, usr_input_dict: dict) -> di
 
     simulation = Simulation(
         sim_id=simulation_ID,
-        size_of_grid=SOG,
+        grid_size=SOG,
         polymer=polymer_obj,
         surfactant=surfactant_obj,
-        resevoir_geometry=reservoir_geometry,
-        permeability_flg=permeability_flag,
-        mdl_id=model_type,
-        plt_type=plot_type,
+        reservoir_geometry=reservoir_geometry,
+        permeability_flag=permeability_flag,
+        model_type=model_type,
+        plot_type=plot_type,
     )
 
-    simulation_outputs = simulation.execute_simulation()
-    print(simulation_outputs['COC'])
-    return simulation_outputs
+    results = simulation.run()
+    simulation._export_results()
 
 
 def main() -> None:
