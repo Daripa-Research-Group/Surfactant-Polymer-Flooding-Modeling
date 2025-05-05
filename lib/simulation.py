@@ -15,7 +15,6 @@ from enumerations import (
 )
 from polymer import Polymer
 from surfactant import Surfactant
-# from exceptions import SimulationCalcInputException
 from scipy.io import loadmat
 os.makedirs("memmaps", exist_ok=True)
 
@@ -143,10 +142,9 @@ class Simulation:
             # Rectilinear Heterogeneous
             out = y - init_front_hs
         elif permeability_input == 5:
-            # Quarter five spot (circular front)
+            # Quarter five spot 
             out = np.square(x) + np.square(y) - 0.015
         else:
-            # Default case (not specified clearly)
             out = np.zeros_like(x)
         
         return out
@@ -165,7 +163,7 @@ class Simulation:
             KK = Kmax * np.ones((m + 1, m + 1))
 
         elif flag == 2:
-            # Continuous Heterogeneous
+            # Heterogeneous
             Kmax = 100
             KK = Kmax * (
                 0.5 * (1 - 10 ** (-7)) * (np.sin(6 * np.pi * np.cos(self.x)) * np.cos(4 * np.pi * np.sin(3 * self.y)) - 1) + 1
@@ -197,17 +195,17 @@ class Simulation:
             # Load Upper Ness formation (SPE10)
             mat_data = loadmat('/Resources/KK30Ness.mat')
             if 'KK' not in mat_data:
-                raise SimulationCalcInputException('KK matrix not found in KK30Ness.mat file.')
+                raise Exception('KK matrix not found in KK30Ness.mat file.')
             KK = mat_data['KK']
         elif flag == 6:
             # Load Tarbert formation (SPE10)
             mat_data = loadmat('/Resources/KK30Tabert.mat')
             if 'KK' not in mat_data:
-                raise SimulationCalcInputException('KK matrix not found in KK30Tabert.mat file.')
+                raise Exception('KK matrix not found in KK30Tabert.mat file.')
             KK = mat_data['KK']
 
         else:
-            raise SimulationCalcInputException("Unknown permeability flag.")
+            raise Exception("Unknown permeability flag.")
 
         return KK
     
@@ -218,7 +216,7 @@ class Simulation:
         viscosity_flag = self.model_type.value
         miuw = self.miuw
         miuo = self.miuo
-        beta1 = 15000  # fixed value from your code
+        beta1 = 15000  
 
         gamma_dot = np.zeros_like(c)
         n, m = c.shape
@@ -282,7 +280,7 @@ class Simulation:
                             self.miup_array[i, j] = np.clip(self.miup_array[i, j], miuw, 100)
 
         else:
-            raise SimulationCalcInputException("Invalid viscosityFlag value.")
+            raise Exception("Invalid viscosityFlag value.")
 
         return miua, gamma_dot
     
@@ -400,7 +398,6 @@ class Simulation:
         dx, dy = self.mesh.dx, self.mesh.dy
 
         # Build system matrices (discrete Laplacian)
-        # Here we create a simple 5-point finite difference stencil for beta-weighted Laplacian
         num_nodes = (n + 1) * (m + 1)
 
         rows = []
@@ -580,12 +577,6 @@ class Simulation:
         }
 
 
-    def _apply_shear_effects(u, v, miua):
-        """
-        No-op: placeholder shear effect (MATLAB version had no implementation).
-        """
-        return miua
-
     def _export_results(self):
         """
         Saves simulation sim_results to CSV files.
@@ -699,7 +690,7 @@ class Simulation:
 
             tcal += 1
 
-            # Step 11: Save intermediate miua/lambda fields
+            # Step 11: Save intermediate fields
             if tcal % 200 == 0:
                 self._save_lambda_miua(tcal, lambda_a, miua)
                 
