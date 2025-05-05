@@ -571,6 +571,9 @@ class Simulation:
         ROIP = 100 * np.sum(1 - Snew) / (n * m)
 
         return {
+            "S": Snew,
+            "C": Cnew,
+            "G": Gnew,
             "prod_oil_vol": prod_oil_vol,
             "prod_water_vol": prod_water_vol,
             "ROIP": ROIP
@@ -677,7 +680,14 @@ class Simulation:
                 miua = self._apply_shear_effects(u, v, miua)
 
             # Step 9: Solve transport equations
-            self.U, self.C, self.G, OC, WC, ROIP = self._solve_transport(u, v, sigma)
+            # self.U, self.C, self.G, OC, WC, ROIP = self._solve_transport(u, v, sigma)
+            transport_results = self._solve_transport(u, v, sigma)
+            self.U = self.water_saturation = transport_results["S"]
+            self.C = self.polymer.vec_concentration = transport_results["C"]
+            self.G = self.surfactant.vec_concentration = transport_results["G"]
+            OC = transport_results["prod_oil_vol"]
+            WC = transport_results["prod_water_vol"]
+            ROIP = transport_results["ROIP"]            
 
             # Step 10: Update oil recovery tracking
             if tcal == 0:
