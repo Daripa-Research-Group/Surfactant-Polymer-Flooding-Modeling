@@ -1,8 +1,13 @@
 """
 This python script contains the class definition for polymers for the surfactant-flooding model
 
+The methods of this class were derived from the MATLAB Surfactant-Polymer Flooding Code developed by
+Sourav Dutta and Rohit Mishra.
+
+@author: Bhargav Akula Ramesh Kumar
 """
 
+import numpy as np
 
 class Polymer:
     def __init__(
@@ -47,3 +52,32 @@ class Polymer:
         self.viscosity_scalar = viscosity_scalar
         self.e_coeff = e_coeff
         self.n_coeff = n_coeff
+
+    def compute_viscosity(self, grid):
+        """
+        Compute polymer viscosity.
+        This function is derived from 'compvis()' in the original MATLAB code.
+
+        :param grid: The FEM grid used for simulation calculations
+        :type grid: np.ndarray
+
+        :return: the viscosity_matrix for the polymer within the grid
+        :rtype: np.ndarrray
+        """
+        
+        pass
+
+    def compute_concentration(self, grid, u, v):
+        """
+        Update the polymer concentration matrix property
+
+        This function is derived from the section of the 'nmmoc_surf_mod_neumann'
+        related to the polymer concentration matrix
+
+        :param grid: The FEM grid used for simulation calculations
+        :type grid: np.ndarray
+
+        :param u: matrix that holds the global pressure
+        :type u: np.ndarray
+        """
+
