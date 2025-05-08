@@ -115,10 +115,12 @@ class Polymer:
             self.viscosity_matrix = self.viscosity_scalar*np.ones((SimulationConstants.Grid_Size.value,SimulationConstants.Grid_Size.value))
         #Model Type is 'Sourav Implementation':
         elif(model_type == ModelType.Sourav_Implementation.value):
-            # self.viscosity_matrix = self.viscosity_scalar*np.ones((SimulationConstants.Grid_Size.value,SimulationConstants.Grid_Size.value))
+            #TODO: Will keep empty until properly understood how to implement
             pass
         #if polymer shear thinning is ON:
         elif(model_type == ModelType.Shear_Thinning_On.value):
+            # Will need to use the numerically derived power law to determine the viscosity of the polymer
+
             pass
 
     def compute_concentration(self, grid, u, v):
