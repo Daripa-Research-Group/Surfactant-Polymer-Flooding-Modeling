@@ -8,8 +8,12 @@ Sourav Dutta and Rohit Mishra.
 """
 
 import numpy as np
+from enumerations import ModelType, SimulationConstants
 
 class Polymer:
+    """
+    Class definition for the polymer objects and the calculation that they can perform
+    """
     def __init__(
         self,
         name,
@@ -71,28 +75,51 @@ class Polymer:
         """
         Will initialize the viscosity and concentration matrices
 
-        :return: a list of the initialized concentration and viscosity matrices
+        :return: a list of the initialized concentration, viscosity, and shear_rate matrices
         :rtype: List
         """
         pass
 
 
-    def compute_viscosity(self, grid, model_type):
+    def compute_viscosity(self, grid, u, v, aqueous_viscosity, model_type):
         """
         Compute polymer viscosity.
         This function is derived from 'compvis()' in the original MATLAB code.
 
-        :param grid: The FEM grid used for simulation calculations
+        :param grid: The FEM grid used for simulation calculations (x and y variables from the MATLAB code)
         :type grid: np.ndarray
+
+        :param u: Matrix related to the global pressure
+        :type u: np.ndarray
+
+        :param v: Matrix related to the velocity matrix
+        :type v: np.ndarray
+
+        :param aqueous_viscosity: Aqueous viscosity matrix
+        :type aqueous_viscosity: np.ndarray
 
         :param model_type: Will state whether the model will include polymer shear thinning or not
         :type model_type: enum 'ModelType'
 
-        :return: the viscosity_matrix for the polymer within the grid
-        :rtype: np.ndarrray
+        :return: the viscosity_matrix & shear_rate matrix for the polymer within the grid
+        :rtype: List
         """
-        pass
+        # x and y components from meshgrid
+        x = grid[0]
+        y = grid[1]
 
+        #if model_type is NO SHEAR THINNING:
+        if(model_type == ModelType.No_Shear_Thinning.value):
+            ## the scalar viscosity is equal to the max within the aqueous viscosity matrix
+            self.viscosity_scalar = np.max(aqueous_viscosity[0, :])
+            self.viscosity_matrix = self.viscosity_scalar*np.ones((SimulationConstants.Grid_Size.value,SimulationConstants.Grid_Size.value))
+        #Model Type is 'Sourav Implementation':
+        elif(model_type == ModelType.Sourav_Implementation.value):
+            # self.viscosity_matrix = self.viscosity_scalar*np.ones((SimulationConstants.Grid_Size.value,SimulationConstants.Grid_Size.value))
+            pass
+        #if polymer shear thinning is ON:
+        elif(model_type == ModelType.Shear_Thinning_On.value):
+            pass
 
     def compute_concentration(self, grid, u, v):
         """
@@ -107,4 +134,4 @@ class Polymer:
         :param u: matrix that holds the global pressure
         :type u: np.ndarray
         """
-
+        pass
