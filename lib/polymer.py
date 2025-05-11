@@ -8,6 +8,7 @@ Sourav Dutta and Rohit Mishra.
 """
 
 import numpy as np
+import scipy as sp
 from enumerations import ModelType, PolymerList, SimulationConstants
 from lib.Exceptions import SimulationCalcInputException
 from lib.para import Box
@@ -189,17 +190,135 @@ class Polymer:
             
 
 
-    def compute_concentration(self, grid, u, v):
+    def compute_concentration(
+            self, 
+            grid: tuple,
+            mesh: Box,
+            u: np.ndarray, 
+            v: np.ndarray,
+            dt: float,
+            initial_water_saturation: float,
+            water_saturation_matrix: np.ndarray,
+            xmod : np.ndarray,
+            ymod : np.ndarray,
+            ):
         """
         Update the polymer concentration matrix and the shear rate tensor
 
         This function is derived from the section of the 'nmmoc_surf_mod_neumann'
         related to the polymer concentration matrix
 
-        :param grid: The FEM grid used for simulation calculations
-        :type grid: np.ndarray
+        :param grid: The FEM grid used for simulation calculations (x and y variables from the MATLAB code)
+        :type grid: tuple[NDArray[Any], ...]
 
-        :param u: matrix that holds the global pressure
+        :param mesh: 'Box' object containing information for the FEM grid
+        :type mesh: Box
+
+        :param u: Matrix related to the global pressure
         :type u: np.ndarray
+
+        :param v: Matrix related to the velocity matrix
+        :type v: np.ndarray
+
+        :param dt: time-step
+        :type dt: float
+
+        :param initial_water_saturation: the scalar quantity of the initial water saturation in sim
+        :type initial_water_saturation: float
+
+        :param water_saturation_matrix: the updated water saturation matrix
+        :type water_saturation_matrix: np.ndarray
+
+        :param xmod: x-dimension coordinate points for formulating the 'Cmod' matrix
+        :type xmod: np.ndarray
+
+        :param ymod: y-dimension coordinate points for formulating the 'Cmod' matrix
+        :type ymod: np.ndarray
+
+        :return: Polymer concentration matrix
+        :rtype: np.ndarray
         """
-        pass
+        #initializing variables:
+        x = grid[0]
+        y = grid[1]
+        m = mesh.m
+        n = mesh.n
+        dt_array = dt*np.ones((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value))
+        Qnew = water_saturation_matrix
+
+        g1 = initial_water_saturation
+        g2 = initial_water_saturation*self.concetration_scalar
+
+        # Determining 'Cmod'
+        x1d = x[0, :]
+        y1d = y[:, 0]
+        x_sorted = np.all(np.diff(x1d) > 0)
+        y_sorted = np.all(np.diff(y1d) > 0)   
+        
+        # reorder vec_concentration if a dimension isn't sorted
+        if not x_sorted:
+            x_sort_idx = np.argsort(x1d)
+            x1d = x1d[x_sort_idx]
+            self.concentration_matrix = self.concentration_matrix[:, x_sort_idx]  # Sort columns of vec_concentration
+        if not y_sorted:
+            y_sort_idx = np.argsort(y1d)
+            y1d = y1d[y_sort_idx]
+            self.concentration_matrix = self.concentration_matrix[y_sort_idx, :]  # Sort rows of vec_concentration
+            
+        interp = sp.interpolate.RegularGridInterpolator(
+            (y1d, x1d), self.concentration_matrix, method='linear', bounds_error=False, fill_value=None
+        )
+        Cmod = interp((xmod, ymod))
+    
+        # Using 'Cmod' and 'Qnew' to update the polymer concentration matrix
+        idx = 1
+        AAA = np.zeros((n * m, n * m))
+        DDD = np.zeros((n * m, 1))
+
+        while idx <= (m) * (n - 1) + 1:
+            cnt = (idx - 1) // m  # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
+            BB = np.zeros((n, m))
+            AA = BB
+            CC = BB
+            DD = np.zeros((m, 1))
+            for i in range(m - 1):
+                for j in range(n - 1):
+                    if j == i:
+                        if idx == 1:  # lowermost row of grid
+                            if i == 1:  # leftmost point (source)
+                                DD[i] = g2 / Qnew[cnt][i] + Cmod[cnt][i] / dt_array[cnt][i]
+                                BB[j][i] = 1 / dt_array[cnt][i] + g1 / Qnew[cnt][i]
+                            else:
+                                DD[i] = Cmod[cnt][i] / dt_array[cnt][i]
+                                BB[j][i] = 1 / dt_array[cnt][i]
+                        elif idx == (m) * (n - 1) + 1:
+                            if i == m - 1:
+                                DD[i] = Cmod[cnt][i] / dt_array[cnt][i]
+                                BB[j][i] = (
+                                    1 / dt_array[cnt][i] - g1 * f[cnt][i] / Qnew[cnt][i]
+                                )
+                            else:
+                                DD[i] = Cmod[cnt][i] / dt_array[cnt][i]
+                                BB[j][i] = 1 / dt_array[cnt][i]
+                        else:
+                            DD[i] = Cmod[cnt][i] / dt_array[cnt][i]
+                            BB[j][i] = 1 / dt_array[cnt][i]
+
+            if cnt == 0:
+                AAA[0:n, 0 : 2 * m] = np.hstack([BB, CC])
+            elif cnt == n - 1:
+                AAA[(m - 1) * n : m * n, (n - 2) * m : n * m] = np.hstack([AA, BB])
+            else:
+                AAA[cnt * n : (cnt + 1) * n, (cnt - 1) * m : (cnt + 2) * m] = np.hstack(
+                    [AA, BB, CC]
+                )
+
+            DDD[cnt * m : (cnt + 1) * m] = DD
+
+            idx += m
+
+        Cnew_flat, info = bicgstab(AAA, DDD, rtol=10 ** (-10), maxiter=600)
+        Cnew = Cnew_flat.reshape(m, n)
+        self.concentration_matrix = Cnew
+
+        return self.concentration_matrix
