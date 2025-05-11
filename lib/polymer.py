@@ -24,7 +24,8 @@ class Polymer:
             n_coeff : list,
             rho : float,
             concentration_scalar : float,
-            viscosity_scalar: float | None,
+            phi: np.ndarray,
+            viscosity_scalar: float,
             viscosity_matrix: np.ndarray | None,
             concentration_matrix: np.ndarray | None,
             shear_rate: np.ndarray | None
@@ -46,9 +47,12 @@ class Polymer:
 
         :param concentration_scalar: Scalar quantity of concentration. When initializing, this param will equal the initial polymer concentration. 
         :type concentration_scalar: float
+
+        :param phi: arrray used to initialize the concentration matrix
+        :type: np.ndarray
         
         :param viscosity_scalar: scalar quantitiey of the polymer viscosity
-        :type viscosity_matrix: float, None
+        :type viscosity_scalar: float
 
         :param viscosity_matrix: viscosity matrix of the polymer
         :type viscosity_matrix: np.ndarray, None
@@ -66,12 +70,11 @@ class Polymer:
         #properties related to the concentration (scalar concentration, matrix version of initial concentration, and current concentration matrix)
         self.concetration_scalar = concentration_scalar
         self.init_concentration_matrix = concentration_scalar * np.ones((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value))
-        self.concentration_matrix = concentration_matrix if(concentration_matrix is not None) else concentration_scalar * np.ones((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value))
-
+        self.concentration_matrix = concentration_matrix 
         
         #Properties related to the viscosity
-        self.viscosity_matrix = viscosity_matrix if(viscosity_matrix is not None) else np.zeros((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value))
-        self.viscosity_scalar = viscosity_scalar if(viscosity_scalar is not None) else 0
+        self.viscosity_matrix = viscosity_matrix 
+        self.viscosity_scalar = viscosity_scalar 
 
         #Values required to formulate the numerical powerlaw function for viscosity calculations
         self.e_coeff = e_coeff
@@ -81,16 +84,38 @@ class Polymer:
         self.rho = rho 
 
         #shear rate matrix (needed when running 'shear thinning' model version)
-        self.shear_rate = shear_rate if(shear_rate is not None) else np.zeros((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value)) 
+        self.shear_rate = shear_rate  
+
+        #util param for initialization
+        self.phi = phi # Will need to be created in the simulation class
+
+        #initializing matrix properties
+        initialization_list = self.initialize()
+        if(self.concentration_matrix is None):
+            self.concentration_matrix = initialization_list[0]
+        if(self.shear_rate is None):
+            self.shear_rate = initialization_list[1]
+        if(self.viscosity_matrix is None):
+            self.viscosity_matrix = initialization_list[2]
 
     def initialize(self):
         """
-        Will initialize the viscosity and concentration matrices
+        Will initialize the viscosity, shear_rate, and concentration matrices
 
         :return: a list of the initialized concentration, viscosity, and shear_rate matrices
         :rtype: List
         """
-        pass
+        D = (self.phi > 1e-10) + (np.abs(self.phi) < 1e-10)
+        if(self.concentration_matrix is None):
+            self.concentration_matrix = (~D)*self.concetration_scalar
+
+        if(self.shear_rate is None):
+            self.shear_rate = np.zeros((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value)) 
+        
+        if(self.viscosity_matrix is None):
+            self.viscosity_matrix = self.viscosity_scalar * np.ones((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value))
+
+        return [self.concentration_matrix, self.shear_rate, self.viscosity_matrix]
 
 
     def compute_viscosity(
