@@ -65,11 +65,12 @@ class Polymer:
         #properties related to the concentration (scalar concentration, matrix version of initial concentration, and current concentration matrix)
         self.concetration_scalar = concentration_scalar
         self.init_concentration_matrix = concentration_scalar * np.ones((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value))
-        self.concentration_matrix = concentration_matrix
+        self.concentration_matrix = concentration_matrix if(concentration_matrix is not None) else concentration_scalar * np.ones((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value))
+
         
         #Properties related to the viscosity
-        self.viscosity_matrix = viscosity_matrix
-        self.viscosity_scalar = viscosity_scalar
+        self.viscosity_matrix = viscosity_matrix if(viscosity_matrix is not None) else np.zeros((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value))
+        self.viscosity_scalar = viscosity_scalar if(viscosity_scalar is not None) else 0
 
         #Values required to formulate the numerical powerlaw function for viscosity calculations
         self.e_coeff = e_coeff
@@ -79,7 +80,7 @@ class Polymer:
         self.rho = rho 
 
         #shear rate matrix (needed when running 'shear thinning' model version)
-        self.shear_rate = shear_rate
+        self.shear_rate = shear_rate if(shear_rate is not None) else np.zeros((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value)) 
 
     def initialize(self):
         """
@@ -96,8 +97,8 @@ class Polymer:
             grid : tuple, 
             u : np.ndarray, 
             v : np.ndarray, 
-            aqueous_viscosity : np.ndarray, 
-            model_type : ModelType
+            model_type : ModelType,
+            aqueous_viscosity : np.ndarray | None, 
             ):
         """
         Compute polymer viscosity.
@@ -112,12 +113,12 @@ class Polymer:
         :param v: Matrix related to the velocity matrix
         :type v: np.ndarray
 
-        :param aqueous_viscosity: Aqueous viscosity matrix
-        :type aqueous_viscosity: np.ndarray
-
         :param model_type: Will state whether the model will include polymer shear thinning or not
         :type model_type: enum 'ModelType'
 
+        :param aqueous_viscosity: Aqueous viscosity matrix (will come from the 'Water' class). Only needed when shear thinning OFF
+        :type aqueous_viscosity: np.ndarray, None
+        
         :return: the viscosity_matrix (index 0) & shear_rate matrix (index 1) for the polymer within the grid
         :rtype: list
         """
@@ -130,6 +131,8 @@ class Polymer:
 
         #if model_type is NO SHEAR THINNING:
         if(model_type == ModelType.No_Shear_Thinning.value):
+            if(aqueous_viscosity is None):
+                raise SimulationCalcInputException("SimulationInputException: Aqueous viscosity matrix required but not provided. Please try again.")
             ## the scalar viscosity is equal to the max within the aqueous viscosity matrix
             self.viscosity_scalar = np.max(aqueous_viscosity[0, :])
             self.viscosity_matrix = self.viscosity_scalar*np.ones((SimulationConstants.Grid_Size.value,SimulationConstants.Grid_Size.value))
@@ -139,8 +142,13 @@ class Polymer:
             pass
         #if polymer shear thinning is ON:
         elif(model_type == ModelType.Shear_Thinning_On.value):
-            # Getting water density (Note: polymer density a property of class)
+            if(aqueous_viscosity is not None):
+                raise SimulationCalcInputException("SimulationInputException: Aqueous viscosity reliant on changing polymer viscosity. Update will be done within 'Water' Class")
+            if(self.shear_rate is None or self.viscosity_matrix is None):
+                raise SimulationCalcInputException("SimulationInputException: Either shear_matrix or viscosity_matrix are not initialized")
+            # Getting water density and viscosity (Note: polymer density a property of class)
             rho_water = SimulationConstants.Water_Density.value
+            viscosity_water = SimulationConstants.Water_Viscosity.value
 
             # Formulating the numerically derived power law equation
             w1 = self.rho*self.concentration_matrix
@@ -149,13 +157,34 @@ class Polymer:
             w1_0 = self.rho*self.init_concentration_matrix #from the variable w10 in MATLAB code
             w2_0 = rho_water*(1-self.init_concentration_matrix) #from the variable w20 in MATLAB code
             wppm_0 = (w1_0/(w1_0+w2_0))*(10**6) #from the wppm0 variable in MATLAB code
-
+            
+            ## Determining the epsilon and n coefficients for the power law equation 
             epsilon_0 = self.e_coeff[0]*(wppm_0**self.e_coeff[1])
             n_0 = np.min(self.n_coeff[0]*(wppm_0**self.n_coeff[1]))
             epsilon = self.e_coeff[0]*(wppm**self.e_coeff[1])
             n = np.min(self.n_coeff[0]*(wppm**self.n_coeff[1]))
 
-        return []
+            row = np.size(self.concentration_matrix, 0)
+            col = np.size(self.concentration_matrix, 1)
+
+            # Compute divergence terms
+            a1 = np.gradient(v, axis=0)
+            a2 = np.gradient(u, axis=1)
+            a3 = np.gradient(u, axis=0)
+            a4 = np.gradient(v, axis=1)
+
+            pi_D = np.abs(-0.25 * (a1 + a2) ** 2 + a3 * a4)
+
+            for i in range(row):
+                for j in range(col):
+                    if self.concentration_matrix[i, j] > 0:
+                        self.shear_rate[i, j] = 2 * np.sqrt(pi_D[i, j])
+                        if self.shear_rate[i, j] != 0:
+                            self.viscosity_matrix[i, j] = epsilon_0[i, j] * (self.shear_rate[i, j] ** (n_0[i, j] - 1))
+                            self.viscosity_matrix[i, j] = np.clip(self.viscosity_matrix[i, j], viscosity_water, 100)
+
+
+        return [self.viscosity_matrix, self.shear_rate]
 
             
 
