@@ -9,6 +9,7 @@ Sourav Dutta and Rohit Mishra.
 
 import numpy as np
 import scipy as sp
+from scipy.sparse.linalg import bicgstab
 from enumerations import ModelType, PolymerList, SimulationConstants
 from lib.Exceptions import SimulationCalcInputException
 from lib.para import Box
@@ -208,7 +209,6 @@ class Polymer:
                         if self.shear_rate[i, j] != 0:
                             self.viscosity_matrix[i, j] = epsilon_0[i, j] * (self.shear_rate[i, j] ** (n_0[i, j] - 1))
                             self.viscosity_matrix[i, j] = np.clip(self.viscosity_matrix[i, j], viscosity_water, 100)
-
 
         return [self.viscosity_matrix, self.shear_rate]
 
