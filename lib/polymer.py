@@ -89,22 +89,16 @@ class Polymer:
 
         #util param for initialization
         self.phi = phi # Will need to be created in the simulation class
-
-        #initializing matrix properties
-        initialization_list = self.initialize()
-        if(self.concentration_matrix is None):
-            self.concentration_matrix = initialization_list[0]
-        if(self.shear_rate is None):
-            self.shear_rate = initialization_list[1]
-        if(self.viscosity_matrix is None):
-            self.viscosity_matrix = initialization_list[2]
-
+        
+        #perform initialization
+        self.initialize()
+        
     def initialize(self):
         """
         Will initialize the viscosity, shear_rate, and concentration matrices
 
-        :return: a list of the initialized concentration, viscosity, and shear_rate matrices
-        :rtype: List
+        :return: Initalized Polymer Object
+        :rtype: Polymer
         """
         D = (self.phi > 1e-10) + (np.abs(self.phi) < 1e-10)
         if(self.concentration_matrix is None):
@@ -116,7 +110,7 @@ class Polymer:
         if(self.viscosity_matrix is None):
             self.viscosity_matrix = self.viscosity_scalar * np.ones((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value))
 
-        return [self.concentration_matrix, self.shear_rate, self.viscosity_matrix]
+        return self
 
 
     def compute_viscosity(
