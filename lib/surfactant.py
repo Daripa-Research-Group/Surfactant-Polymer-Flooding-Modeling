@@ -15,17 +15,17 @@ import numpy as np
 
 class Surfactant:
     """
-    Contains property and calculations related to the Surfactant
+    Contains property and calculations related to the surfactant object
     """
     def __init__(
-        self,
-        name : SurfactantList,
-        initial_concentration : float,
-        IFT_equation : LambdaType,
-        derivative_IFT_equation : LambdaType,
-        phi : np.ndarray,
-        concentration_matrix : np.ndarray | None,
-    ):
+            self,
+            name : SurfactantList,
+            initial_concentration : float,
+            IFT_equation : LambdaType,
+            derivative_IFT_equation : LambdaType,
+            phi : np.ndarray,
+            concentration_matrix : np.ndarray | None,
+            ):
         """
         Creates instance of Surfactant class
 
@@ -54,7 +54,9 @@ class Surfactant:
     
 
 
-    def initialize(self):
+    def initialize(
+            self
+            ):
         """
         This function will initialize the surfactant object
 
