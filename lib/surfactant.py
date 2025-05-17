@@ -59,7 +59,6 @@ class Surfactant:
         self.initialize()
     
 
-
     def initialize(
             self
             ):
