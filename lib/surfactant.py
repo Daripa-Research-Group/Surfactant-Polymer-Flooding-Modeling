@@ -10,6 +10,7 @@ Sourav Dutta and Rohit Mishra.
 
 from types import LambdaType
 from lib.enumerations import SimulationConstants, SurfactantList
+from Exceptions import SimulationCalcInputException
 from lib.para import Box
 import numpy as np
 
@@ -46,11 +47,14 @@ class Surfactant:
         """
         self.name = name
         self.concentration = initial_concentration
-        self.concentration_matrix = concentration_matrix if (concentration_matrix is not None) else initial_concentration * np.zeros((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value))
+        self.concentration_matrix = concentration_matrix 
         self.IFT_conc_equ = IFT_equation
         self.derivative_IFT_conc_equ = derivative_IFT_equation
         self.is_surfactant = True if (initial_concentration > 0) else False
         self.phi = phi
+
+        #initializing the surfactant object
+        self.initialize()
     
 
 
@@ -63,7 +67,14 @@ class Surfactant:
         :return: Surfactant object
         :rtype: Surfactant
         """
-        pass
+        if(self.concentration_matrix is None):
+            if(self.phi is None):
+                raise SimulationCalcInputException("SimulationError: phi value not initalized...")
+            D = (self.phi > 1e-10) + (np.abs(self.phi) < 1e-10)
+            self.concentration_matrix = (~D) * self.concentration
+
+
+        return self
 
     def compute_concentration(
             self,
