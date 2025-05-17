@@ -287,7 +287,7 @@ class Surfactant:
 
         Gnew_flat, info = bicgstab(AAA, DDD, rtol=10 ** (-10), maxiter=600)
         Gnew = Gnew_flat.reshape(m, n)
+        
+        self.concentration_matrix = Gnew
 
-
-        pass
-
+        return self.concentration_matrix
