@@ -13,6 +13,8 @@ from lib.enumerations import SimulationConstants, SurfactantList
 from Exceptions import SimulationCalcInputException
 from lib.para import Box
 import numpy as np
+import scipy as sp
+from scipy.sparse.linalg import bicgstab
 
 class Surfactant:
     """
@@ -42,8 +44,8 @@ class Surfactant:
         :param derivative_IFT_conc_equ: Deriviative of the equation relating IFT to surfactant concentration
         :type derivative_IFT_conc_equ: lambda
 
-        :param vec_concentration: vector representation of surfactant concentration in resevoir
-        :type vec_concentration: np.array, None
+        :param concentration_matrix: vector representation of surfactant concentration in resevoir
+        :type concentration_matrix: np.array, None
         """
         self.name = name
         self.concentration = initial_concentration
@@ -69,11 +71,9 @@ class Surfactant:
         """
         if(self.concentration_matrix is None):
             if(self.phi is None):
-                raise SimulationCalcInputException("SimulationError: phi value not initalized...")
+                raise SimulationCalcInputException("SimulationInputException: phi value not initalized...")
             D = (self.phi > 1e-10) + (np.abs(self.phi) < 1e-10)
             self.concentration_matrix = (~D) * self.concentration
-
-
         return self
 
     def compute_concentration(
@@ -87,6 +87,7 @@ class Surfactant:
             water_saturation_matrix: np.ndarray,
             xmod : np.ndarray,
             ymod : np.ndarray,
+            param_coeff : dict
             ):
         """
         This function will update the surfactant concentration matrix
@@ -121,8 +122,172 @@ class Surfactant:
         :param ymod: y-dimension coordinate points for formulating the 'Cmod' matrix
         :type ymod: np.ndarray
 
+        :param param_coeff: contains the updated constants (calculated in the simulation class) for updating the surfactant concentration matrix
+        :type param_coeff: dict
+
         :return: Surfactant concentration matrix
         :rtype: np.ndarray
 
         """
+        # initializing constants
+        if(self.concentration_matrix is None):
+            raise SimulationCalcInputException("SimulationInputException: Surfactant concentration matrix not initialized. Please initizlize before running this function.")
+        g1 = initial_water_saturation
+        g3 = initial_water_saturation * self.concentration
+        x = grid[0]
+        y = grid[1]
+        m = mesh.m
+        n = mesh.n
+        dx = mesh.dx
+        dy = mesh.dy
+        dt_array = dt*np.ones((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value))
+        Qnew = water_saturation_matrix
+
+        x1d = x[0, :]
+        y1d = y[:, 0]
+        x_sorted = np.all(np.diff(x1d) > 0)
+        y_sorted = np.all(np.diff(y1d) > 0)   
+        
+        # reorder surfactant.concentration_matrix if a dimension isn't sorted
+        if not x_sorted:
+            x_sort_idx = np.argsort(x1d)
+            x1d = x1d[x_sort_idx]
+            self.concentration_matrix = self.concentration_matrix[:, x_sort_idx]  # Sort columns of surfactant.concentration_matrix
+        if not y_sorted:
+            y_sort_idx = np.argsort(y1d)
+            y1d = y1d[y_sort_idx]
+            self.concentration_matrix = self.concentration_matrix[y_sort_idx, :]  # Sort rows of surfactant.concentration_matrix
+            
+        interp = sp.interpolate.RegularGridInterpolator(
+            (y1d, x1d), self.concentration_matrix ,method='linear', bounds_error=False, fill_value=None
+        )
+        Gmod = interp((xmod, ymod))
+
+        # Updating coefficients using interpolated surfactant concentration
+        sigma_mod = self.IFT_conc_equ(Gmod)
+        sigma_g_mod = self.derivative_IFT_conc_equ(Gmod)
+        lambda_a = param_coeff['lambda_a']
+        lambda_total = param_coeff['lambda_total']
+        D = param_coeff['D']
+        pc_g = param_coeff['pc_g']
+
+        # intermediate parameters for code:
+        F = D * pc_g / Qnew
+        idx = 1
+        AAA = np.zeros((n * m, n * m))
+        DDD = np.zeros((n * m, 1))
+
+        while idx <= (m) * (n - 1) + 1:
+            cnt = (idx - 1) // m  # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
+            BB = np.zeros((n, m))
+            AA = BB
+            CC = BB
+            DD = np.zeros((m, 1))
+            for i in range(m - 1):
+                for j in range(n - 1):
+                    if j == i:
+                        if idx == 1:
+                            if i == 0:
+                                DD[i] = g3 / Qnew[cnt][i] + Gmod[cnt][i] / dt_array[cnt][i]
+                                CC[j][i] = 2 * F[cnt][i] / (dy**2)
+                                BB[j][i] = (
+                                    1 / dt_array[cnt][i]
+                                    - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
+                                    + g1 / Qnew[cnt][i]
+                                )
+                                BB[j][i + 1] = 2 * F[cnt][i] / (dx**2)
+                            elif i == m - 1:  # Bottom right point
+                                DD[i] = Gmod[cnt][i] / dt_array[cnt][i]
+                                CC[j][i] = 2 * F[cnt][i] / (dy**2)
+                                BB[j][i] = (
+                                    1 / dt_array[cnt][i]
+                                    - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
+                                )
+                                BB[j][i - 1] = 2 * F[cnt][i] / (dx**2)
+                            else:
+                                DD[i] = Gmod[cnt][i] / dt_array[cnt][i]
+                                CC[j][i] = 2 * F[cnt][i] / (dy**2)
+                                BB[j][i] = (
+                                    1 / dt_array[cnt][i]
+                                    - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
+                                )
+                                BB[j][i - 1] = F[cnt][i] / (dx**2)
+                                BB[j][i + 1] = 2 * F[cnt][i] / (dx**2)
+                        elif idx == (m) * (n - 1) + 1:
+                            if i == 0:
+                                DD[i] = Gmod[cnt][i] / dt_array[cnt][i]
+                                AA[j][i] = 2 * F[cnt][i] / (dy**2)
+                                BB[j][i] = (
+                                    1 / dt_array[cnt][i]
+                                    - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
+                                    + g1 / Qnew[cnt][i]
+                                )
+                                BB[j][i + 1] = 2 * F[cnt][i] / (dx**2)
+                            elif i == m - 1:
+                                DD[i] = Gmod[cnt][i] / dt_array[cnt][i]
+                                AA[j][i] = 2 * F[cnt][i] / (dy**2)
+                                BB[j][i] = (
+                                    1 / dt_array[cnt][i]
+                                    - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
+                                    - ((g1 * lambda_a[cnt][i]) / [lambda_total[cnt][i]])
+                                    / Qnew[cnt][i]
+                                    + ((g3 * lambda_a[cnt][i]) / [lambda_total[cnt][i]])
+                                    / (Qnew[cnt][i] * self.concentration)
+                                )
+                                BB[j][i - 1] = 2 * F[cnt][i] / (dx**2)
+                            else:
+                                DD[i] = Gmod[cnt][i] / dt_array[cnt][i]
+                                AA[j][i] = 2 * F[cnt][i] / (dy**2)
+                                BB[j][i + 1] = F[cnt][i] / (dx**2)
+                                BB[j][i] = (
+                                    1 / dt_array[cnt][i]
+                                    - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
+                                )
+                                BB[j][i - 1] = F[cnt][i] / (dx**2)
+                        else:
+                            if i == 0:
+                                DD[i] = Gmod[cnt][i] / dt_array[cnt][i]
+                                AA[j][i] = F[cnt][i] / (dy**2)
+                                BB[j][i] = (
+                                    1 / dt_array[cnt][i]
+                                    - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
+                                )
+                                BB[j][i + 1] = 2 * F[cnt][i] / (dx**2)
+                                CC[j][i] = F[cnt][i] / (dy**2)
+                            elif i == m - 1:
+                                DD[i] = Gmod[cnt][i] / dt_array[cnt][i]
+                                AA[j][i] = F[cnt][i] / (dy**2)
+                                BB[j][i] = (
+                                    1 / dt_array[cnt][i]
+                                    - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
+                                )
+                                BB[j][i - 1] = 2 * F[cnt][i] / (dx**2)
+                                CC[j][i] = F[cnt][i] / (dy**2)
+                            else:
+                                DD[i] = Gmod[cnt][i] / dt_array[cnt][i]
+                                AA[j][i] = F[cnt][i] / (dy**2)
+                                BB[j][i] = (
+                                    1 / dt_array[cnt][i]
+                                    - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
+                                )
+                                BB[j][i - 1] = 2 * F[cnt][i] / (dx**2)
+                                BB[j][i + 1] = 2 * F[cnt][i] / (dx**2)
+                                CC[j][i] = F[cnt][i] / (dy**2)
+            if cnt == 0:
+                AAA[:n, : 2 * m] = np.hstack([BB, CC])
+            elif cnt == n - 1:
+                AAA[(m - 1) * n : m * n, (n - 2) * m : n * m] = np.hstack([AA, BB])
+            else:
+                AAA[cnt * n : (cnt + 1) * n, (cnt - 1) * m : (cnt + 2) * m] = np.hstack(
+                    [AA, BB, CC]
+                )
+
+            DDD[cnt * m : (cnt + 1) * m] = DD
+            idx += m
+
+        Gnew_flat, info = bicgstab(AAA, DDD, rtol=10 ** (-10), maxiter=600)
+        Gnew = Gnew_flat.reshape(m, n)
+
+
         pass
+
