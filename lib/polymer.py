@@ -216,6 +216,7 @@ class Polymer:
             u: np.ndarray, 
             v: np.ndarray,
             dt: float,
+            f_lambda: np.ndarray,
             initial_water_saturation: float,
             water_saturation_matrix: np.ndarray,
             xmod : np.ndarray,
@@ -242,6 +243,9 @@ class Polymer:
         :param dt: time-step
         :type dt: float
 
+        :param f_lambda: fraction of lambda_aqueous / lambda_total
+        :type f_lambda: np.ndarray
+
         :param initial_water_saturation: the scalar quantity of the initial water saturation in sim
         :type initial_water_saturation: float
 
@@ -258,6 +262,8 @@ class Polymer:
         :rtype: np.ndarray
         """
         #initializing variables:
+        if(self.concentration_matrix is None):
+            raise SimulationCalcInputException("SimulationInputException: Polymer concentration matrix not initialized. Please initalize before running method.")
         x = grid[0]
         y = grid[1]
         m = mesh.m
@@ -314,7 +320,7 @@ class Polymer:
                             if i == m - 1:
                                 DD[i] = Cmod[cnt][i] / dt_array[cnt][i]
                                 BB[j][i] = (
-                                    1 / dt_array[cnt][i] - g1 * f[cnt][i] / Qnew[cnt][i]
+                                    1 / dt_array[cnt][i] - g1 * f_lambda[cnt][i] / Qnew[cnt][i]
                                 )
                             else:
                                 DD[i] = Cmod[cnt][i] / dt_array[cnt][i]
