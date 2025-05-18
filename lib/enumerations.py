@@ -1,3 +1,11 @@
+"""
+This python script contains the class definitions for the enumerations that are used within the simulation runs
+
+The methods of this class were derived from the MATLAB Surfactant-Polymer Flooding Code developed by
+Sourav Dutta and Rohit Mishra.
+
+@author: Bhargav Akula Ramesh Kumar, Carlos Acosta Caripo
+"""
 from enum import Enum
 
 
@@ -28,6 +36,9 @@ class SimulationConstants(Enum):
 
 
 class PolymerList(Enum):
+    """
+    List of Polymers that can be selected for the simulation runs
+    """
     Xanthane = (1, 1500, [3.05428284, -0.27294817], [1.15410398e-04, 2.04937780e00])
     Schizophyllan = (2, 1300, [4.86265534, -0.41570227], [0.03647214, 1.32175949])
     No_Polymer = (3, 0, [0, 0], [0, 0])
@@ -55,27 +66,42 @@ class PolymerList(Enum):
 
 
 class SurfactantList(Enum):
+    """
+    List of Surfactants that can be selected for the simulation runs
+    """
     Alkyl_Ether_Sulfate = 1
     No_Surfactant = 2
 
 
 class ModelType(Enum):
+    """
+    The simulation model types that can be selected
+    """
     No_Shear_Thinning = 1
     Sourav_Implementation = 2
     Shear_Thinning_On = 3
 
 
 class PlotType(Enum):
+    """
+    Selection of types of plots that can be created for the user
+    """
     Saturation_Plot = 1
     Polymer_Concentration_Plot = 2
     Surfactant_Concentration_Plot = 3
 
 
 class ResevoirGeometry(Enum):
+    """
+    Selection of the geometry of the resevoir for the simulation
+    """
     Rectilinear = 1
     Quarter_Five_Spot = 2
 
 
 class PermeabilityType(Enum):
+    """
+    Selection of the permeability profile for each of the simulation runs
+    """
     Homogenous = 1
     Heterogenous = 2
