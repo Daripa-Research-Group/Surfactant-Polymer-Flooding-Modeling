@@ -53,7 +53,7 @@ class Polymer:
         :type: np.ndarray
         
         :param viscosity_scalar: scalar quantity of the polymer viscosity
-        :type viscosity_scalar: float
+        :type viscosity_scalar: float, None
 
         :param viscosity_matrix: viscosity matrix of the polymer
         :type viscosity_matrix: np.ndarray, None
@@ -105,7 +105,11 @@ class Polymer:
             self.concentration_matrix = (~D)*self.concetration_scalar
 
         if(self.shear_rate is None):
-            self.shear_rate = np.zeros((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value)) 
+            self.shear_rate = np.zeros((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value))
+
+        if(self.viscosity_scalar is None):
+            beta1 = 15000 #constant that came from the MATLAB code
+            self.viscosity_scalar = SimulationConstants.Water_Viscosity.value*(1+beta1+self.concetration_scalar)
         
         if(self.viscosity_matrix is None):
             self.viscosity_matrix = self.viscosity_scalar * np.ones((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value))
