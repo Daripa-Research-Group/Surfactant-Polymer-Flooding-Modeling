@@ -26,10 +26,10 @@ class Polymer:
             rho : float,
             concentration_scalar : float,
             phi: np.ndarray,
-            viscosity_scalar: float,
-            viscosity_matrix: np.ndarray | None,
-            concentration_matrix: np.ndarray | None,
-            shear_rate: np.ndarray | None
+            viscosity_scalar: float | None = None,
+            viscosity_matrix: np.ndarray | None = None,
+            concentration_matrix: np.ndarray | None = None,
+            shear_rate: np.ndarray | None = None
             ):
         """
         Initializes a instance of the polymer class
@@ -52,7 +52,7 @@ class Polymer:
         :param phi: arrray used to initialize the concentration matrix
         :type: np.ndarray
         
-        :param viscosity_scalar: scalar quantitiey of the polymer viscosity
+        :param viscosity_scalar: scalar quantity of the polymer viscosity
         :type viscosity_scalar: float
 
         :param viscosity_matrix: viscosity matrix of the polymer

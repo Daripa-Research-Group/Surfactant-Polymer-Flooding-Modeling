@@ -51,9 +51,11 @@ def sim_condition_initialization(simulation_ID: int, usr_input_dict: dict) -> di
     
     polymer_obj = Polymer(
         name=polymer_type,
-        initial_concentration=polymer_concentration,
         e_coeff=polymer_type.e_coeff,
         n_coeff=polymer_type.n_coeff,
+        rho=polymer_type.Density,
+        concentration_scalar=polymer_concentration,
+        phi=None,
     )
 
     surfactant_obj = Surfactant(
