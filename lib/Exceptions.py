@@ -9,11 +9,18 @@ class OutOfRangeError(Exception):
     def __str__(self):
         return f"{self.value} -> {self.message}"
 
-
-# Exception Classes
 class SimulationCalcInputException(Exception):
+    """
+    Exception Handling for required inputs within various stages of the simulation
+    """
     def __init__(self, message):
         self.message = message
 
     def __str__(self):
         return self.message
+
+class UserInputException(Exception):
+    """
+    Exception Handling for user inputs retrieved from GUI
+    """
+
