@@ -83,7 +83,19 @@ class Simulation:
             raise UserInputException("Surfactant concentration not given. Please try again.", user_input_dict)
         
         ## Instantiates the required simulation properties:
+        
+        # Initializing sim properties
+        self.mesh = self._create_mesh()
+        self.x, self.y = self._generate_grid()
+        self.phi = self._compute_phi()  # Level set function (relates to porosity)
+        self.KK = None  # Permeability tensor
+        self.time_step = None
+        
+        # Initalizing Polymer Object
 
+        # Initializing Surfactant Object
+
+        # Initializing Water Object
 
 
 
