@@ -13,6 +13,7 @@ from enumerations import (
     ResevoirGeometry,
     SimulationConstants,
 )
+from Exceptions import UserInputException
 from polymer import Polymer
 from surfactant import Surfactant
 from scipy.io import loadmat
@@ -25,53 +26,120 @@ class Simulation:
     """
 
     def __init__(
-        self,
-        sim_id: int,
-        grid_size: int,
-        polymer: Polymer,
-        surfactant: Surfactant,
-        reservoir_geometry: ResevoirGeometry,
-        permeability_flag: PermeabilityType,
-        model_type: ModelType,
-        plot_type,
-        init_water_saturation=SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value,
-        init_oleic_saturation=SimulationConstants.Resid_Oleic_Phase_Saturation_Initial.value,
-        source_flow_magnitude=SimulationConstants.Source_Flow_Magnitude.value,
-    ):
-        self.sim_id = sim_id
-        self.grid_size = grid_size
-        self.polymer = polymer
-        self.surfactant = surfactant
+            self,
+            user_input_dict : dict
+            ):
+        """
+        This method will check the user user_input_dict and initialize the simulation
+        """
+        ## Performs checks on the user input dictionary passed in:
+        try:
+            model_type = ModelType(user_input_dict["model_type"])
+            if model_type is None:
+                raise ValueError
+        except (KeyError, ValueError, TypeError):
+            raise UserInputException("Model Type not selected. Please try again.", user_input_dict)
 
-        self.reservoir_geometry = reservoir_geometry
-        self.permeability_flag = permeability_flag
-        self.model_type = model_type
-        self.plot_type = plot_type
+        try:
+            reservoir_geometry = ResevoirGeometry(user_input_dict["reservoir_geometry"])
+            if reservoir_geometry is None:
+                raise ValueError
+        except (KeyError, ValueError, TypeError):
+            raise UserInputException("Reservoir Geometry not selected. Please try again.", user_input_dict)
 
-        self.init_water_saturation = init_water_saturation
-        self.init_oleic_saturation = init_oleic_saturation
-        self.source_flow_magnitude = source_flow_magnitude
+        try:
+            permeability_flag = PermeabilityType(user_input_dict["permeability"])
+            if permeability_flag is None:
+                raise ValueError
+        except (KeyError, ValueError, TypeError):
+            raise UserInputException("Permeability not properly selected. Please try again.", user_input_dict)
 
-        # Internal initialization
-        self.mesh = self._create_mesh()
-        self.x, self.y = self._generate_grid()
-        self.phi = None  # Level set function
-        self.KK = None  # Permeability field
-        self.time_step = None
+        try:
+            polymer_type = PolymerList.get_by_value(user_input_dict["polymer_type"])
+            if polymer_type is None:
+                raise ValueError
+        except (KeyError, ValueError, TypeError):
+            raise UserInputException("Polymer not properly selected. Please try again.", user_input_dict)
 
-        # Initial field variables
-        self.s0 = 0.79  # Initial oil saturation
-        self.c0 = self.polymer.initial_concentration
-        self.g0 = self.surfactant.concentration if surfactant else 0
+        try:
+            polymer_concentration = user_input_dict["polymer_concentration"]
+            if polymer_concentration is None:
+                raise ValueError
+        except (KeyError, ValueError, TypeError):
+            raise UserInputException("Polymer concentration not given. Please try again.", user_input_dict)
 
-        self.U = None  # Water saturation
-        self.C = None  # Polymer concentration
-        self.G = None  # Surfactant concentration
-        self.c0_array = None
-        self.miuw = SimulationConstants.Water_Viscosity.value
-        self.miuo = SimulationConstants.Oil_Viscosity.value
-        self.miup = None
-        self.miup_array = None
+        try:
+            surfactant_type = SurfactantList(user_input_dict["surfactant_type"])
+            if surfactant_type is None:
+                raise ValueError
+        except (KeyError, ValueError, TypeError):
+            raise UserInputException("Surfactant not properly selected. Please try again.", user_input_dict)
+
+        try:
+            surfactant_concentration = user_input_dict["surfactant_concentration"]
+            if surfactant_concentration is None:
+                raise ValueError
+        except (KeyError, ValueError, TypeError):
+            raise UserInputException("Surfactant concentration not given. Please try again.", user_input_dict)
+        
+        ## Instantiates the required simulation properties:
+
+
+
+
+
+
+
+
+
+    # def __init__(
+    #     self,
+    #     sim_id: int,
+    #     grid_size: int,
+    #     polymer: Polymer,
+    #     surfactant: Surfactant,
+    #     reservoir_geometry: ResevoirGeometry,
+    #     permeability_flag: PermeabilityType,
+    #     model_type: ModelType,
+    #     plot_type,
+    #     init_water_saturation=SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value,
+    #     init_oleic_saturation=SimulationConstants.Resid_Oleic_Phase_Saturation_Initial.value,
+    #     source_flow_magnitude=SimulationConstants.Source_Flow_Magnitude.value,
+    # ):
+    #     self.sim_id = sim_id
+    #     self.grid_size = grid_size
+    #     self.polymer = polymer
+    #     self.surfactant = surfactant
+    #
+    #     self.reservoir_geometry = reservoir_geometry
+    #     self.permeability_flag = permeability_flag
+    #     self.model_type = model_type
+    #     self.plot_type = plot_type
+    #
+    #     self.init_water_saturation = init_water_saturation
+    #     self.init_oleic_saturation = init_oleic_saturation
+    #     self.source_flow_magnitude = source_flow_magnitude
+    #
+    #     # Internal initialization
+    #     self.mesh = self._create_mesh()
+    #     self.x, self.y = self._generate_grid()
+    #     self.phi = None  # Level set function
+    #     self.KK = None  # Permeability field
+    #     self.time_step = None
+    #
+    #     # Initial field variables
+    #     self.s0 = 0.79  # Initial oil saturation
+    #     self.c0 = self.polymer.initial_concentration
+    #     self.g0 = self.surfactant.concentration if surfactant else 0
+    #
+    #     self.U = None  # Water saturation
+    #     self.C = None  # Polymer concentration
+    #     self.G = None  # Surfactant concentration
+    #     self.c0_array = None
+    #     self.miuw = SimulationConstants.Water_Viscosity.value
+    #     self.miuo = SimulationConstants.Oil_Viscosity.value
+    #     self.miup = None
+    #     self.miup_array = None
 
     def _create_mesh(self):
         mesh = Box()
@@ -130,7 +198,7 @@ class Simulation:
         Compute the initial position of the water front.
         Equivalent to MATLAB z_func_test.
         
-        Takes array inputs x, y.
+        Takes array user_input_dict x, y.
         """
         init_front_hs = 0.1
         permeability_input = self.permeability_flag.value
