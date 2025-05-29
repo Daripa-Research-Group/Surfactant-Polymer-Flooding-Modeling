@@ -49,7 +49,7 @@ class Polymer:
         :param concentration_scalar: Scalar quantity of concentration. When initializing, this param will equal the initial polymer concentration. 
         :type concentration_scalar: float
 
-        :param phi: arrray used to initialize the concentration matrix
+        :param phi: arrray used to initialize the concentration matrix (represents porosity of the resevoir)
         :type: np.ndarray
         
         :param viscosity_scalar: scalar quantity of the polymer viscosity

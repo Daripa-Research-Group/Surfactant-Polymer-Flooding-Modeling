@@ -92,10 +92,23 @@ class Simulation:
         self.time_step = None
         
         # Initalizing Polymer Object
-
+        self.polymer = Polymer(
+            name = polymer_type,
+            e_coeff = polymer_type.n_coeff,
+            n_coeff = polymer_type.e_coeff,
+            rho = polymer_type.Density,
+            concentration_scalar = polymer_concentration,
+            phi = self.phi,
+        )
         # Initializing Surfactant Object
-
-        # Initializing Water Object
+        self.surfactant = Surfactant(    
+            name = surfactant_type,
+            initial_concentration = surfactant_concentration,
+            IFT_equation = surfactant_type.IFT_equation,
+            derivative_IFT_equation =  surfactant_type.derivative_IFT_equation,
+            phi = self.phi,
+        )
+        # TODO: Initializing Water Object
 
 
 
