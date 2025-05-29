@@ -83,7 +83,6 @@ class Simulation:
             raise UserInputException("Surfactant concentration not given. Please try again.", user_input_dict)
         
         ## Instantiates the required simulation properties:
-        
         # Initializing Simulation Flags:
         self.permeability_flag = permeability_flag
         self.reservoir_geometry = reservoir_geometry
