@@ -13,7 +13,7 @@ from enumerations import (
     ResevoirGeometry,
     SimulationConstants,
 )
-from Exceptions import UserInputException
+from Exceptions import SimulationCalcInputException, UserInputException
 from polymer import Polymer
 from surfactant import Surfactant
 from scipy.io import loadmat
@@ -84,12 +84,23 @@ class Simulation:
         
         ## Instantiates the required simulation properties:
         
+        # Initializing Simulation Flags:
+        self.permeability_flag = permeability_flag
+        self.reservoir_geometry = reservoir_geometry
+        self.model_type = model_type
+        
+        #initializing grid size
+        self.grid_size = SimulationConstants.Grid_Size.value
+
         # Initializing sim properties
         self.mesh = self._create_mesh()
         self.x, self.y = self._generate_grid()
-        self.phi = self._compute_phi()  # Level set function (relates to porosity)
+        self.phi = None  # Level set function (relates to porosity)
         self.KK = None  # Permeability tensor
         self.time_step = None
+        self.initialize_simulation() #will initialize phi, KK, and time_step
+        if(self.phi is None or self.KK is None or self.time_step is None): #Raise Exception if not properly initialized...
+            raise SimulationCalcInputException("SimulationInputException: phi, KK, or time_step not properly initialized. Please try again...") 
         
         # Initalizing Polymer Object
         self.polymer = Polymer(
@@ -186,13 +197,6 @@ class Simulation:
 
         # Initialize permeability matrix
         self.KK = self._compute_permeability()
-
-        # Initialize water, polymer, surfactant fields
-        self.c0_array = self.c0 * np.ones((self.grid_size + 1, self.grid_size + 1))
-        self.U, self.C, self.G = self._initialize_fields()
-
-        self.miup = self.miuw * (1 + 15000 * self.c0)
-        self.miup_array = self.miup * np.ones((self.grid_size + 1, self.grid_size + 1))
 
         # Calculate time step
         self.time_step = self.mesh.dx / self.source_flow_magnitude
