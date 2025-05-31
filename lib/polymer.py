@@ -123,7 +123,7 @@ class Polymer:
             u : np.ndarray, 
             v : np.ndarray, 
             model_type : ModelType,
-            aqueous_viscosity : np.ndarray | None, 
+            aqueous_viscosity : np.ndarray | None = None, 
             ):
         """
         Compute polymer viscosity.
