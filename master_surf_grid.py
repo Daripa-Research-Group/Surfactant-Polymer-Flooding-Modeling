@@ -18,71 +18,6 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
 from user_input.gui import UserInputGUI
 from lib.simulation import Simulation
-from lib.polymer import Polymer
-from lib.surfactant import Surfactant
-from lib.enumerations import (
-    ModelType,
-    PlotType,
-    PermeabilityType,
-    PolymerList,
-    SurfactantList,
-    ResevoirGeometry,
-    SimulationConstants,
-)
-
-
-# def sim_condition_initialization(simulation_ID: int, usr_input_dict: dict) -> dict:
-#     plot_type = PlotType.Saturation_Plot  # TODO: MAKE DYNAMIC
-#
-#     model_type = ModelType(usr_input_dict["model_type"])
-#     assert model_type is not None, "Model Type not selected. Please try again"
-#     reservoir_geometry = ResevoirGeometry(usr_input_dict["reservoir_geometry"])
-#     assert reservoir_geometry is not None, "Resevoir Geometry  not selected. Please try again"
-#     permeability_flag = PermeabilityType(usr_input_dict["permeability"])
-#     assert permeability_flag is not None, "Permeability not properly selected. Please try again"
-#     polymer_type = PolymerList.get_by_value(usr_input_dict["polymer_type"])
-#     assert polymer_type is not None, "Polymer not properly selected. Please try again"
-#     polymer_concentration = usr_input_dict["polymer_concentration"]
-#     assert polymer_concentration is not None, "Polymer concentration not given. Please try again"
-#     surfactant_type = SurfactantList(usr_input_dict["surfactant_type"])
-#     assert surfactant_type is not None, "Surfactant not properly selected. Please try again"
-#     surfactant_concentration = usr_input_dict["surfactant_concentration"]
-#     assert surfactant_concentration is not None, "Surfactant concentration not given. Please try again"
-#
-#     polymer_obj = Polymer(
-#         name=polymer_type,
-#         e_coeff=polymer_type.e_coeff,
-#         n_coeff=polymer_type.n_coeff,
-#         rho=polymer_type.Density,
-#         concentration_scalar=polymer_concentration,
-#         phi=None,
-#     )
-#
-#     surfactant_obj = Surfactant(
-#         name=surfactant_type,
-#         initial_concentration=surfactant_concentration,
-#         IFT_conc_equ=lambda GG: 10.001 / (GG + 1)
-#         - 0.001,  # TODO: make dynamic depending on the surfactant type
-#         derivative_IFT_conc_equ=lambda GG: (-10.001)
-#         / ((GG + 1) ** 2),  # TODO: make dynamic depending on the surfactant type
-#     )
-#
-#     SOG = SimulationConstants.Grid_Size.value
-#
-#     simulation = Simulation(
-#         sim_id=simulation_ID,
-#         grid_size=SOG,
-#         polymer=polymer_obj,
-#         surfactant=surfactant_obj,
-#         reservoir_geometry=reservoir_geometry,
-#         permeability_flag=permeability_flag,
-#         model_type=model_type,
-#         plot_type=plot_type,
-#     )
-#
-#     results = simulation.run()
-#     simulation._export_results()
-
 
 def main() -> None:
     root = tk.Tk()
@@ -91,8 +26,9 @@ def main() -> None:
 
     user_input = app.get_input()
     for index, simulation in enumerate(user_input):
-        ## Will need to pass the dictionary into the simulation class
-        pass
+        # Will need to pass the dictionary into the simulation class
+        sim_object = Simulation(user_input_dict=simulation)
+        sim_object.run()
 
 if __name__ == "__main__":
     main()
