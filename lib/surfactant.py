@@ -58,16 +58,12 @@ class Surfactant:
         self.is_surfactant = True if (initial_concentration > 0) else False
         self.phi = phi
 
-        #initializing the surfactant object
-        self.initialize()
-    
-
     def initialize(
-            self
+            self,
             ):
         """
         This function will initialize the surfactant object
-
+        
         :return: Surfactant object
         :rtype: Surfactant
         """

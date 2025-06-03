@@ -98,7 +98,8 @@ class Simulation:
         self.source_flow_magnitude = SimulationConstants.Source_Flow_Magnitude.value
 
         # Initializing sim properties
-        self.mesh = self._create_mesh() # TODO: This needs to be replaced with 'Grid' object
+        self.mesh = self._create_mesh()# TODO: This needs to be replaced with 'Grid' object
+        grid_shape = (self.mesh.n, self.mesh.m)
         self.x, self.y = self._generate_grid()
         self.phi = None  # Level set function (relates to porosity)
         self.KK = None  # Permeability tensor
@@ -121,6 +122,7 @@ class Simulation:
             concentration_scalar = polymer_concentration,
             phi = self.phi,
         )
+        self.polymer.initialize(grid_shape=grid_shape)
 
         # Initializing Surfactant Object
         self.surfactant = Surfactant(    
@@ -130,6 +132,7 @@ class Simulation:
             derivative_IFT_equation =  surfactant_type.derivative_IFT_equation,
             phi = self.phi,
         )
+        self.surfactant.initialize()
 
         # TODO:Initializing Water Object
 

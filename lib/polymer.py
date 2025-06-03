@@ -90,29 +90,34 @@ class Polymer:
         #util param for initialization
         self.phi = phi # Will need to be created in the simulation class
         
-        #perform initialization
-        self.initialize()
-        
-    def initialize(self):
+    def initialize(
+            self,
+            grid_shape : tuple
+            ):
         """
         Will initialize the viscosity, shear_rate, and concentration matrices
+
+        :param grid_shape: contain the shape of the grid
+        :type grid_shape: tuple
 
         :return: Initalized Polymer Object
         :rtype: Polymer
         """
+        n = grid_shape[0]
+        m = grid_shape[1]
         D = (self.phi > 1e-10) + (np.abs(self.phi) < 1e-10)
         if(self.concentration_matrix is None):
             self.concentration_matrix = (~D)*self.concetration_scalar
 
         if(self.shear_rate is None):
-            self.shear_rate = np.zeros((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value))
+            self.shear_rate = np.zeros((n+1,m+1))
 
         if(self.viscosity_scalar is None):
             beta1 = 15000 #constant that came from the MATLAB code
             self.viscosity_scalar = SimulationConstants.Water_Viscosity.value*(1+beta1+self.concetration_scalar)
         
         if(self.viscosity_matrix is None):
-            self.viscosity_matrix = self.viscosity_scalar * np.ones((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value))
+            self.viscosity_matrix = self.viscosity_scalar * np.ones((n+1,m+1))
 
         return self
 
