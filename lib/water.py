@@ -4,18 +4,26 @@ from enumerations import SimulationConstants
 
 
 class Water:
-    def __init__(self, init_water_saturation: float, init_oleic_saturation: float, miuw: float, miuo: float):
+    def __init__(
+            self, 
+            init_water_saturation: float, 
+            init_oleic_saturation: float, 
+            miuw: float, 
+            miuo: float,
+            phi: np.ndarray
+            ):
         self.init_water_saturation = init_water_saturation
         self.init_oleic_saturation = init_oleic_saturation
         self.miuw = miuw
         self.miuo = miuo
         self.water_saturation = None
         self.viscosity_array = None
+        self.phi = phi
 
-    def initialize(self, phi: np.ndarray, grid_shape: tuple):
+    def initialize(self, grid_shape: tuple):
         n, m = grid_shape
         s0 = np.zeros((n + 1, m + 1))
-        D = (phi > 1e-10) | (np.abs(phi) < 1e-10)
+        D = (self.phi > 1e-10) | (np.abs(self.phi) < 1e-10)
         s0 = np.logical_not(D).astype(float) + D.astype(float) * (1 - self.init_water_saturation)
         self.water_saturation = s0
         return s0
