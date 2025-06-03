@@ -12,6 +12,24 @@ class Water:
             miuo: float,
             phi: np.ndarray
             ):
+        """
+        Constructor for the 'Water' class
+
+        :param init_water_saturation: initial water saturation
+        :type init_water_saturation: float
+
+        :param init_oleic_saturation: initial oil phase saturation
+        :type init_oleic_saturation: float
+
+        :param miuw: water viscosity
+        :type miuw: float
+
+        :param miuo: oil viscosity
+        :type miuo: float
+
+        :param phi: porosity matrix
+        :type phi: np.ndarray
+        """
         self.init_water_saturation = init_water_saturation
         self.init_oleic_saturation = init_oleic_saturation
         self.miuw = miuw
@@ -20,7 +38,10 @@ class Water:
         self.viscosity_array = None
         self.phi = phi
 
-    def initialize(self, grid_shape: tuple):
+    def initialize(
+            self, 
+            grid_shape: tuple
+            ):
         n, m = grid_shape
         s0 = np.zeros((n + 1, m + 1))
         D = (self.phi > 1e-10) | (np.abs(self.phi) < 1e-10)
@@ -28,7 +49,13 @@ class Water:
         self.water_saturation = s0
         return s0
 
-    def compute_viscosity(self, c: np.ndarray, u: np.ndarray, v: np.ndarray, c0: float):
+    def compute_viscosity(
+            self, 
+            c: np.ndarray, 
+            u: np.ndarray, 
+            v: np.ndarray, 
+            c0: float
+            ):
         """
         Compute aqueous viscosity (NO shear-thinning version).
         """
@@ -40,7 +67,12 @@ class Water:
         self.viscosity_array = miua
         return miua, np.zeros_like(c) 
 
-    def compute_residual_saturations(self, sigma: np.ndarray, u: np.ndarray, v: np.ndarray):
+    def compute_residual_saturations(
+            self, 
+            sigma: np.ndarray, 
+            u: np.ndarray, 
+            v: np.ndarray
+            ):
         """
         Compute swr, sor based on capillary numbers.
         """
@@ -62,7 +94,17 @@ class Water:
 
         return swr, sor
 
-    def compute_mobility(self, s: np.ndarray, c: np.ndarray, miua: np.ndarray, sor, swr, aqueous: bool, has_surfactant: bool, surfactant_conc: float):
+    def compute_mobility(
+            self, 
+            s: np.ndarray, 
+            c: np.ndarray, 
+            miua: np.ndarray, 
+            sor, 
+            swr, 
+            aqueous: bool, 
+            has_surfactant: bool, 
+            surfactant_conc: float
+            ):
         if not has_surfactant or surfactant_conc == 0:
             nsw0 = (s - self.init_water_saturation) / (1 - self.init_water_saturation)
             nso0 = (s - self.init_water_saturation) / (1 - self.init_water_saturation - self.init_oleic_saturation)
@@ -77,9 +119,19 @@ class Water:
         return krw0 / miua if aqueous else kro0 / self.miuo
 
     def solve_saturation_transport(
-        self,
-        x, y, dt, KK, lambda_a, lambda_o, sigma, G, para, u, v
-    ):
+            self,
+            x, 
+            y, 
+            dt, 
+            KK, 
+            lambda_a, 
+            lambda_o, 
+            sigma, 
+            G, 
+            para, 
+            u, 
+            v
+            ):
         dx, dy = para.grid.dx, para.grid.dy
         phi = 1  # Constant
         omega1 = SimulationConstants.Capillary_Pressure_Param_1.value
