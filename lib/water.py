@@ -1,3 +1,12 @@
+"""
+This python script contains the class definition for the water in the surfactant-flooding model
+
+The methods of this class were derived from the MATLAB Surfactant-Polymer Flooding Code developed by
+Sourav Dutta and Rohit Mishra.
+
+@author: Bhargav Akula Ramesh Kumar, Carlos Acosta Caripo
+"""
+
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 from enumerations import SimulationConstants
