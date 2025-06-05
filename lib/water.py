@@ -9,8 +9,9 @@ Sourav Dutta and Rohit Mishra.
 
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
-from enumerations import SimulationConstants
-
+from enumerations import ModelType, SimulationConstants
+from grid import Grid
+from polymer import Polymer
 
 class Water:
     def __init__(
@@ -59,22 +60,43 @@ class Water:
         return s0
 
     def compute_viscosity(
-            self, 
-            c: np.ndarray, 
-            u: np.ndarray, 
-            v: np.ndarray, 
-            c0: float
+            self,
+            grid: Grid,
+            model_type: ModelType,
+            polymer: Polymer,
+            u: np.ndarray | None = None,
+            v: np.ndarray | None = None,
             ):
         """
         Compute aqueous viscosity (NO shear-thinning version).
+
+        :param grid: Grid object for deterrmining matrix size
+        :type grid: Grid
+
+        :param polymer: holds the information about the polymer in the sim
+        :type polymer: Polymer
+
+        :param u: global pressure matrix. Only needed when shear thinning ON.
+        :type u: np.ndarray, None
+
+        :param v: velocity matrix. Only needed when shear thinning ON.
+        :type v: np.ndarray, None
         """
-        beta1 = 15000
-        if c0 == 0:
-            miua = self.miuw * np.ones_like(c)
-        else:
-            miua = self.miuw * (1 + beta1 * c)
-        self.viscosity_array = miua
-        return miua, np.zeros_like(c) 
+        n = np.size(polymer.concentration_matrix, 0)
+        m = np.size(polymer.concentration_matrix, 0)
+        initial_polymer_concentration_scalar = polymer.concetration_scalar
+        
+        if(model_type.value == ModelType.No_Shear_Thinning.value): #no shear thinning polymer
+            miuw = SimulationConstants.Water_Viscosity.value
+            if(initial_polymer_concentration_scalar == 0):
+                self.viscosity_array = miuw*np.ones((n,m))
+            else:
+                beta1 = SimulationConstants.beta1.value
+                self.viscosity_array = miuw*(1+beta1*polymer.concentration_matrix)
+        elif(model_type.value == ModelType.Shear_Thinning_On.value): #shear thinning polymer
+            pass
+
+        
 
     def compute_residual_saturations(
             self, 
