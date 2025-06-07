@@ -10,6 +10,7 @@ Sourav Dutta and Rohit Mishra.
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 from enumerations import ModelType, SimulationConstants
+from Exceptions import SimulationCalcInputException
 from grid import Grid
 from polymer import Polymer
 
@@ -52,12 +53,19 @@ class Water:
             self, 
             grid_shape: tuple
             ):
+        #getting values for n and m from grid:
         n, m = grid_shape
+
+        #initializing the water saturation matrix
         s0 = np.zeros((n + 1, m + 1))
         D = (self.phi > 1e-10) | (np.abs(self.phi) < 1e-10)
         s0 = np.logical_not(D).astype(float) + D.astype(float) * (1 - self.init_water_saturation)
         self.water_saturation = s0
-        return s0
+
+        #initialize the aqueous viscosity matrix:
+        self.viscosity_array = self.miuw*np.ones((n,m))
+
+        return self
 
     def compute_viscosity(
             self,
@@ -81,11 +89,16 @@ class Water:
 
         :param v: velocity matrix. Only needed when shear thinning ON.
         :type v: np.ndarray, None
+
+        :return: updated aqueous viscosity matrix
+        :rtype: np.ndarray
         """
+        assert self.viscosity_array is not None, SimulationCalcInputException("SimuationInputException: aqueous viscosity matrix not initialized. Please try again")
+        assert polymer is not None, SimulationCalcInputException("SimuationInputException: polymer object not initialized. \
+                The polymer object must be initialized before updating aqueous viscosity. Please try again.")
         n = np.size(polymer.concentration_matrix, 0)
         m = np.size(polymer.concentration_matrix, 0)
         initial_polymer_concentration_scalar = polymer.concetration_scalar
-        
         if(model_type.value == ModelType.No_Shear_Thinning.value): #no shear thinning polymer
             miuw = SimulationConstants.Water_Viscosity.value
             if(initial_polymer_concentration_scalar == 0):
@@ -94,8 +107,48 @@ class Water:
                 beta1 = SimulationConstants.beta1.value
                 self.viscosity_array = miuw*(1+beta1*polymer.concentration_matrix)
         elif(model_type.value == ModelType.Shear_Thinning_On.value): #shear thinning polymer
-           pass 
+            # using the shear rate and polymer coefficients to understand how its viscosity changes
+            assert u is not None, SimulationCalcInputException("SimuationInputException: variables 'u' not initialized for shear-thinning-on model. Please try again")
+            assert v is not None, SimulationCalcInputException("SimuationInputException: variables 'v' not initialized for shear-thinning-on model. Please try again")
+            
+            #constants:
+            rho_water = SimulationConstants.Water_Density.value
+            viscosity_water = SimulationConstants.Water_Viscosity.value
 
+            #relevant parameters for power law equation:
+            w1 = polymer.rho*polymer.concentration_matrix
+            w2 = rho_water*(1-polymer.concentration_matrix)
+            wppm = (w1/(w1+w2))*(10**6)
+            w1_0 = polymer.rho*polymer.init_concentration_matrix #from the variable w10 in MATLAB code
+            w2_0 = rho_water*(1-polymer.init_concentration_matrix) #from the variable w20 in MATLAB code
+            wppm_0 = (w1_0/(w1_0+w2_0))*(10**6) #from the wppm0 variable in MATLAB code
+            
+            #determining ε and n for power law equation:
+            epsilon_0 = polymer.e_coeff[0]*(wppm_0**polymer.e_coeff[1])
+            n_0 = np.min(polymer.n_coeff[0]*(wppm_0**polymer.n_coeff[1]))
+            epsilon_val = polymer.e_coeff[0]*(wppm**polymer.e_coeff[1])
+            n_val = np.min(polymer.n_coeff[0]*(wppm**polymer.n_coeff[1]))
+
+            row = np.size(polymer.concentration_matrix, 0)
+            col = np.size(polymer.concentration_matrix, 1)
+
+            # Compute divergence terms
+            a1 = np.gradient(v, axis=0)
+            a2 = np.gradient(u, axis=1)
+            a3 = np.gradient(u, axis=0)
+            a4 = np.gradient(v, axis=1)
+
+            pi_D = np.abs(-0.25 * (a1 + a2) ** 2 + a3 * a4)
+
+            for ii in range(row):
+                for jj in range(col):
+                    # Applying constraints
+                    self.viscosity_array[ii,jj] = epsilon_val[ii,jj]*(polymer.shear_rate[ii,jj]**(n_val[ii,jj]-1))
+                    if self.viscosity_array[ii, jj] < viscosity_water:
+                        self.viscosity_array[ii, jj] = viscosity_water
+                    if self.viscosity_array[ii, jj] > 100:
+                        self.viscosity_array[ii, jj] = 100
+        return self.viscosity_array 
         
 
     def compute_residual_saturations(
