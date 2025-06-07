@@ -94,7 +94,7 @@ class Water:
                 beta1 = SimulationConstants.beta1.value
                 self.viscosity_array = miuw*(1+beta1*polymer.concentration_matrix)
         elif(model_type.value == ModelType.Shear_Thinning_On.value): #shear thinning polymer
-            pass
+           pass 
 
         
 
