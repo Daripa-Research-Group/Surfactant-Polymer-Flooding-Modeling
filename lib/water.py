@@ -53,6 +53,15 @@ class Water:
             self, 
             grid_shape: tuple
             ):
+        """
+        Initializing 'Water' Object properties
+        
+        :param grid_shape: the n and m parameters from the 'Grid' class
+        :type grid_shape: tuple
+
+        :return: Updated 'Water' object
+        :rtype: Water
+        """
         #getting values for n and m from grid:
         n, m = grid_shape
 
@@ -158,7 +167,19 @@ class Water:
             v: np.ndarray
             ):
         """
-        Compute swr, sor based on capillary numbers.
+        Compute swr, sor based on capillary numbers (came from compres.m MATLAB file)
+
+        :param sigma: interfacial tension (IFT)
+        :type sigma: np.ndarray
+
+        :param u: global pressure matrix. Only needed when shear thinning ON.
+        :type u: np.ndarray, None
+
+        :param v: velocity matrix. Only needed when shear thinning ON.
+        :type v: np.ndarray, None
+
+        :return residual saturation for oil (index 0) and water (index 1) phases
+        :rtype: list
         """
         swr0 = self.init_water_saturation
         sor0 = self.init_oleic_saturation
@@ -176,19 +197,42 @@ class Water:
         sor = sor0 * (Nco0 / Nco) ** 0.5213 if Nco >= Nco0 else sor0
         swr = swr0 * (Nca0 / Nca) ** 0.1534 if Nca >= Nca0 else swr0
 
-        return swr, sor
+        return [swr, sor]
 
     def compute_mobility(
             self, 
-            s: np.ndarray, 
             c: np.ndarray, 
-            miua: np.ndarray, 
-            sor, 
-            swr, 
+            sor: np.ndarray, 
+            swr: np.ndarray, 
             aqueous: bool, 
             has_surfactant: bool, 
             surfactant_conc: float
             ):
+        """
+        Computing mobility (made using the compmob.m MATLAB file)
+        
+        :param c: polymer concentration matrix
+        :type c: np.ndarray
+
+        :param sor: residual saturation oil phase
+        :type sor: np.ndarray
+
+        :param swr: residual saturation water phase
+        :type swr: np.ndarray
+
+        :param aqueous: boolean for whether we are solving for aqoeous or oleic mobility
+        :type aqueous: bool
+
+        :param has_surfactant: whether or not there is surfactant in the system
+        :type has_surfactant: bool
+
+        :param surfactant_conc: scalar quantity of the initial surfactant concentration
+        :type surfactant_conc: float
+        """
+        assert self.water_saturation is not None, SimulationCalcInputException("SimuationInputException: water saturation matrix not initialized. Please try again")
+        assert self.viscosity_array is not None, SimulationCalcInputException("SimuationInputException: viscosity matrix not initialized. Please try again")
+        s = self.water_saturation
+        miua = self.viscosity_array
         if not has_surfactant or surfactant_conc == 0:
             nsw0 = (s - self.init_water_saturation) / (1 - self.init_water_saturation)
             nso0 = (s - self.init_water_saturation) / (1 - self.init_water_saturation - self.init_oleic_saturation)
