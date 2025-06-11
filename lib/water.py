@@ -172,13 +172,13 @@ class Water:
         :param sigma: interfacial tension (IFT)
         :type sigma: np.ndarray
 
-        :param u: global pressure matrix. Only needed when shear thinning ON.
-        :type u: np.ndarray, None
+        :param u: global pressure matrix.
+        :type u: np.ndarray
 
-        :param v: velocity matrix. Only needed when shear thinning ON.
-        :type v: np.ndarray, None
+        :param v: velocity matrix. 
+        :type v: np.ndarray
 
-        :return residual saturation for oil (index 0) and water (index 1) phases
+        :return residual saturation for oil (index 1) and water (index 0) phases
         :rtype: list
         """
         swr0 = self.init_water_saturation
@@ -197,7 +197,7 @@ class Water:
         sor = sor0 * (Nco0 / Nco) ** 0.5213 if Nco >= Nco0 else sor0
         swr = swr0 * (Nca0 / Nca) ** 0.1534 if Nca >= Nca0 else swr0
 
-        return [swr, sor]
+        return [swr, sor] #[residual water saturation, residual oil saturation]
 
     def compute_mobility(
             self, 
@@ -228,6 +228,9 @@ class Water:
 
         :param surfactant_conc: scalar quantity of the initial surfactant concentration
         :type surfactant_conc: float
+
+        :return: aqueous or oleic mobility (depending on the 'aqueous' parameter)
+        :rtype: np.ndarray
         """
         assert self.water_saturation is not None, SimulationCalcInputException("SimuationInputException: water saturation matrix not initialized. Please try again")
         assert self.viscosity_array is not None, SimulationCalcInputException("SimuationInputException: viscosity matrix not initialized. Please try again")
@@ -246,21 +249,53 @@ class Water:
 
         return krw0 / miua if aqueous else kro0 / self.miuo
 
-    def solve_saturation_transport(
+    def compute_water_saturation(
             self,
-            x, 
-            y, 
-            dt, 
-            KK, 
-            lambda_a, 
-            lambda_o, 
-            sigma, 
-            G, 
-            para, 
-            u, 
-            v
+            grid: Grid,
+            dt: float, 
+            KK: np.ndarray, 
+            lambda_a: np.ndarray, 
+            lambda_o: np.ndarray, 
+            sigma: np.ndarray, 
+            G: np.ndarray, 
+            u: np.ndarray,
+            v: np.ndarray
             ):
-        dx, dy = para.grid.dx, para.grid.dy
+        """
+        Solving saturation equation (comes from part of the nmmoc_surf_mod_neumann.m file that 
+        is for calculating the water saturation)
+
+        :param grid: the 'Grid' object
+        :type grid: Grid
+
+        :param dt: time step
+        :type dt: float
+
+        :param KK: the permeability tensor
+        :type KK: np.ndarray
+
+        :param lambda_a: aqueous mobility
+        :type lambda_a: np.ndarray
+
+        :param lambda_o: oleic mobility
+        :type lambda_o: np.ndarray
+
+        :param sigma: IFT (interfacial tension)
+        :type sigma: np.ndarray
+
+        :param G: surfactant concentration (matrix form)
+        :type G: np.ndarray
+
+        :param u: global pressure matrix
+        :type u: np.ndarray
+
+        :param v: velocity matrix
+        :type v: np.ndarray
+
+        :return: updated water saturation matrix
+        :rtype: np.ndarray
+        """
+        dx, dy = grid.dx, grid.dy
         phi = 1  # Constant
         omega1 = SimulationConstants.Capillary_Pressure_Param_1.value
         omega2 = SimulationConstants.Capillary_Pressure_Param_2.value
@@ -289,4 +324,5 @@ class Water:
         Snew = np.clip(Snew, 0, 1)
 
         self.water_saturation = Snew
+
         return Snew
