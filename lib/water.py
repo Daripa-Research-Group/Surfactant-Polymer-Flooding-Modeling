@@ -15,6 +15,9 @@ from grid import Grid
 from polymer import Polymer
 
 class Water:
+    """
+    Contains the properties and methods for water in the SP-Flooding system
+    """
     def __init__(
             self, 
             init_water_saturation: float, 
