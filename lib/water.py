@@ -257,9 +257,9 @@ class Water:
             lambda_a: np.ndarray, 
             lambda_o: np.ndarray, 
             sigma: np.ndarray, 
-            G: np.ndarray, 
+            surfactant: Surfactant, 
             u: np.ndarray,
-            v: np.ndarray
+            v: np.ndarray,
             ):
         """
         Solving saturation equation (comes from part of the nmmoc_surf_mod_neumann.m file that 
@@ -295,6 +295,7 @@ class Water:
         :return: updated water saturation matrix
         :rtype: np.ndarray
         """
+        assert self.water_saturation is not None, SimulationCalcInputException("SimuationInputException: water saturation matrix not initialized. Please try again")
         dx, dy = grid.dx, grid.dy
         phi = 1  # Constant
         omega1 = SimulationConstants.Capillary_Pressure_Param_1.value
@@ -307,12 +308,14 @@ class Water:
         lambda_total = lambda_a + lambda_o
         f = lambda_a / lambda_total
         D = KK * lambda_o * f
-        sigma_g = -10.001 / (G + 1) ** 2
+        sigma_g = surfactant.derivative_IFT_equation(surfactant.concentration_matrix) #-10.001 / (G + 1) ** 2
 
         pc = (sigma * omega2 * phi ** 0.5) / (KK ** 0.5 * (1 - nso) ** (1 / omega1))
         pc_s = pc / (omega1 * (1 - nso))
         pc_g = (pc / sigma) * sigma_g + pc_s
-
+        
+        x = grid.x
+        y = grid.y
         xjump = x - f * u * dt
         yjump = y - f * v * dt
         xmod = np.where(xjump <= 1, np.abs(xjump), 2 - xjump)
