@@ -263,10 +263,14 @@ class Water:
             surfactant: Surfactant, 
             u: np.ndarray,
             v: np.ndarray,
+            xmod: np.ndarray,
+            ymod: np.ndarray
             ):
         """
         Solving saturation equation (comes from part of the nmmoc_surf_mod_neumann.m file that 
         is for calculating the water saturation)
+
+        :raises SimulationCalcInputException: If water saturation matrix is None
 
         :param grid: the 'Grid' object
         :type grid: Grid
@@ -295,40 +299,49 @@ class Water:
         :param v: velocity matrix
         :type v: np.ndarray
 
+        :param xmod: x-dimension coordinate points for formulating the 'Cmod' matrix
+        :type xmod: np.ndarray
+
+        :param ymod: y-dimension coordinate points for formulating the 'Cmod' matrix
+        :type ymod: np.ndarray
+
         :return: updated water saturation matrix
         :rtype: np.ndarray
         """
+        #Assert statements to ensure that all parameters are property initialized:
         assert self.water_saturation is not None, SimulationCalcInputException("SimuationInputException: water saturation matrix not initialized. Please try again")
+
+        #Required constants:
         dx, dy = grid.dx, grid.dy
-        phi = 1  # Constant
+        x = grid.x
+        y = grid.y
+        phi = 1  
         omega1 = SimulationConstants.Capillary_Pressure_Param_1.value
         omega2 = SimulationConstants.Capillary_Pressure_Param_2.value
-
+        
+        #determining the wetting (aqueous) and non-wetting (oleic) phase saturation
         S = self.water_saturation
         nsw = (S - self.init_water_saturation) / (1 - self.init_water_saturation)
         nso = (S - self.init_water_saturation) / (1 - self.init_water_saturation - self.init_oleic_saturation)
 
+        #mobility calculations:
         lambda_total = lambda_a + lambda_o
         f = lambda_a / lambda_total
         D = KK * lambda_o * f
-        sigma_g = surfactant.derivative_IFT_equation(surfactant.concentration_matrix) #-10.001 / (G + 1) ** 2
 
+        #geting rate of change of IFT wrt surfactant concentration
+        sigma_g = surfactant.derivative_IFT_equation(surfactant.concentration_matrix)
+
+        #capillary pressure and its derivative wrt water saturation and surfactant conceentration
         pc = (sigma * omega2 * phi ** 0.5) / (KK ** 0.5 * (1 - nso) ** (1 / omega1))
         pc_s = pc / (omega1 * (1 - nso))
         pc_g = (pc / sigma) * sigma_g + pc_s
         
-        x = grid.x
-        y = grid.y
-        xjump = x - f * u * dt
-        yjump = y - f * v * dt
-        xmod = np.where(xjump <= 1, np.abs(xjump), 2 - xjump)
-        ymod = np.where(yjump <= 1, np.abs(yjump), 2 - yjump)
-
+        #Determining Smod matrix
         interp = RegularGridInterpolator((y[:, 0], x[0, :]), S)
         coords = np.array([ymod.flatten(), xmod.flatten()]).T
-        Snew = interp(coords).reshape(S.shape)
-        Snew = np.clip(Snew, 0, 1)
+        Smod = interp(coords).reshape(S.shape)
 
-        self.water_saturation = Snew
+        # Updating coefficients with interpolated saturations
 
-        return Snew
+
