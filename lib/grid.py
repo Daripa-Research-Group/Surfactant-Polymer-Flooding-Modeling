@@ -15,14 +15,27 @@ class Grid:
         self.bottom = bottom
         self.top = top
 
-        self.dx = (self.right - self.left) / self.m
-        self.dy = (self.top - self.bottom) / self.n
-
-        self.x, self.y = self.set_grid()
         self.tri = None
         self.A = None
         self.B = None
         self.RHS = None
+
+    @property
+    def get_spacing(self):
+        return self.dx, self.dy
+    
+    @property
+    def get_meshgrid(self):
+        self.x, self.y = self.set_grid()
+        return self.x, self.y
+
+    @property
+    def dx(self):
+        return (self.right - self.left) / self.m
+
+    @property
+    def dy(self):
+        return (self.top - self.bottom) / self.n
 
     def set_grid(self):
         """
@@ -103,8 +116,3 @@ class Grid:
         """
         return np.arange((self.m + 1) * (self.n + 1)).reshape((self.n + 1, self.m + 1))
 
-    def get_spacing(self):
-        return self.dx, self.dy
-
-    def get_meshgrid(self):
-        return self.x, self.y

@@ -4,7 +4,7 @@ This python script contains the class definition for running simulations
 import os
 
 import numpy as np
-from para import Box
+from grid import Grid
 from enumerations import (
     ModelType,
     PolymerList,
@@ -31,7 +31,10 @@ class Simulation:
             user_input_dict : dict
             ):
         """
-        This method will check the user user_input_dict and initialize the simulation
+        This method will check the ``user_input_dict`` and initialize the simulation
+
+        :raises UserInputException: If there is a issue with the user inputs in ``user_input_dict``
+        :raises SimulationCalcInputException: If there is an issue with the execution of a calculation during runtime
 
         :param user_input_dict: dictionary containing the information from the GUI
         :type user_input_dict: dict
@@ -42,49 +45,49 @@ class Simulation:
             if model_type is None:
                 raise ValueError
         except (KeyError, ValueError, TypeError):
-            raise UserInputException("Model Type not selected. Please try again.", user_input_dict)
+            raise UserInputException("UserInputError:BadModelTypeAssignment", user_input_dict)
 
         try:
             reservoir_geometry = ResevoirGeometry(user_input_dict["reservoir_geometry"])
             if reservoir_geometry is None:
                 raise ValueError
         except (KeyError, ValueError, TypeError):
-            raise UserInputException("Reservoir Geometry not selected. Please try again.", user_input_dict)
+            raise UserInputException("UserInputError:BadReservoirGeometryAssignment", user_input_dict)
 
         try:
             permeability_flag = PermeabilityType(user_input_dict["permeability"])
             if permeability_flag is None:
                 raise ValueError
         except (KeyError, ValueError, TypeError):
-            raise UserInputException("Permeability not properly selected. Please try again.", user_input_dict)
+            raise UserInputException("UserInputError:BadPermeabilityAssignment", user_input_dict)
 
         try:
             polymer_type = PolymerList.get_by_value(user_input_dict["polymer_type"])
             if polymer_type is None:
                 raise ValueError
         except (KeyError, ValueError, TypeError):
-            raise UserInputException("Polymer not properly selected. Please try again.", user_input_dict)
+            raise UserInputException("UserInputError:BadPolymerTypeAssignment", user_input_dict)
 
         try:
             polymer_concentration = user_input_dict["polymer_concentration"]
             if polymer_concentration is None:
                 raise ValueError
         except (KeyError, ValueError, TypeError):
-            raise UserInputException("Polymer concentration not given. Please try again.", user_input_dict)
+            raise UserInputException("UserInputError:BadPolymerConcentrationAssignment", user_input_dict)
 
         try:
             surfactant_type = SurfactantList(user_input_dict["surfactant_type"])
             if surfactant_type is None:
                 raise ValueError
         except (KeyError, ValueError, TypeError):
-            raise UserInputException("Surfactant not properly selected. Please try again.", user_input_dict)
+            raise UserInputException("UserInputError:BadSurfactantTypeAssignment", user_input_dict)
 
         try:
             surfactant_concentration = user_input_dict["surfactant_concentration"]
             if surfactant_concentration is None:
                 raise ValueError
         except (KeyError, ValueError, TypeError):
-            raise UserInputException("Surfactant concentration not given. Please try again.", user_input_dict)
+            raise UserInputException("UserInputError:BadSurfactantConcentrationAssignment", user_input_dict)
         
         ## Instantiates the required simulation properties:
         
@@ -98,15 +101,15 @@ class Simulation:
         self.source_flow_magnitude = SimulationConstants.Source_Flow_Magnitude.value
 
         # Initializing sim properties
-        self.mesh = self._create_mesh()# TODO: This needs to be replaced with 'Grid' object
+        self.mesh = self._create_mesh()
         grid_shape = (self.mesh.n, self.mesh.m)
-        self.x, self.y = self._generate_grid()
+        self.x, self.y = self.mesh.get_meshgrid 
         self.phi = None  # Level set function (relates to porosity)
         self.KK = None  # Permeability tensor
         self.time_step = None
         self.initialize_simulation() #will initialize phi, KK, and time_step
         if(self.phi is None or self.KK is None or self.time_step is None): #Raise Exception if not properly initialized...
-            raise SimulationCalcInputException("SimulationInputException: phi, KK, or time_step not properly initialized. Please try again...") 
+            raise SimulationCalcInputException("SimulationCalcInputError:BadInitialSimulationPropertiesCalculation") 
         
         # TODO: Initializing global pressure ('u') and velocity matrices ('v'):
             # Need to be initialized using the Grid class
@@ -135,6 +138,14 @@ class Simulation:
         self.surfactant.initialize()
 
         # TODO:Initializing Water Object
+        self.water = Water(
+            init_water_saturation= SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value,
+            init_oleic_saturation= SimulationConstants.Resid_Oleic_Phase_Saturation_Initial.value,
+            miuw= SimulationConstants.Water_Viscosity.value,
+            miuo= SimulationConstants.Oil_Viscosity.value,
+            phi= self.phi
+        )
+        self.water.initialize(grid_shape=grid_shape)
 
         # TODO:Properties for Exporting Simulation Results
         self.COC = np.zeros((1,2000))
@@ -142,16 +153,19 @@ class Simulation:
         self.lambdaTcal = np.zeros((1,2000))
 
     def _create_mesh(self):
-        mesh = Box()
+        """
+        :return: Private method used in initializing the grid
+        :rtype: Grid
+        """
+        mesh = Grid()
         mesh.m = self.grid_size
         mesh.n = self.grid_size
-        mesh.calculate_spacing
         return mesh
 
-    def _generate_grid(self):
-        x = np.arange(self.mesh.left, self.mesh.right + self.mesh.dx, self.mesh.dx)
-        y = np.arange(self.mesh.bottom, self.mesh.top + self.mesh.dy, self.mesh.dy)
-        return np.meshgrid(x, y)
+    # def _generate_grid(self):
+    #     x = np.arange(self.mesh.left, self.mesh.right + self.mesh.dx, self.mesh.dx)
+    #     y = np.arange(self.mesh.bottom, self.mesh.top + self.mesh.dy, self.mesh.dy)
+    #     return np.meshgrid(x, y)
 
     def initialize_simulation(self):
         """
@@ -316,9 +330,12 @@ class Simulation:
         """
         Executes simulation loop.
 
+        :raises SimulationCalcInputException: if relevant inputs for calculation not provided or not initialized
+
         :return: Dictionary with relevant results for plotting and data analysis
         :rtype: dict
         """
+        assert self.water.water_saturation is not None, SimulationCalcInputException("SimulationCalcInputError:WaterSaturationMatrixUnavailable")
         try:
             # TODO: Updating the Grid with the initial source and production well flowrates (actual steps will be done within the 'Grid' Class)
 
