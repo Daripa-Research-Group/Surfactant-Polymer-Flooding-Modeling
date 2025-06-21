@@ -33,7 +33,8 @@ class SimulationConstants(Enum):
     Time_Step = 1 / 50
     Grid_Size = 29
     Source_Flow_Magnitude = 120000
-
+    
+    beta1 = 15000
 
 class PolymerList(Enum):
     """
