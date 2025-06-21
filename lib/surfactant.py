@@ -24,10 +24,10 @@ class Surfactant:
             self,
             name : SurfactantList,
             initial_concentration : float,
-            IFT_equation : LambdaType,
-            derivative_IFT_equation : LambdaType,
             phi : np.ndarray,
-            concentration_matrix : np.ndarray | None,
+            IFT_equation : LambdaType | None = None,
+            derivative_IFT_equation : LambdaType | None = None,
+            concentration_matrix : np.ndarray | None = None,
             ):
         """
         Creates instance of Surfactant class
@@ -38,11 +38,14 @@ class Surfactant:
         :param concentration: Initial concentration in wppm of surfactant (scalar quantity)
         :type concentration: float
 
+        :param phi: arrray used to initialize the concentration matrix (represents porosity of the resevoir)
+        :type: np.ndarray
+
         :param IFT_conc_equ: expression that relates surfactant concentration to interfacial tension b/t oil and water
-        :type IFT_conc_equ: lambda
+        :type IFT_conc_equ: lambda, None
 
         :param derivative_IFT_conc_equ: Deriviative of the equation relating IFT to surfactant concentration
-        :type derivative_IFT_conc_equ: lambda
+        :type derivative_IFT_conc_equ: lambda, None
 
         :param concentration_matrix: vector representation of surfactant concentration in resevoir
         :type concentration_matrix: np.array, None
@@ -55,16 +58,12 @@ class Surfactant:
         self.is_surfactant = True if (initial_concentration > 0) else False
         self.phi = phi
 
-        #initializing the surfactant object
-        self.initialize()
-    
-
     def initialize(
-            self
+            self,
             ):
         """
         This function will initialize the surfactant object
-
+        
         :return: Surfactant object
         :rtype: Surfactant
         """

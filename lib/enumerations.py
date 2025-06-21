@@ -70,8 +70,26 @@ class SurfactantList(Enum):
     """
     List of Surfactants that can be selected for the simulation runs
     """
-    Alkyl_Ether_Sulfate = 1
-    No_Surfactant = 2
+    Alkyl_Ether_Sulfate = [1, lambda GG: 10.001 / (GG + 1),lambda GG: (-10.001)/((GG + 1) ** 2)]
+    No_Surfactant = [2, None, None]
+
+    @property
+    def Id(self):
+        return self.value[0]
+
+    @property
+    def IFT_equation(self):
+        return self.value[1]
+
+    @property
+    def derivative_IFT_equation(self):
+        return self.value[2]
+
+    @classmethod
+    def get_by_value(cls, value):
+        member = next((member for member in cls if member.value[0] == value), None)
+        return member
+
 
 
 class ModelType(Enum):
