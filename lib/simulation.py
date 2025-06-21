@@ -91,14 +91,14 @@ class Simulation:
         
         ## Instantiates the required simulation properties:
         
+        #initializing properties that hold simulation constants
+        self.grid_size = SimulationConstants.Grid_Size.value
+        self.source_flow_magnitude = SimulationConstants.Source_Flow_Magnitude.value
+        
         # Initializing Simulation Flags:
         self.permeability_flag = permeability_flag
         self.reservoir_geometry = reservoir_geometry
         self.model_type = model_type
-        
-        #initializing properties that hold simulation constants
-        self.grid_size = SimulationConstants.Grid_Size.value
-        self.source_flow_magnitude = SimulationConstants.Source_Flow_Magnitude.value
 
         # Initializing sim properties
         self.mesh = self._create_mesh()
@@ -107,12 +107,11 @@ class Simulation:
         self.phi = None  # Level set function (relates to porosity)
         self.KK = None  # Permeability tensor
         self.time_step = None
-        self.initialize_simulation() #will initialize phi, KK, and time_step
+        self._initialize_simulation() #will initialize phi, KK, and time_step
         if(self.phi is None or self.KK is None or self.time_step is None): #Raise Exception if not properly initialized...
             raise SimulationCalcInputException("SimulationCalcInputError:BadInitialSimulationPropertiesCalculation") 
         
-        # TODO: Initializing global pressure ('u') and velocity matrices ('v'):
-            # Need to be initialized using the Grid class
+        #TODO: Need to implement ``self._initialize_pressure_and_velocity()`` private method
         self.u = None
         self.v = None
 
@@ -137,7 +136,7 @@ class Simulation:
         )
         self.surfactant.initialize()
 
-        # TODO:Initializing Water Object
+        # Initializing Water Object
         self.water = Water(
             init_water_saturation= SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value,
             init_oleic_saturation= SimulationConstants.Resid_Oleic_Phase_Saturation_Initial.value,
@@ -147,14 +146,27 @@ class Simulation:
         )
         self.water.initialize(grid_shape=grid_shape)
 
-        # TODO:Properties for Exporting Simulation Results
+        # Properties for Exporting Simulation Results
+        self.source_prod_flows = np.zeros((self.mesh.m, self.mesh.n)) # ``f`` in MATLAB code
         self.COC = np.zeros((1,2000))
         self.miuaTcal = np.zeros((1,2000))
         self.lambdaTcal = np.zeros((1,2000))
 
+
+    def _initialize_pressure_and_velocity(self):
+        """
+        (private method)
+        
+        TODO: Initializing global pressure ('u') and velocity matrices ('v')
+        Will use methods from ``Grid`` Class for initialization
+        """
+        pass
+
     def _create_mesh(self):
         """
-        :return: Private method used in initializing the grid
+        (private method)
+
+        :return: Initialized grid
         :rtype: Grid
         """
         mesh = Grid()
@@ -167,9 +179,14 @@ class Simulation:
     #     y = np.arange(self.mesh.bottom, self.mesh.top + self.mesh.dy, self.mesh.dy)
     #     return np.meshgrid(x, y)
 
-    def initialize_simulation(self):
+    def _initialize_simulation(self):
         """
+        (private method)
+
         Sets up initial reservoir fields, permeability, and time step.
+
+        :return: initialized properties of simulation. Required in ``__init__`` function
+        :rtype: None
         """
         self.phi = self._compute_phi()
 
@@ -183,6 +200,8 @@ class Simulation:
 
     def _compute_phi(self):
         """
+        (private method)
+
         Compute level set function phi at each grid point.
         Equivalent to MATLAB get_phi_test function.
         """
@@ -202,6 +221,8 @@ class Simulation:
     
     def _z_func_test(self, x, y):
         """
+        (private method)
+
         Compute the initial position of the water front.
         Equivalent to MATLAB z_func_test.
         
@@ -226,6 +247,8 @@ class Simulation:
 
     def _compute_permeability(self):
         """
+        (private method)
+
         Compute permeability matrix KK based on the flag.
         Equivalent to MATLAB KKdef function.
         """
@@ -280,6 +303,8 @@ class Simulation:
     
     def _characteristic_coordinates(self, x, y, s, snew, g, f, f_s, D, pc_s, pc_g, u, v, dt, para, flag):
         """
+        (private method)
+
         Compute redefined characteristic coordinates (xmod, ymod) according to Neumann boundary conditions.
         """
         dx, dy = para.box.dx, para.box.dy
@@ -313,6 +338,8 @@ class Simulation:
 
     def _export_results(self):
         """
+        (private method)
+
         Saves simulation sim_results to CSV files.
         """
         import os
@@ -338,7 +365,8 @@ class Simulation:
         assert self.water.water_saturation is not None, SimulationCalcInputException("SimulationCalcInputError:WaterSaturationMatrixUnavailable")
         try:
             # TODO: Updating the Grid with the initial source and production well flowrates (actual steps will be done within the 'Grid' Class)
-
+                # Lines 95-104 in MATLAB code
+            
 
             # TODO: Running primary while loop to iterate through time-steps
             t = 0
