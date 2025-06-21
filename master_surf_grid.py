@@ -20,6 +20,9 @@ from user_input.gui import UserInputGUI
 from lib.simulation import Simulation
 
 def main() -> None:
+    """
+    Main Function for simulation :) !!!
+    """
     root = tk.Tk()
     app = UserInputGUI(root)
     root.mainloop()

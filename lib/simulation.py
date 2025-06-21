@@ -1,5 +1,11 @@
 """
 This python script contains the class definition for running simulations
+
+This Python code has been derived from the MATLAB Surfactant-Polymer Flooding Simulation 
+developed by Sourav Dutta and Rohit Mishra.
+
+@author: Bhargav Akula Ramesh Kumar and Carlos Acosta Caripo
+
 """
 import os
 
