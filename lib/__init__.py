@@ -1,3 +1,3 @@
-from . import enumerations, simulation, polymer, para, surfactant 
+from . import enumerations, simulation, polymer, grid, surfactant 
 
 name = "lib"

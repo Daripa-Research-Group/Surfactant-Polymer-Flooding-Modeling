@@ -11,7 +11,6 @@ Sourav Dutta and Rohit Mishra.
 from types import LambdaType
 from lib.enumerations import SimulationConstants, SurfactantList
 from Exceptions import SimulationCalcInputException
-from lib.grid import Grid
 import numpy as np
 import scipy as sp
 from scipy.sparse.linalg import bicgstab

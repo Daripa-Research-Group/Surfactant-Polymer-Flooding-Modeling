@@ -12,7 +12,7 @@ import scipy as sp
 from scipy.sparse.linalg import bicgstab
 from enumerations import ModelType, PolymerList, SimulationConstants
 from lib.Exceptions import SimulationCalcInputException
-from lib.para import Box
+from lib.grid import Grid
 
 class Polymer:
     """
