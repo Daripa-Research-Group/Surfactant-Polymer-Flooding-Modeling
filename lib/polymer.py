@@ -11,8 +11,8 @@ import numpy as np
 import scipy as sp
 from scipy.sparse.linalg import bicgstab
 from enumerations import ModelType, PolymerList, SimulationConstants
-from lib.Exceptions import SimulationCalcInputException
-from lib.grid import Grid
+from Exceptions import SimulationCalcInputException
+from grid import Grid
 
 class Polymer:
     """
@@ -221,7 +221,7 @@ class Polymer:
     def compute_concentration(
             self, 
             grid: tuple,
-            mesh: Box,
+            mesh: Grid,
             u: np.ndarray, 
             v: np.ndarray,
             dt: float,

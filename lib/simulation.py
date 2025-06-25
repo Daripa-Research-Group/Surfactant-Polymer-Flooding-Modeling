@@ -82,7 +82,7 @@ class Simulation:
             raise UserInputException("UserInputError:BadPolymerConcentrationAssignment", user_input_dict)
 
         try:
-            surfactant_type = SurfactantList(user_input_dict["surfactant_type"])
+            surfactant_type = SurfactantList.get_by_value(user_input_dict["surfactant_type"])
             if surfactant_type is None:
                 raise ValueError
         except (KeyError, ValueError, TypeError):
@@ -113,13 +113,11 @@ class Simulation:
         self.phi = None  # Level set function (relates to porosity)
         self.KK = None  # Permeability tensor
         self.time_step = None
+        self.u, self.v = self._initialize_pressure_and_velocity()
         self._initialize_simulation() #will initialize phi, KK, and time_step
         if(self.phi is None or self.KK is None or self.time_step is None): #Raise Exception if not properly initialized...
             raise SimulationCalcInputException("SimulationCalcInputError:BadInitialSimulationPropertiesCalculation") 
         
-        #TODO: Need to implement ``self._initialize_pressure_and_velocity()`` private method
-        self.u = None
-        self.v = None
 
         # Initalizing Polymer Object
         self.polymer = Polymer(
@@ -153,11 +151,13 @@ class Simulation:
         self.water.initialize(grid_shape=grid_shape)
 
         # Properties for Exporting Simulation Results
-        self.source_prod_flows = np.zeros((self.mesh.m, self.mesh.n)) # ``f`` in MATLAB code
-        self.COC = np.zeros((1,2000))
-        self.miuaTcal = np.zeros((1,2000))
-        self.lambdaTcal = np.zeros((1,2000))
-
+        self.source_prod_flows = np.zeros((self.mesh.m, self.mesh.n)) # ``f`` in MATLAB code (source and sink terms)
+        self.COC = np.zeros((1,2000)) #Cumulative Oil Recovered
+        self.miuaTcal = np.zeros((1,2000)) # Total Aqueous Viscosity
+        self.lambdaTcal = np.zeros((1,2000)) # Total Mobility (λ_o + λ_a)
+        ##The following properties require memmaps:
+        self.ProdRate, self.CROIP = self._initialize_memmap_properties() #ProdRate (Production Rate) / CROIP (Cummulative Remaining Oil In Place)
+        self.MFW = [] # Mean Finger Width (will be converted into a numpy array when reporting)
 
     def _initialize_pressure_and_velocity(self):
         """
@@ -166,7 +166,30 @@ class Simulation:
         TODO: Initializing global pressure ('u') and velocity matrices ('v')
         Will use methods from ``Grid`` Class for initialization
         """
-        pass
+        u = np.zeros((self.mesh.n+1, self.mesh.m+1))
+        v = np.zeros((self.mesh.n+1, self.mesh.m+1))
+
+        return u, v
+
+    def _initialize_memmap_properties(self):
+        """
+        (private method)
+
+        Will initialize the ``ProdRate`` and ``CROIP`` properties.
+        Using memmaps to allow window's users to run program.
+
+        :return: Initialized ``ProdRate`` and ``CROIP`` properties
+        :rtype: list
+        """
+        os.makedirs('memmaps', exist_ok=True)
+        tf = 500
+        dt = self.mesh.dx / self.source_flow_magnitude
+        timestamps = int(np.floor(tf / dt))
+        CROIP = np.memmap("memmaps/ProdRate.dat", dtype="float64", mode="w+", shape=(1, timestamps))
+        ProdRate = np.memmap("memmaps/ProdRate.dat", dtype="float64", mode="w+", shape=(1, timestamps))
+        
+        return ProdRate, CROIP
+
 
     def _create_mesh(self):
         """

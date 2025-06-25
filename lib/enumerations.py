@@ -70,8 +70,8 @@ class SurfactantList(Enum):
     """
     List of Surfactants that can be selected for the simulation runs
     """
-    Alkyl_Ether_Sulfate = [1, lambda GG: 10.001 / (GG + 1),lambda GG: (-10.001)/((GG + 1) ** 2)]
-    No_Surfactant = [2, None, None]
+    Alkyl_Ether_Sulfate = (1, lambda GG: 10.001 / (GG + 1),lambda GG: (-10.001)/((GG + 1) ** 2))
+    No_Surfactant = (2, lambda GG: 0, lambda GG: 0)
 
     @property
     def Id(self):

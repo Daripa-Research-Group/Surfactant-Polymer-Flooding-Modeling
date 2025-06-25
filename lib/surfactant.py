@@ -9,7 +9,8 @@ Sourav Dutta and Rohit Mishra.
 
 
 from types import LambdaType
-from lib.enumerations import SimulationConstants, SurfactantList
+from enumerations import SimulationConstants, SurfactantList
+from grid import Grid
 from Exceptions import SimulationCalcInputException
 import numpy as np
 import scipy as sp
@@ -76,7 +77,7 @@ class Surfactant:
     def compute_concentration(
             self,
             grid: tuple,
-            mesh: Box,
+            mesh: Grid,
             u: np.ndarray, 
             v: np.ndarray,
             dt: float,

@@ -9,12 +9,12 @@ Sourav Dutta and Rohit Mishra.
 
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
+from scipy.sparse.linalg import bicgstab
 from enumerations import ModelType, SimulationConstants
 from Exceptions import SimulationCalcInputException
 from grid import Grid
 from polymer import Polymer
-
-from scipy.sparse.linalg import bicgstab
+from surfactant import Surfactant
 
 class Water:
     """
