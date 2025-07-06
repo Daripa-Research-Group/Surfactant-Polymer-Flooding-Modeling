@@ -22,7 +22,7 @@ from enumerations import (
 from Exceptions import SimulationCalcInputException, UserInputException
 from polymer import Polymer
 from surfactant import Surfactant
-from water import Water #TODO: Merge into water refactor branch
+from water import Water 
 from scipy.io import loadmat
 os.makedirs("memmaps", exist_ok=True) #ensures that the program works on computers with RAM constraints
 
