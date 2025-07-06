@@ -53,3 +53,4 @@ user_dict = {
 }
 sim1 = simulation.Simulation(user_input_dict=user_dict)
 
+print(sim1.source_prod_flow)
