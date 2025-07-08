@@ -159,6 +159,7 @@ class Simulation:
         self.ProdRate, self.CROIP = self._initialize_memmap_properties() #ProdRate (Production Rate) / CROIP (Cummulative Remaining Oil In Place)
         self.MFW = [] # Mean Finger Width (will be converted into a numpy array when reporting)
 
+
     # Dependent Property of Simulation Class
     _source_prod_flow = None
     @property
@@ -431,7 +432,7 @@ class Simulation:
                 # Created a property to hold this information (self.source_flow_flow)
             
 
-            # TODO: Running primary while loop to iterate through time-steps
+            # TODO: Running primary while loop to iterate through time-steps (Redo with Carlos!!)
             t = 0
             tf = 500
             dt = self.mesh.dx / self.source_flow_magnitude
