@@ -470,17 +470,17 @@ class Simulation:
                 else:
                     raise SimulationCalcInputException("SimulationInputException: Improper model type provided... please try again...")
 
-            #TODO:Update 'tsave':
-            tsave += tcal
+                #TODO:Update 'tsave':
+                tsave += tcal
 
-            #TODO:calculating mobilities of wetting and non-wettting phases
-                #need to invoke function within 'Water' class
+                #TODO:calculating mobilities of wetting and non-wettting phases
+                    #need to invoke function within 'Water' class
 
-            #TODO:Update beta value
+                #TODO:Update beta value
 
-            #TODO:Update grid & update global pressure (u) and velocity(v):
+                #TODO:Update grid & update global pressure (u) and velocity(v):
 
-            #TODO: Solve transport equations to update concentration & saturation matrices:
+                #TODO: Solve transport equations to update concentration & saturation matrices:
 
 
 
