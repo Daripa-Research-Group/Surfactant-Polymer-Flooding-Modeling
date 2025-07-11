@@ -110,7 +110,7 @@ class Simulation:
         self.mesh = self._create_mesh()
         grid_shape = (self.mesh.n, self.mesh.m)
         self.x, self.y = self.mesh.get_meshgrid 
-        self.phi = None  # Level set function (relates to porosity)
+        self.phi = None  # FIXME: Should check if this functionality code 
         self.KK = None  # Permeability tensor
         self.time_step = None
         self.u, self.v = self._initialize_pressure_and_velocity()
