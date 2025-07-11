@@ -177,7 +177,7 @@ class Simulation:
             bool_Heterogenous_and_Rectilinear = (self.permeability_flag.value == PermeabilityType.Heterogenous.value) \
                                                 and (self.reservoir_geometry.value == ResevoirGeometry.Rectilinear.value) 
             bool_Heterogenous_and_Quarter_Five_Spot = (self.permeability_flag.value == PermeabilityType.Heterogenous.value) \
-                                                and (self.reservoir_geometry.value == ResevoirGeometry.Rectilinear.value) 
+                                                and (self.reservoir_geometry.value == ResevoirGeometry.Quarter_Five_Spot.value) 
             if(bool_Homogenous_and_Rectilinear or bool_Heterogenous_and_Rectilinear):
                 print("reached here")
                 self._source_prod_flow[:, 0] = self.source_flow_magnitude
@@ -315,53 +315,59 @@ class Simulation:
         Compute permeability matrix KK based on the flag.
         Equivalent to MATLAB KKdef function.
         """
-        flag = self.permeability_flag.value
+        bool_Homogenous_and_Rectilinear = (self.permeability_flag.value == PermeabilityType.Homogenous.value) \
+                                            and (self.reservoir_geometry.value == ResevoirGeometry.Rectilinear.value)
+        bool_Heterogenous_and_Rectilinear = (self.permeability_flag.value == PermeabilityType.Heterogenous.value) \
+                                            and (self.reservoir_geometry.value == ResevoirGeometry.Rectilinear.value) 
+        bool_Heterogenous_and_Quarter_Five_Spot = (self.permeability_flag.value == PermeabilityType.Heterogenous.value) \
+                                            and (self.reservoir_geometry.value == ResevoirGeometry.Quarter_Five_Spot.value) 
         m = self.mesh.m
-
-        if flag == 1:
+        KK = None
+        if(bool_Homogenous_and_Rectilinear):
             # Homogeneous
             Kmax = 100
             KK = Kmax * np.ones((m + 1, m + 1))
-        elif flag == 2:
+        elif(bool_Heterogenous_and_Rectilinear):
             # Heterogeneous
             Kmax = 100
             KK = Kmax * (
                 0.5 * (1 - 10 ** (-7)) * (np.sin(6 * np.pi * np.cos(self.x)) * np.cos(4 * np.pi * np.sin(3 * self.y)) - 1) + 1
             )
-        elif flag == 3:
-            # Impermeable block at center
-            KK = 3000 * np.ones((m + 1, m + 1))
-            center = m // 2
-            delta = m // 8
-            KK[
-                center - delta : center + delta + 1,
-                center - delta : center + delta + 1,
-            ] = 3
-        elif flag == 4:
-            # Impermeable blocks off-center
-            KK = 3000 * np.ones((m + 1, m + 1))
-            KK[
-                (3*m)//4 - m//12 : (3*m)//4 + m//12 + 1,
-                (2*m)//3 - m//12 : (2*m)//3 + m//12 + 1
-            ] = 3
-            KK[
-                m//3 - m//10 : m//3 + m//10 + 1,
-                m//3 - m//10 : m//3 + m//10 + 1
-            ] = 3
-        elif flag == 5:
+        # elif flag == 3:
+        #     # Impermeable block at center
+        #     KK = 3000 * np.ones((m + 1, m + 1))
+        #     center = m // 2
+        #     delta = m // 8
+        #     KK[
+        #         center - delta : center + delta + 1,
+        #         center - delta : center + delta + 1,
+        #     ] = 3
+        # elif flag == 4:
+        #     # Impermeable blocks off-center
+        #     KK = 3000 * np.ones((m + 1, m + 1))
+        #     KK[
+        #         (3*m)//4 - m//12 : (3*m)//4 + m//12 + 1,
+        #         (2*m)//3 - m//12 : (2*m)//3 + m//12 + 1
+        #     ] = 3
+        #     KK[
+        #         m//3 - m//10 : m//3 + m//10 + 1,
+        #         m//3 - m//10 : m//3 + m//10 + 1
+        #     ] = 3
+        elif(bool_Heterogenous_and_Quarter_Five_Spot):
             # Load Upper Ness formation (SPE10)
-            mat_data = loadmat('/Resources/KK30Ness.mat')
+            print("reached here")
+            mat_data = loadmat('./Resources/KK30Ness.mat') #FIXME: when using master_surf_grid need to change this path
             if 'KK' not in mat_data:
                 raise SimulationCalcInputException('SimulationInputException: KK matrix not found in KK30Ness.mat file.')
             KK = mat_data['KK']
-        elif flag == 6:
-            # Load Tarbert formation (SPE10)
-            mat_data = loadmat('/Resources/KK30Tabert.mat')
-            if 'KK' not in mat_data:
-                raise SimulationCalcInputException('SimulationInputException: KK matrix not found in KK30Tabert.mat file.')
-            KK = mat_data['KK']
-        else:
-            raise SimulationCalcInputException("SimulationInputException: Unknown permeability flag.")
+        # elif flag == 6:
+        #     # Load Tarbert formation (SPE10)
+        #     mat_data = loadmat('/Resources/KK30Tabert.mat')
+        #     if 'KK' not in mat_data:
+        #         raise SimulationCalcInputException('SimulationInputException: KK matrix not found in KK30Tabert.mat file.')
+        #     KK = mat_data['KK']
+        # else:
+        #     raise SimulationCalcInputException("SimulationInputException: Unknown permeability flag.")
         return KK
     
     def _characteristic_coordinates(self, x, y, s, snew, g, f, f_s, D, pc_s, pc_g, u, v, dt, para, flag):
@@ -426,64 +432,8 @@ class Simulation:
         :rtype: dict
         """
         assert self.water.water_saturation is not None, SimulationCalcInputException("SimulationCalcInputError:WaterSaturationMatrixUnavailable")
-        try:
-            # TODO: Updating the Grid with the initial source and production well flowrates (actual steps will be done within the 'Grid' Class)
-                # Lines 95-104 in MATLAB code
-                # Created a property to hold this information (self.source_flow_flow)
-            
-
-            # TODO: Running primary while loop to iterate through time-steps (Redo with Carlos!!)
-            t = 0
-            tf = 500
-            dt = self.mesh.dx / self.source_flow_magnitude
-            tcal = 0
-            tsave = 0
-            viscosity_aqueous_save = 0
-            shear_force_save = 0
-            concentration_save = 0
-            source_flow_magnitude_total = 0
-            sum_of_saturation_matrix = 0
-
-            # This while loop will run as long as little to no water in production well and current timestep < final timestep
-            while(t < tf and self.water.water_saturation[self.mesh.n, self.mesh.m] <= 0.70):
-                #update the total source flow magnitude:
-                source_flow_magnitude_total += self.source_flow_magnitude
-
-                #update time:
-                t += dt
-                innerIter = 0
-                
-                #compute viscosity:
-                if(self.model_type == ModelType.No_Shear_Thinning):
-                    # Will need the aqueous viscosity for no shear thinning
-                    if(self.x is None or self.y is None or self.u is None or self.v is None):
-                        raise SimulationCalcInputException("SimulationInputException: Grid, global pressure, or velocity not initialized. Please try again.")
-                    grid =(self.x, self.y)
-                    [polymer_viscosity_matrix, shear_rate_matrix] = \
-                            self.polymer.compute_viscosity(grid=grid, u=self.u, v=self.v, model_type=self.model_type, aqueous_viscosity=self.water.viscosity_array)
-                elif(self.model_type == ModelType.Shear_Thinning_On):
-                    if(self.x is None or self.y is None or self.u is None or self.v is None):
-                        raise SimulationCalcInputException("SimulationInputException: Grid, global pressure, or velocity not initialized. Please try again.")
-                    grid =(self.x, self.y)
-                    [polymer_viscosity_matrix, shear_rate_matrix] = \
-                            self.polymer.compute_viscosity(grid=grid, u=self.u, v=self.v, model_type=self.model_type)
-                else:
-                    raise SimulationCalcInputException("SimulationInputException: Improper model type provided... please try again...")
-
-                #TODO:Update 'tsave':
-                tsave += tcal
-
-                #TODO:calculating mobilities of wetting and non-wettting phases
-                    #need to invoke function within 'Water' class
-
-                #TODO:Update beta value
-
-                #TODO:Update grid & update global pressure (u) and velocity(v):
-
-                #TODO: Solve transport equations to update concentration & saturation matrices:
-
-
-
-        except Exception as e:
-            print(e)
+        # try:
+        #
+        # except Exception as e:
+        #     print(e)
 

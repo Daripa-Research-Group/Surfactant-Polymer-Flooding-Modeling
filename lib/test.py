@@ -45,7 +45,7 @@ user_dict = {
         "simulation_id": 1,
         "model_type": MODEL["Shear_Thinning"],
         "reservoir_geometry": GEOMETRY["Rectilinear"],
-        "permeability": PERMEABILITY["Homogeneous"],
+        "permeability": PERMEABILITY["Heterogeneous"],
         "polymer_type": POLYMER["Xanthane"],
         "polymer_concentration": 0.001,
         "surfactant_type": SURFACTANT["Alkyl_Ether_Sulfate"],
@@ -53,4 +53,4 @@ user_dict = {
 }
 sim1 = simulation.Simulation(user_input_dict=user_dict)
 
-print(sim1.source_prod_flow)
+print(f"{sim1.phi}")
