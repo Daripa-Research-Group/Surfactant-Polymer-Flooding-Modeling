@@ -292,15 +292,19 @@ class Simulation:
         Takes array user_input_dict x, y.
         """
         init_front_hs = 0.1
-        permeability_input = self.permeability_flag.value
-
-        if permeability_input == 1:
+        bool_Homogenous_and_Rectilinear = (self.permeability_flag.value == PermeabilityType.Homogenous.value) \
+                                            and (self.reservoir_geometry.value == ResevoirGeometry.Rectilinear.value)
+        bool_Heterogenous_and_Rectilinear = (self.permeability_flag.value == PermeabilityType.Heterogenous.value) \
+                                            and (self.reservoir_geometry.value == ResevoirGeometry.Rectilinear.value) 
+        bool_Heterogenous_and_Quarter_Five_Spot = (self.permeability_flag.value == PermeabilityType.Heterogenous.value) \
+                                            and (self.reservoir_geometry.value == ResevoirGeometry.Quarter_Five_Spot.value) 
+        if bool_Homogenous_and_Rectilinear:
             # Homogeneous
             out = y - init_front_hs + 0.01 * np.cos(80 * np.pi * x)
-        elif permeability_input == 2:
+        elif bool_Heterogenous_and_Rectilinear:
             # Rectilinear Heterogeneous
             out = y - init_front_hs
-        elif permeability_input == 5:
+        elif bool_Heterogenous_and_Quarter_Five_Spot:
             # Quarter five spot 
             out = np.square(x) + np.square(y) - 0.015
         else:
@@ -355,7 +359,6 @@ class Simulation:
         #     ] = 3
         elif(bool_Heterogenous_and_Quarter_Five_Spot):
             # Load Upper Ness formation (SPE10)
-            print("reached here")
             mat_data = loadmat('./Resources/KK30Ness.mat') #FIXME: when using master_surf_grid need to change this path
             if 'KK' not in mat_data:
                 raise SimulationCalcInputException('SimulationInputException: KK matrix not found in KK30Ness.mat file.')
