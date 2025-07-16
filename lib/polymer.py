@@ -160,14 +160,14 @@ class Polymer:
             raise SimulationCalcInputException("SimulationInputException: Polymer concentration matrix and/or scalar concentration value not initialized...") 
 
         #if model_type is NO SHEAR THINNING:
-        if(model_type == ModelType.No_Shear_Thinning.value):
+        if(model_type.value == ModelType.No_Shear_Thinning.value):
             if(aqueous_viscosity is None):
                 raise SimulationCalcInputException("SimulationInputException: Aqueous viscosity matrix required but not provided. Please try again.")
             ## the scalar viscosity is equal to the max within the aqueous viscosity matrix
             self.viscosity_scalar = np.max(aqueous_viscosity[0, :])
             self.viscosity_matrix = self.viscosity_scalar*np.ones((SimulationConstants.Grid_Size.value,SimulationConstants.Grid_Size.value))
         #Model Type is 'Sourav Implementation':
-        elif(model_type == ModelType.Sourav_Implementation.value):
+        elif(model_type.value == ModelType.Sourav_Implementation.value):
             #TODO: Will keep empty until properly understood how to implement
             pass
         #if polymer shear thinning is ON:
@@ -207,11 +207,11 @@ class Polymer:
 
             for i in range(row):
                 for j in range(col):
-                    if self.concentration_matrix[i, j] > 0:
-                        self.shear_rate[i, j] = 2 * np.sqrt(pi_D[i, j])
-                        if self.shear_rate[i, j] != 0:
-                            self.viscosity_matrix[i, j] = epsilon_0[i, j] * (self.shear_rate[i, j] ** (n_0[i, j] - 1))
-                            self.viscosity_matrix[i, j] = np.clip(self.viscosity_matrix[i, j], viscosity_water, 100)
+                    self.viscosity_matrix[i, j] = epsilon_0[i,j] * (self.shear_rate[i,j]**(n_0[i,j]-1))
+                    if(self.viscosity_matrix[i,j] < viscosity_water):
+                        self.viscosity_matrix[i,j] = viscosity_water
+                    if(self.viscosity_matrix[i,j] > 100):
+                        self.viscosity_matrix[i,j] = 100
 
         return [self.viscosity_matrix, self.shear_rate]
 

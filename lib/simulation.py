@@ -158,6 +158,7 @@ class Simulation:
         ##The following properties require memmaps:
         self.ProdRate, self.CROIP = self._initialize_memmap_properties() #ProdRate (Production Rate) / CROIP (Cummulative Remaining Oil In Place)
         self.MFW = [] # Mean Finger Width (will be converted into a numpy array when reporting)
+        self.integrated_inlet_flow = 0 # "src_total" in the MATLAB version of the code
 
 
     # Dependent Property of Simulation Class
@@ -435,8 +436,62 @@ class Simulation:
         :rtype: dict
         """
         assert self.water.water_saturation is not None, SimulationCalcInputException("SimulationCalcInputError:WaterSaturationMatrixUnavailable")
-        # try:
-        #
-        # except Exception as e:
-        #     print(e)
+        bool_Homogenous_and_Rectilinear = (self.permeability_flag.value == PermeabilityType.Homogenous.value) \
+                                            and (self.reservoir_geometry.value == ResevoirGeometry.Rectilinear.value)
+        bool_Heterogenous_and_Rectilinear = (self.permeability_flag.value == PermeabilityType.Heterogenous.value) \
+                                            and (self.reservoir_geometry.value == ResevoirGeometry.Rectilinear.value) 
+        bool_Heterogenous_and_Quarter_Five_Spot = (self.permeability_flag.value == PermeabilityType.Heterogenous.value) \
+                                            and (self.reservoir_geometry.value == ResevoirGeometry.Quarter_Five_Spot.value) 
+        try:
+        ## STEP 1: initializing start time, end time, and time step
+            t = 0
+            t_cal = 0
+            t_stop = 500
+            dt = self.mesh.dx / self.source_flow_magnitude
+            # dt value if running under Quarter Five Spot & Heterogeneous scenario:
+            if(bool_Heterogenous_and_Quarter_Five_Spot):
+                dt *= 100
+
+        ## STEP 2: Initiating the primary 'while' loop that will keep running until water shows up in production well
+            # while(t < t_stop and self.water.water_saturation[self.mesh.n, self.mesh.m] <= 0.70):
+            while(t < 1):
+            ## STEP 2.1: Increment time and amount of feed used:
+                self.integrated_inlet_flow += self.source_flow_magnitude
+                t += dt
+                
+
+            ## STEP 2.2: Compute viscosities:
+                x = self.mesh.x
+                y = self.mesh.y
+                grid_tuple = (x, y)
+                if(self.model_type.value == ModelType.No_Shear_Thinning.value): #if No Polymer Shear Thinning
+                    self.water.compute_viscosity(grid = self.mesh,
+                                                 model_type = self.model_type,
+                                                 polymer = self.polymer,
+                                                 u = self.u,
+                                                 v = self.v)
+                    self.polymer.compute_viscosity(grid = grid_tuple,
+                                                   u = self.u,
+                                                   v = self.v,
+                                                   model_type = self.model_type,
+                                                   aqueous_viscosity = self.water.viscosity_array)
+                elif(self.model_type.value == ModelType.Shear_Thinning_On.value):
+                    self.polymer.compute_viscosity(grid = grid_tuple,
+                                                   u = self.u,
+                                                   v = self.v,
+                                                   model_type = self.model_type,
+                                                   aqueous_viscosity = None)
+                    self.water.compute_viscosity(grid = self.mesh,
+                                                 model_type = self.model_type,
+                                                 polymer = self.polymer,
+                                                 u = self.u,
+                                                 v = self.v)
+
+
+
+
+
+
+        except Exception as e:
+            print(e)
 

@@ -50,8 +50,8 @@ class Water:
         self.init_oleic_saturation = init_oleic_saturation
         self.miuw = miuw
         self.miuo = miuo
-        self.water_saturation = None
-        self.viscosity_array = None
+        self.water_saturation = None # water saturation matrix
+        self.viscosity_array = None # aqueous viscosity matrix
         self.phi = phi
 
     def initialize(
@@ -90,10 +90,13 @@ class Water:
             v: np.ndarray | None = None,
             ):
         """
-        Compute aqueous viscosity (NO shear-thinning version).
+        Compute aqueous viscosity.
 
         :param grid: Grid object for deterrmining matrix size
         :type grid: Grid
+
+        :param model_type: Type of model we are running (Polymer shear thinning ON or OFF)
+        :type model_type: enum 'ModelType'
 
         :param polymer: holds the information about the polymer in the sim
         :type polymer: Polymer

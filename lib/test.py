@@ -44,13 +44,16 @@ SURFACTANT = {
 user_dict = {
         "simulation_id": 1,
         "model_type": MODEL["Shear_Thinning"],
-        "reservoir_geometry": GEOMETRY["Quarter Five Spot"],
-        "permeability": PERMEABILITY["Heterogeneous"],
+        "reservoir_geometry": GEOMETRY["Rectilinear"],
+        "permeability": PERMEABILITY["Homogeneous"],
         "polymer_type": POLYMER["Xanthane"],
         "polymer_concentration": 0.001,
         "surfactant_type": SURFACTANT["Alkyl_Ether_Sulfate"],
         "surfactant_concentration": 0,
 }
+# FIXME: discrepancy in polymer viscosity matrix. Checked the u, v, x, and y (x and y from 'Grid' class)
 sim1 = simulation.Simulation(user_input_dict=user_dict)
-
-print(f"{sim1.phi}")
+sim1.run()
+print(f"x: {sim1.mesh.x}")
+print(f"y: {sim1.mesh.y}")
+print(sim1.polymer.viscosity_matrix)

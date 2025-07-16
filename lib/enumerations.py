@@ -49,15 +49,15 @@ class PolymerList(Enum):
         return self.value[0]
 
     @property
-    def Density(self):
+    def Density(self): # kg/m^3
         return self.value[1]
 
     @property
-    def n_coeff(self):
+    def n_coeff(self): #dimensionless
         return self.value[2]
 
     @property
-    def e_coeff(self):
+    def e_coeff(self): #dimensionless
         return self.value[3]
 
     @classmethod
