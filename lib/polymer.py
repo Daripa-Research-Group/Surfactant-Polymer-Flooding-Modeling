@@ -21,8 +21,8 @@ class Polymer:
     def __init__(
             self,
             name : PolymerList,
-            e_coeff : list,
-            n_coeff : list,
+            e_coeff : np.ndarray,
+            n_coeff : np.ndarray,
             rho : float,
             concentration_scalar : float,
             phi: np.ndarray,
@@ -114,7 +114,7 @@ class Polymer:
 
         if(self.viscosity_scalar is None):
             beta1 = 15000 #constant that came from the MATLAB code
-            self.viscosity_scalar = SimulationConstants.Water_Viscosity.value*(1+beta1+self.concetration_scalar)
+            self.viscosity_scalar = SimulationConstants.Water_Viscosity.value*(1+beta1*self.concetration_scalar)
         
         if(self.viscosity_matrix is None):
             self.viscosity_matrix = self.viscosity_scalar * np.ones((n+1,m+1))
@@ -171,7 +171,7 @@ class Polymer:
             #TODO: Will keep empty until properly understood how to implement
             pass
         #if polymer shear thinning is ON:
-        elif(model_type == ModelType.Shear_Thinning_On.value):
+        elif(model_type.value == ModelType.Shear_Thinning_On.value):
             if(aqueous_viscosity is not None):
                 raise SimulationCalcInputException("SimulationInputException: Aqueous viscosity reliant on changing polymer viscosity. Update will be done within 'Water' Class")
             if(self.shear_rate is None or self.viscosity_matrix is None):
@@ -181,37 +181,49 @@ class Polymer:
             viscosity_water = SimulationConstants.Water_Viscosity.value
 
             # Formulating the numerically derived power law equation
-            w1 = self.rho*self.concentration_matrix
-            w2 = rho_water*(1-self.concentration_matrix)
-            wppm = (w1/(w1+w2))*(10**6)
             w1_0 = self.rho*self.init_concentration_matrix #from the variable w10 in MATLAB code
             w2_0 = rho_water*(1-self.init_concentration_matrix) #from the variable w20 in MATLAB code
             wppm_0 = (w1_0/(w1_0+w2_0))*(10**6) #from the wppm0 variable in MATLAB code
+            print(f'type wppm_0: {np.shape(wppm_0)}')
+            print(f'type w1_0: {np.shape(w1_0)}')
+            print(f'type w2_0: {np.shape(w2_0)}')
             
-            ## Determining the epsilon and n coefficients for the power law equation 
-            epsilon_0 = self.e_coeff[0]*(wppm_0**self.e_coeff[1])
-            n_0 = np.min(self.n_coeff[0]*(wppm_0**self.n_coeff[1]))
-            epsilon = self.e_coeff[0]*(wppm**self.e_coeff[1])
-            n = np.min(self.n_coeff[0]*(wppm**self.n_coeff[1]))
+            ## Determining the epsilon and n coefficients for the power law equation
+            print(f'shape e_coeff: {np.shape(self.e_coeff)}')
+            print(f'shape n_coeff: {np.shape(self.n_coeff)}')
+            epsilon_0 = self.e_coeff[0].item() * np.power(wppm_0, self.e_coeff[1].item())
+            n_0 = np.min(self.n_coeff[0].item() * np.power(wppm_0, self.n_coeff[1].item()), 1)
+            print(f'type epsilon_0: {np.shape(n_0)}')
+            print(f'type n_0: {np.shape(n_0)}')
 
             row = np.size(self.concentration_matrix, 0)
             col = np.size(self.concentration_matrix, 1)
 
             # Compute divergence terms
-            a1 = np.gradient(v, axis=0)
-            a2 = np.gradient(u, axis=1)
-            a3 = np.gradient(u, axis=0)
-            a4 = np.gradient(v, axis=1)
+            print(f'shape: {np.shape(x)}')
+            a1 = self.divergence(x,v)
+            a2 = self.divergence(y,u)
+            a3 = self.divergence(x,u)
+            a4 = self.divergence(y,v)
+            # a2 = np.gradient(u,x, axis=1)
+            # a3 = np.gradient(u,y, axis=0)
+            # a4 = np.gradient(v,y, axis=1)
 
-            pi_D = np.abs(-0.25 * (a1 + a2) ** 2 + a3 * a4)
-
+            pi_D = np.abs(-0.25 * ((a1 + a2) ** 2) + a3 * a4)
             for i in range(row):
                 for j in range(col):
-                    self.viscosity_matrix[i, j] = epsilon_0[i,j] * (self.shear_rate[i,j]**(n_0[i,j]-1))
-                    if(self.viscosity_matrix[i,j] < viscosity_water):
-                        self.viscosity_matrix[i,j] = viscosity_water
-                    if(self.viscosity_matrix[i,j] > 100):
-                        self.viscosity_matrix[i,j] = 100
+                    if(self.concentration_matrix[i,j] > 0):
+                        self.shear_rate[i,j] = 2 * np.sqrt(pi_D[i,j])
+                        print(f'shear rate: {self.shear_rate[i,j]}')
+                        if(not(self.shear_rate[i,j] == 0)):
+                            print(f'i: {i} | j: {j}')
+                            print(f"epsilon_0 type: {type(epsilon_0)}")
+                            print(f"n_0 type: {type(n_0)}")
+                            self.viscosity_matrix[i, j] = epsilon_0[i,j] * (self.shear_rate[i,j]**(n_0[i,j]-1))
+                            if(self.viscosity_matrix[i,j] < viscosity_water):
+                                self.viscosity_matrix[i,j] = viscosity_water
+                            if(self.viscosity_matrix[i,j] > 100):
+                                self.viscosity_matrix[i,j] = 100
 
         return [self.viscosity_matrix, self.shear_rate]
 
@@ -356,3 +368,17 @@ class Polymer:
         self.concentration_matrix = Cnew
 
         return self.concentration_matrix
+
+    def divergence(self, F1, F2):
+        """
+        Calculate the divergence of a 2D vector field.
+
+        Parameters:
+        F1, F2 : 2D numpy arrays
+            Components of the vector field
+
+        Returns:
+        div : 2D numpy array
+            Divergence of the vector field
+        """
+        return np.gradient(F1, axis=1) + np.gradient(F2, axis=0)

@@ -481,12 +481,12 @@ class Simulation:
                                                    v = self.v,
                                                    model_type = self.model_type,
                                                    aqueous_viscosity = None)
-                    self.water.compute_viscosity(grid = self.mesh,
-                                                 model_type = self.model_type,
-                                                 polymer = self.polymer,
-                                                 u = self.u,
-                                                 v = self.v)
-
+                    # self.water.compute_viscosity(grid = self.mesh,
+                    #                              model_type = self.model_type,
+                    #                              polymer = self.polymer,
+                    #                              u = self.u,
+                    #                              v = self.v)
+                    #
 
 
 

@@ -7,6 +7,7 @@ Sourav Dutta and Rohit Mishra.
 @author: Bhargav Akula Ramesh Kumar, Carlos Acosta Caripo
 """
 from enum import Enum
+import numpy as np
 
 
 class SimulationConstants(Enum):
@@ -40,8 +41,8 @@ class PolymerList(Enum):
     """
     List of Polymers that can be selected for the simulation runs
     """
-    Xanthane = (1, 1500, [3.05428284, -0.27294817], [1.15410398e-04, 2.04937780e00])
-    Schizophyllan = (2, 1300, [4.86265534, -0.41570227], [0.03647214, 1.32175949])
+    Xanthane = (1, 1500, np.array([[3.05428284], [-0.27294817]]), np.array([[1.15410398e-04], [2.04937780e00]]))
+    Schizophyllan = (2, 1300, np.array([[4.86265534], [-0.41570227]]), np.array([[0.03647214], [1.32175949]]))
     No_Polymer = (3, 0, [0, 0], [0, 0])
 
     @property
