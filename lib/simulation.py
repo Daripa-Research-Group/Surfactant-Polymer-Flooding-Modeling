@@ -461,22 +461,19 @@ class Simulation:
                 
 
             ## STEP 2.2: Compute viscosities:
-                x = self.mesh.x
-                y = self.mesh.y
-                grid_tuple = (x, y)
                 if(self.model_type.value == ModelType.No_Shear_Thinning.value): #if No Polymer Shear Thinning
                     self.water.compute_viscosity(grid = self.mesh,
                                                  model_type = self.model_type,
                                                  polymer = self.polymer,
                                                  u = self.u,
                                                  v = self.v)
-                    self.polymer.compute_viscosity(grid = grid_tuple,
+                    self.polymer.compute_viscosity(grid = self.mesh,
                                                    u = self.u,
                                                    v = self.v,
                                                    model_type = self.model_type,
                                                    aqueous_viscosity = self.water.viscosity_array)
                 elif(self.model_type.value == ModelType.Shear_Thinning_On.value):
-                    self.polymer.compute_viscosity(grid = grid_tuple,
+                    self.polymer.compute_viscosity(grid = self.mesh,
                                                    u = self.u,
                                                    v = self.v,
                                                    model_type = self.model_type,

@@ -114,7 +114,6 @@ class Polymer:
 
         if(self.shear_rate is None):
             self.shear_rate = np.zeros((n+1,m+1))
-            print(f"shape of shear_rate: {np.shape(self.shear_rate)}")
 
         if(self.viscosity_scalar is None):
             beta1 = 15000 #constant that came from the MATLAB code
@@ -128,7 +127,7 @@ class Polymer:
 
     def compute_viscosity(
             self, 
-            grid : tuple, 
+            grid : Grid, 
             u : np.ndarray, 
             v : np.ndarray, 
             model_type : ModelType,
@@ -157,8 +156,8 @@ class Polymer:
         :rtype: list
         """
         # x and y components from meshgrid
-        x = grid[0]
-        y = grid[1]
+        x = grid.x
+        y = grid.y
 
         if(self.concentration_matrix is None or self.init_concentration_matrix is None or self.concetration_scalar is None):
             raise SimulationCalcInputException("SimulationInputException: Polymer concentration matrix and/or scalar concentration value not initialized...") 
@@ -213,16 +212,20 @@ class Polymer:
 
             # Compute divergence terms
             print(f'shape: {np.shape(x)}')
-            a1 = self.divergence(x,v)
-            a2 = self.divergence(y,u)
-            a3 = self.divergence(x,u)
-            a4 = self.divergence(y,v)
+            # a1 = self.divergence(v,x)
+            # a2 = self.divergence(u,y)
+            # a3 = self.divergence(u,x)
+            # a4 = self.divergence(v,y)
+            a1 = self.divergence(x,v, dx=grid.dx, dy=grid.dy)
+            a2 = self.divergence(y,u, dx=grid.dx, dy=grid.dy)
+            a3 = self.divergence(x,u, dx=grid.dx, dy=grid.dy)
+            a4 = self.divergence(y,v, dx=grid.dx, dy=grid.dy)
             # a1 = np.gradient(v, axis=0)     # ∂V/∂y
             # a2 = np.gradient(u, axis=1)     # ∂U/∂x
             # a3 = np.gradient(u, axis=0)     # ∂U/∂y
             # a4 = np.gradient(v, axis=1)     # ∂V/∂x
 
-            pi_D = np.abs(-0.25 * ((a1 + a2) ** 2) + a3 * a4)
+            pi_D = np.abs(-0.25 * ((a1 + a2) ** 2) + a3 * a4) #FIXME: I am pressure sure we need to check this...
             print(f"viscosity of water {viscosity_water}")
             for i in range(row):
                 for j in range(col):
@@ -230,10 +233,11 @@ class Polymer:
                         self.shear_rate[i,j] = 2 * np.sqrt(pi_D[i,j])
                         # print(f'shear rate: {self.shear_rate[i,j]}')
                         if(not(self.shear_rate[i,j] == 0)):
-                            # print(f'i: {i} | j: {j}')
+                            print(f'i: {i} | j: {j}')
                             # print(f"epsilon_0 type: {type(epsilon_0)}")
                             # print(f"n_0 type: {type(n_0)}")
-                            self.viscosity_matrix[i, j] = epsilon_0[i,j] * (self.shear_rate[i,j]**(n_0[i,j]-1))
+                            self.viscosity_matrix[i,j] = epsilon_0[i,j] * (self.shear_rate[i,j]**(n_0[i,j]-1))
+                            print(self.viscosity_matrix[i,j])
                             if(self.viscosity_matrix[i,j] < viscosity_water):
                                 self.viscosity_matrix[i,j] = viscosity_water
                             if(self.viscosity_matrix[i,j] > 100):
@@ -383,16 +387,20 @@ class Polymer:
 
         return self.concentration_matrix
 
-    def divergence(self, F1, F2):
-        """
-        Calculate the divergence of a 2D vector field.
-
-        Parameters:
-        F1, F2 : 2D numpy arrays
-            Components of the vector field
-
-        Returns:
-        div : 2D numpy array
-            Divergence of the vector field
-        """
-        return np.gradient(F1, axis=1) + np.gradient(F2, axis=0)
+    # def divergence(self, F1, F2):
+    #     """
+    #     Calculate the divergence of a 2D vector field.
+    #
+    #     Parameters:
+    #     F1, F2 : 2D numpy arrays
+    #         Components of the vector field
+    #
+    #     Returns:
+    #     div : 2D numpy array
+    #         Divergence of the vector field
+    #     """
+    #     return np.gradient(F1, axis=1) + np.gradient(F2, axis=0)
+    def divergence(self, Fx, Fy, dx=1.0, dy=1.0):
+        dFx_dx = np.gradient(Fx, dx, axis=1)
+        dFy_dy = np.gradient(Fy, dy, axis=0)
+        return dFx_dx + dFy_dy
