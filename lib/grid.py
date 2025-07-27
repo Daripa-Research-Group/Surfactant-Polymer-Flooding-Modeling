@@ -101,7 +101,7 @@ class Grid:
 
         self.A = coo_matrix((data, (rows, cols)), shape=(num_nodes, num_nodes)).tocsc()
 
-    def set_B(self, source_array: np.ndarray = None):
+    def set_B(self, source_array: np.ndarray | None=None):
         """
         Sets vector B (Right Hand Side of linear system).
         """
