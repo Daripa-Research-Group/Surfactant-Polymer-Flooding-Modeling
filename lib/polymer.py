@@ -70,7 +70,7 @@ class Polymer:
 
         #properties related to the concentration (scalar concentration, matrix version of initial concentration, and current concentration matrix)
         self.concetration_scalar = concentration_scalar
-        self.init_concentration_matrix = concentration_scalar * np.ones((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value))
+        self.init_concentration_matrix = concentration_matrix 
         self.concentration_matrix = concentration_matrix 
         
         #Properties related to the viscosity
@@ -109,8 +109,12 @@ class Polymer:
         if(self.concentration_matrix is None):
             self.concentration_matrix = (~D)*self.concetration_scalar
 
+        if(self.init_concentration_matrix is None):
+            self.init_concentration_matrix = self.concetration_scalar * np.ones((n+1, m+1))
+
         if(self.shear_rate is None):
             self.shear_rate = np.zeros((n+1,m+1))
+            print(f"shape of shear_rate: {np.shape(self.shear_rate)}")
 
         if(self.viscosity_scalar is None):
             beta1 = 15000 #constant that came from the MATLAB code
@@ -184,17 +188,25 @@ class Polymer:
             w1_0 = self.rho*self.init_concentration_matrix #from the variable w10 in MATLAB code
             w2_0 = rho_water*(1-self.init_concentration_matrix) #from the variable w20 in MATLAB code
             wppm_0 = (w1_0/(w1_0+w2_0))*(10**6) #from the wppm0 variable in MATLAB code
-            print(f'type wppm_0: {np.shape(wppm_0)}')
             print(f'type w1_0: {np.shape(w1_0)}')
             print(f'type w2_0: {np.shape(w2_0)}')
             
             ## Determining the epsilon and n coefficients for the power law equation
-            print(f'shape e_coeff: {np.shape(self.e_coeff)}')
-            print(f'shape n_coeff: {np.shape(self.n_coeff)}')
-            epsilon_0 = self.e_coeff[0].item() * np.power(wppm_0, self.e_coeff[1].item())
-            n_0 = np.min(self.n_coeff[0].item() * np.power(wppm_0, self.n_coeff[1].item()), 1)
+            # print(f'shape e_coeff: {np.shape(self.e_coeff)}')
+            # print(f'shape n_coeff: {np.shape(self.n_coeff)}')
+            # epsilon_0 = float(self.e_coeff[0]) * wppm_0 ** float(self.e_coeff[1])
+            # print(f'type wppm_0: {np.shape(wppm_0)}')
+            # n_0 = np.min(self.n_coeff[0].item() * np.power(wppm_0, self.n_coeff[1].item()), 1)
+            epsilon_0 = np.zeros((np.size(self.concentration_matrix, 0), np.size(self.concentration_matrix, 1)))
+            n_0 = np.zeros((np.size(self.concentration_matrix, 0), np.size(self.concentration_matrix, 1)))
             print(f'type epsilon_0: {np.shape(n_0)}')
             print(f'type n_0: {np.shape(n_0)}')
+            for r in range(np.size(self.concentration_matrix, 0)):
+                for c in range(np.size(self.concentration_matrix, 1)):
+                    # print(f'i: {r} | j: {c}')
+                    epsilon_0[r,c] = self.e_coeff[0] * wppm_0[r,c] ** self.e_coeff[1]
+                    n_0[r,c] = min(self.n_coeff[0] * wppm_0[r,c] ** self.n_coeff[1], 1)
+
 
             row = np.size(self.concentration_matrix, 0)
             col = np.size(self.concentration_matrix, 1)
@@ -205,20 +217,22 @@ class Polymer:
             a2 = self.divergence(y,u)
             a3 = self.divergence(x,u)
             a4 = self.divergence(y,v)
-            # a2 = np.gradient(u,x, axis=1)
-            # a3 = np.gradient(u,y, axis=0)
-            # a4 = np.gradient(v,y, axis=1)
+            # a1 = np.gradient(v, axis=0)     # ∂V/∂y
+            # a2 = np.gradient(u, axis=1)     # ∂U/∂x
+            # a3 = np.gradient(u, axis=0)     # ∂U/∂y
+            # a4 = np.gradient(v, axis=1)     # ∂V/∂x
 
             pi_D = np.abs(-0.25 * ((a1 + a2) ** 2) + a3 * a4)
+            print(f"viscosity of water {viscosity_water}")
             for i in range(row):
                 for j in range(col):
                     if(self.concentration_matrix[i,j] > 0):
                         self.shear_rate[i,j] = 2 * np.sqrt(pi_D[i,j])
-                        print(f'shear rate: {self.shear_rate[i,j]}')
+                        # print(f'shear rate: {self.shear_rate[i,j]}')
                         if(not(self.shear_rate[i,j] == 0)):
-                            print(f'i: {i} | j: {j}')
-                            print(f"epsilon_0 type: {type(epsilon_0)}")
-                            print(f"n_0 type: {type(n_0)}")
+                            # print(f'i: {i} | j: {j}')
+                            # print(f"epsilon_0 type: {type(epsilon_0)}")
+                            # print(f"n_0 type: {type(n_0)}")
                             self.viscosity_matrix[i, j] = epsilon_0[i,j] * (self.shear_rate[i,j]**(n_0[i,j]-1))
                             if(self.viscosity_matrix[i,j] < viscosity_water):
                                 self.viscosity_matrix[i,j] = viscosity_water

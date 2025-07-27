@@ -486,7 +486,7 @@ class Simulation:
                     #                              polymer = self.polymer,
                     #                              u = self.u,
                     #                              v = self.v)
-                    #
+                break
 
 
 
