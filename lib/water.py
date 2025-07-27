@@ -77,7 +77,7 @@ class Water:
         self.water_saturation = s0
 
         #initialize the aqueous viscosity matrix:
-        self.viscosity_array = self.miuw*np.ones((n,m))
+        self.viscosity_array = self.miuw*np.ones((n+1,m+1))
 
         return self
 
@@ -111,10 +111,12 @@ class Water:
         :rtype: np.ndarray
         """
         assert self.viscosity_array is not None, SimulationCalcInputException("SimuationInputException: aqueous viscosity matrix not initialized. Please try again")
-        assert polymer is not None, SimulationCalcInputException("SimuationInputException: polymer object not initialized. \
+        assert polymer is not None and isinstance(polymer, Polymer), SimulationCalcInputException("SimuationInputException: polymer object not initialized. \
                 The polymer object must be initialized before updating aqueous viscosity. Please try again.")
+        assert polymer.concentration_matrix is not None, SimulationCalcInputException("SimuationInputException: Polymer Concentration matrix must be initialized. Please try again...")
+        assert polymer.shear_rate is not None, SimulationCalcInputException("SimuationInputException: Polymer Shear Rate matrix must be initialized. Please try again...")
         n = np.size(polymer.concentration_matrix, 0)
-        m = np.size(polymer.concentration_matrix, 0)
+        m = np.size(polymer.concentration_matrix, 1)
         initial_polymer_concentration_scalar = polymer.concetration_scalar
         if(model_type.value == ModelType.No_Shear_Thinning.value): #no shear thinning polymer
             miuw = SimulationConstants.Water_Viscosity.value
@@ -136,15 +138,26 @@ class Water:
             w1 = polymer.rho*polymer.concentration_matrix
             w2 = rho_water*(1-polymer.concentration_matrix)
             wppm = (w1/(w1+w2))*(10**6)
-            w1_0 = polymer.rho*polymer.init_concentration_matrix #from the variable w10 in MATLAB code
-            w2_0 = rho_water*(1-polymer.init_concentration_matrix) #from the variable w20 in MATLAB code
-            wppm_0 = (w1_0/(w1_0+w2_0))*(10**6) #from the wppm0 variable in MATLAB code
             
             #determining ε and n for power law equation:
-            epsilon_0 = polymer.e_coeff[0]*(wppm_0**polymer.e_coeff[1])
-            n_0 = np.min(polymer.n_coeff[0]*(wppm_0**polymer.n_coeff[1]))
-            epsilon_val = polymer.e_coeff[0]*(wppm**polymer.e_coeff[1])
-            n_val = np.min(polymer.n_coeff[0]*(wppm**polymer.n_coeff[1]))
+            # epsilon_val = polymer.e_coeff[0]*(wppm**polymer.e_coeff[1])
+            # n_val = min(polymer.n_coeff[0]*(wppm**polymer.n_coeff[1]),1)
+
+            # epsilon_val = np.zeros((np.size(polymer.concentration_matrix, 0), np.size(polymer.concentration_matrix, 1)))
+            # n_val = np.zeros((np.size(polymer.concentration_matrix, 0), np.size(polymer.concentration_matrix, 1)))
+            # print(f'type epsilon_0: {np.shape(epsilon_val)}')
+            # print(f'type n_0: {np.shape(n_val)}')
+            # for r in range(np.size(polymer.concentration_matrix, 0)):
+            #     for c in range(np.size(polymer.concentration_matrix, 1)):
+            #         # print(f'i: {r} | j: {c}')
+            #         epsilon_val[r,c] = polymer.e_coeff[0] * wppm[r,c] ** polymer.e_coeff[1]
+            #         n_val[r,c] = min(polymer.n_coeff[0] * wppm[r,c] ** polymer.n_coeff[1], 1)
+            eps = 1e-12
+            wppm_safe = np.maximum(wppm, eps)
+
+            epsilon_val = polymer.e_coeff[0] * wppm_safe ** polymer.e_coeff[1]
+            n_val = np.minimum(polymer.n_coeff[0] * wppm_safe ** polymer.n_coeff[1], 1)
+
 
             row = np.size(polymer.concentration_matrix, 0)
             col = np.size(polymer.concentration_matrix, 1)

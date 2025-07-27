@@ -54,5 +54,5 @@ user_dict = {
 # FIXME: discrepancy in polymer viscosity matrix. Checked the u, v, x, and y (x and y from 'Grid' class)
 sim1 = simulation.Simulation(user_input_dict=user_dict)
 sim1.run()
-print(sim1.polymer.viscosity_scalar)
-print(sim1.polymer.viscosity_matrix)
+print(f'polymer viscosity matrix{sim1.polymer.viscosity_matrix}')
+print(f'aqueous viscosity matrix{sim1.water.viscosity_array}')
