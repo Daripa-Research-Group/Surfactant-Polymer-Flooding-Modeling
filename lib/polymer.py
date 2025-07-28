@@ -191,18 +191,12 @@ class Polymer:
             print(f'type w2_0: {np.shape(w2_0)}')
             
             ## Determining the epsilon and n coefficients for the power law equation
-            # print(f'shape e_coeff: {np.shape(self.e_coeff)}')
-            # print(f'shape n_coeff: {np.shape(self.n_coeff)}')
-            # epsilon_0 = float(self.e_coeff[0]) * wppm_0 ** float(self.e_coeff[1])
-            # print(f'type wppm_0: {np.shape(wppm_0)}')
-            # n_0 = np.min(self.n_coeff[0].item() * np.power(wppm_0, self.n_coeff[1].item()), 1)
             epsilon_0 = np.zeros((np.size(self.concentration_matrix, 0), np.size(self.concentration_matrix, 1)))
             n_0 = np.zeros((np.size(self.concentration_matrix, 0), np.size(self.concentration_matrix, 1)))
             print(f'type epsilon_0: {np.shape(n_0)}')
             print(f'type n_0: {np.shape(n_0)}')
             for r in range(np.size(self.concentration_matrix, 0)):
                 for c in range(np.size(self.concentration_matrix, 1)):
-                    # print(f'i: {r} | j: {c}')
                     epsilon_0[r,c] = self.e_coeff[0] * wppm_0[r,c] ** self.e_coeff[1]
                     n_0[r,c] = min(self.n_coeff[0] * wppm_0[r,c] ** self.n_coeff[1], 1)
 
@@ -211,33 +205,18 @@ class Polymer:
             col = np.size(self.concentration_matrix, 1)
 
             # Compute divergence terms
-            print(f'shape: {np.shape(x)}')
-            # a1 = self.divergence(v,x)
-            # a2 = self.divergence(u,y)
-            # a3 = self.divergence(u,x)
-            # a4 = self.divergence(v,y)
-            a1 = self.divergence(x,v, dx=grid.dx, dy=grid.dy)
-            a2 = self.divergence(y,u, dx=grid.dx, dy=grid.dy)
-            a3 = self.divergence(x,u, dx=grid.dx, dy=grid.dy)
-            a4 = self.divergence(y,v, dx=grid.dx, dy=grid.dy)
-            # a1 = np.gradient(v, axis=0)     # ∂V/∂y
-            # a2 = np.gradient(u, axis=1)     # ∂U/∂x
-            # a3 = np.gradient(u, axis=0)     # ∂U/∂y
-            # a4 = np.gradient(v, axis=1)     # ∂V/∂x
+            a1 = self.divergence(x,v)
+            a2 = self.divergence(y,u)
+            a3 = self.divergence(x,u)
+            a4 = self.divergence(y,v)
 
-            pi_D = np.abs(-0.25 * ((a1 + a2) ** 2) + a3 * a4) #FIXME: I am pressure sure we need to check this...
-            print(f"viscosity of water {viscosity_water}")
+            pi_D = np.abs(-0.25 * ((a1 + a2) ** 2) + a3 * a4)
             for i in range(row):
                 for j in range(col):
                     if(self.concentration_matrix[i,j] > 0):
                         self.shear_rate[i,j] = 2 * np.sqrt(pi_D[i,j])
-                        # print(f'shear rate: {self.shear_rate[i,j]}')
                         if(not(self.shear_rate[i,j] == 0)):
-                            print(f'i: {i} | j: {j}')
-                            # print(f"epsilon_0 type: {type(epsilon_0)}")
-                            # print(f"n_0 type: {type(n_0)}")
                             self.viscosity_matrix[i,j] = epsilon_0[i,j] * (self.shear_rate[i,j]**(n_0[i,j]-1))
-                            print(self.viscosity_matrix[i,j])
                             if(self.viscosity_matrix[i,j] < viscosity_water):
                                 self.viscosity_matrix[i,j] = viscosity_water
                             if(self.viscosity_matrix[i,j] > 100):
