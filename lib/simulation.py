@@ -122,8 +122,8 @@ class Simulation:
         # Initalizing Polymer Object
         self.polymer = Polymer(
             name = polymer_type,
-            e_coeff = polymer_type.n_coeff,
-            n_coeff = polymer_type.e_coeff,
+            e_coeff = polymer_type.e_coeff,
+            n_coeff = polymer_type.n_coeff,
             rho = polymer_type.Density,
             concentration_scalar = polymer_concentration,
             phi = self.phi,
