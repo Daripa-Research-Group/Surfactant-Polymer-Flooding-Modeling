@@ -366,20 +366,12 @@ class Polymer:
 
         return self.concentration_matrix
 
-    # def divergence(self, F1, F2):
-    #     """
-    #     Calculate the divergence of a 2D vector field.
-    #
-    #     Parameters:
-    #     F1, F2 : 2D numpy arrays
-    #         Components of the vector field
-    #
-    #     Returns:
-    #     div : 2D numpy array
-    #         Divergence of the vector field
-    #     """
-    #     return np.gradient(F1, axis=1) + np.gradient(F2, axis=0)
     def divergence(self, Fx, Fy, dx=1.0, dy=1.0):
+        """
+        Calculates Divergence
+
+        :return: Div F = (δfx/δx) + (δfy/δy)
+        """
         dFx_dx = np.gradient(Fx, dx, axis=1)
         dFy_dy = np.gradient(Fy, dy, axis=0)
         return dFx_dx + dFy_dy
