@@ -22,7 +22,8 @@ class Water:
     """
     def __init__(
             self, 
-            init_water_saturation: float, 
+            init_water_saturation: float,
+            init_aqueous_saturation: float,
             init_oleic_saturation: float, 
             miuw: float, 
             miuo: float,
@@ -33,6 +34,9 @@ class Water:
 
         :param init_water_saturation: initial water saturation
         :type init_water_saturation: float
+
+        :param init_aqueous_saturation: initial aqueous phase saturation
+        :type init_aqueous_saturation: float
 
         :param init_oleic_saturation: initial oil phase saturation
         :type init_oleic_saturation: float
@@ -47,6 +51,7 @@ class Water:
         :type phi: np.ndarray
         """
         self.init_water_saturation = init_water_saturation
+        self.init_aqueous_saturation = init_aqueous_saturation
         self.init_oleic_saturation = init_oleic_saturation
         self.miuw = miuw
         self.miuo = miuo
@@ -202,7 +207,7 @@ class Water:
         :return residual saturation for oil (index 1) and water (index 0) phases
         :rtype: list
         """
-        swr0 = self.init_water_saturation
+        swr0 = self.init_aqueous_saturation
         sor0 = self.init_oleic_saturation
 
         Nco0 = 1.44e-4
@@ -258,8 +263,8 @@ class Water:
         s = self.water_saturation
         miua = self.viscosity_array
         if not has_surfactant or surfactant_conc == 0:
-            nsw0 = (s - self.init_water_saturation) / (1 - self.init_water_saturation)
-            nso0 = (s - self.init_water_saturation) / (1 - self.init_water_saturation - self.init_oleic_saturation)
+            nsw0 = (s - self.init_aqueous_saturation) / (1 - self.init_aqueous_saturation)
+            nso0 = (s - self.init_aqueous_saturation) / (1 - self.init_aqueous_saturation - self.init_oleic_saturation)
             krw0 = nsw0 ** 3.5
             kro0 = ((1 - nso0) ** 2) * (1 - nso0 ** 1.5)
         else:

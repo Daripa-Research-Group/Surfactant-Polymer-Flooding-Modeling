@@ -142,7 +142,8 @@ class Simulation:
 
         # Initializing Water Object
         self.water = Water(
-            init_water_saturation= SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value,
+            init_water_saturation= SimulationConstants.Initial_Residual_Water_Saturation.value,
+            init_aqueous_saturation= SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value,
             init_oleic_saturation= SimulationConstants.Resid_Oleic_Phase_Saturation_Initial.value,
             miuw= SimulationConstants.Water_Viscosity.value,
             miuo= SimulationConstants.Oil_Viscosity.value,
