@@ -483,6 +483,13 @@ class Simulation:
                                                  polymer = self.polymer,
                                                  u = self.u,
                                                  v = self.v)
+            ## STEP 2.2: Computing Residual Saturation:
+                assert self.surfactant.IFT_conc_equ is not None,SimulationCalcInputException("SimulationCalcInputError:SurfactantIFTEquationUnavailable") 
+                interfacial_tension_matrix = self.surfactant.IFT_conc_equ(self.surfactant.concentration_matrix)
+                [resid_water_saturation, resid_oleic_saturation] = \
+                        self.water.compute_residual_saturations(sigma=interfacial_tension_matrix, u=self.u, v=self.v)
+                print(f"swr: {resid_water_saturation}")
+                print(f"sor: {resid_oleic_saturation}")
                 break
 
 
