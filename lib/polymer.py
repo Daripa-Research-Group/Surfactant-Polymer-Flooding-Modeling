@@ -217,6 +217,11 @@ class Polymer:
                         self.shear_rate[i,j] = 2 * np.sqrt(pi_D[i,j])
                         if(not(self.shear_rate[i,j] == 0)):
                             self.viscosity_matrix[i,j] = epsilon_0[i,j] * (self.shear_rate[i,j]**(n_0[i,j]-1))
+                            print(f"epsilon_0:{epsilon_0[i,j]}")
+                            print(f"n_0:{n_0[i,j]}")
+                            print(f"shear_rate:{self.shear_rate[i,j]}")
+                            print(f"pi_D: {pi_D[i,j]}")
+                            print("")
                             if(self.viscosity_matrix[i,j] < viscosity_water):
                                 self.viscosity_matrix[i,j] = viscosity_water
                             if(self.viscosity_matrix[i,j] > 100):
