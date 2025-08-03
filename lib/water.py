@@ -223,8 +223,8 @@ class Water:
     def compute_mobility(
             self, 
             c: np.ndarray, 
-            sor: np.ndarray, 
-            swr: np.ndarray, 
+            sor: float, 
+            swr: float, 
             aqueous: bool, 
             has_surfactant: bool, 
             surfactant_conc: float
@@ -236,10 +236,10 @@ class Water:
         :type c: np.ndarray
 
         :param sor: residual saturation oil phase
-        :type sor: np.ndarray
+        :type sor: float
 
         :param swr: residual saturation water phase
-        :type swr: np.ndarray
+        :type swr: float
 
         :param aqueous: boolean for whether we are solving for aqoeous or oleic mobility
         :type aqueous: bool

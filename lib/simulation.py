@@ -488,8 +488,27 @@ class Simulation:
                 interfacial_tension_matrix = self.surfactant.IFT_conc_equ(self.surfactant.concentration_matrix)
                 [resid_water_saturation, resid_oleic_saturation] = \
                         self.water.compute_residual_saturations(sigma=interfacial_tension_matrix, u=self.u, v=self.v)
-                print(f"swr: {resid_water_saturation}")
-                print(f"sor: {resid_oleic_saturation}")
+            ## STEP 2.3: Compute mobilities:
+                assert self.polymer.concentration_matrix is not None,SimulationCalcInputException("SimulationCalcInputError:PolymerConcentrationMatrixUnavailable") 
+                has_surfactant = True if self.surfactant.concentration == 0 else False
+                aqueous_mobility = self.water.compute_mobility(c=self.polymer.concentration_matrix,
+                                                               sor=float(resid_oleic_saturation),
+                                                               swr=float(resid_water_saturation),
+                                                               aqueous=True,
+                                                               has_surfactant=has_surfactant,
+                                                               surfactant_conc=self.surfactant.concentration)
+                oleic_mobility = self.water.compute_mobility(c=self.polymer.concentration_matrix,
+                                                               sor=float(resid_oleic_saturation),
+                                                               swr=float(resid_water_saturation),
+                                                               aqueous=False,
+                                                               has_surfactant=has_surfactant,
+                                                               surfactant_conc=self.surfactant.concentration)
+                print(f"aqueous_mobility: {aqueous_mobility}")
+                print(f"oleic_mobility: {oleic_mobility}")
+               
+
+
+
                 break
 
 
