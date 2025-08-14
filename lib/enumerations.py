@@ -125,3 +125,11 @@ class PermeabilityType(Enum):
     """
     Homogenous = 1
     Heterogenous = 2
+
+class RelativePermeabilityFormula(Enum):
+    """
+    Selection of the relative permeability formuala 
+    (krw, Kro)
+    """
+    AmaefuleHandEquation = 1
+    CoreyTypeEquation = 2

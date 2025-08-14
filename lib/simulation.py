@@ -14,6 +14,7 @@ from grid import Grid
 from enumerations import (
     ModelType,
     PolymerList,
+    RelativePermeabilityFormula,
     SurfactantList,
     PermeabilityType,
     ResevoirGeometry,
@@ -105,6 +106,7 @@ class Simulation:
         self.permeability_flag = permeability_flag
         self.reservoir_geometry = reservoir_geometry
         self.model_type = model_type
+        self.relative_permeability_formula = RelativePermeabilityFormula.AmaefuleHandEquation
 
         # Initializing sim properties
         self.mesh = self._create_mesh()
@@ -496,13 +498,13 @@ class Simulation:
                                                                sor=float(resid_oleic_saturation),
                                                                swr=float(resid_water_saturation),
                                                                aqueous=True,
-                                                               has_surfactant=has_surfactant,
+                                                               rel_permeability_formula= self.relative_permeability_formula,
                                                                surfactant_conc=self.surfactant.concentration)
                 oleic_mobility = self.water.compute_mobility(c=self.polymer.concentration_matrix,
                                                                sor=float(resid_oleic_saturation),
                                                                swr=float(resid_water_saturation),
                                                                aqueous=False,
-                                                               has_surfactant=has_surfactant,
+                                                               rel_permeability_formula= self.relative_permeability_formula,
                                                                surfactant_conc=self.surfactant.concentration)
                 print(f"aqueous_mobility: {aqueous_mobility}")
                 print(f"oleic_mobility: {oleic_mobility}")

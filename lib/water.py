@@ -10,7 +10,7 @@ Sourav Dutta and Rohit Mishra.
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 from scipy.sparse.linalg import bicgstab
-from enumerations import ModelType, SimulationConstants
+from enumerations import ModelType, RelativePermeabilityFormula, SimulationConstants
 from Exceptions import SimulationCalcInputException
 from grid import Grid
 from polymer import Polymer
@@ -231,7 +231,7 @@ class Water:
             sor: float, 
             swr: float, 
             aqueous: bool, 
-            has_surfactant: bool, 
+            rel_permeability_formula: RelativePermeabilityFormula, 
             surfactant_conc: float
             ):
         """
@@ -249,8 +249,8 @@ class Water:
         :param aqueous: boolean for whether we are solving for aqoeous or oleic mobility
         :type aqueous: bool
 
-        :param has_surfactant: whether or not there is surfactant in the system
-        :type has_surfactant: bool
+        :param rel_permeability_formula: Select the type of relative Permeability formula from the ``RelativePermeabilityFormula`` Enum 
+        :type has_surfactant: enum ``RelativePermeabilityFormula``
 
         :param surfactant_conc: scalar quantity of the initial surfactant concentration
         :type surfactant_conc: float
@@ -262,7 +262,7 @@ class Water:
         assert self.viscosity_array is not None, SimulationCalcInputException("SimuationInputException: viscosity matrix not initialized. Please try again")
         s = self.water_saturation
         miua = self.viscosity_array
-        if not has_surfactant or surfactant_conc == 0:
+        if rel_permeability_formula.value == RelativePermeabilityFormula.CoreyTypeEquation.value :
             nsw0 = (s - self.init_aqueous_saturation) / (1 - self.init_aqueous_saturation)
             nso0 = (s - self.init_aqueous_saturation) / (1 - self.init_aqueous_saturation - self.init_oleic_saturation)
             krw0 = nsw0 ** 3.5
