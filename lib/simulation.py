@@ -506,8 +506,11 @@ class Simulation:
                                                                aqueous=False,
                                                                rel_permeability_formula= self.relative_permeability_formula,
                                                                surfactant_conc=self.surfactant.concentration)
-                print(f"aqueous_mobility: {aqueous_mobility}")
-                print(f"oleic_mobility: {oleic_mobility}")
+                total_mobility = aqueous_mobility + oleic_mobility
+                assert self.KK is not None,SimulationCalcInputException("SimulationCalcInputError:PermeabilityTensorUnavailable") 
+                beta = self.KK*total_mobility 
+            ## STEP 2.4: Calculating Global Pressure and velocity
+                self.mesh.set_triangulation() 
                
 
 
