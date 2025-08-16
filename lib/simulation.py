@@ -183,7 +183,6 @@ class Simulation:
             bool_Heterogenous_and_Quarter_Five_Spot = (self.permeability_flag.value == PermeabilityType.Heterogenous.value) \
                                                 and (self.reservoir_geometry.value == ResevoirGeometry.Quarter_Five_Spot.value) 
             if(bool_Homogenous_and_Rectilinear or bool_Heterogenous_and_Rectilinear):
-                print("reached here")
                 self._source_prod_flow[:, 0] = self.source_flow_magnitude
                 self._source_prod_flow[:, -1] = -1 * self.source_flow_magnitude
             elif(bool_Heterogenous_and_Quarter_Five_Spot):
@@ -208,6 +207,19 @@ class Simulation:
         v = np.zeros((self.mesh.n+1, self.mesh.m+1))
 
         return u, v
+
+    def _compute_pressure_and_velocity_matrices(self):
+        """
+        (private method)
+
+        dependent property to calculate the pressure matrix (``u``) 
+        and velocity matrix (``v``). Will rely on functions in the ``Grid`` class.
+
+        :return: list of update pressure matrix and velocity matrix => [u,v]
+        :rtype: list[np.ndarray]
+        """
+        pass
+
 
     def _initialize_memmap_properties(self):
         """
