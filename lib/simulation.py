@@ -106,7 +106,7 @@ class Simulation:
         self.permeability_flag = permeability_flag
         self.reservoir_geometry = reservoir_geometry
         self.model_type = model_type
-        self.relative_permeability_formula = RelativePermeabilityFormula.AmaefuleHandEquation
+        self.relative_permeability_formula = RelativePermeabilityFormula.AmaefuleHandEquation #WILL NEED TO UPDATE TO INCLUDE IN GUI
 
         # Initializing sim properties
         self.mesh = self._create_mesh()
@@ -505,7 +505,6 @@ class Simulation:
                         self.water.compute_residual_saturations(sigma=interfacial_tension_matrix, u=self.u, v=self.v)
             ## STEP 2.3: Compute mobilities:
                 assert self.polymer.concentration_matrix is not None,SimulationCalcInputException("SimulationCalcInputError:PolymerConcentrationMatrixUnavailable") 
-                has_surfactant = True if self.surfactant.concentration == 0 else False
                 aqueous_mobility = self.water.compute_mobility(c=self.polymer.concentration_matrix,
                                                                sor=float(resid_oleic_saturation),
                                                                swr=float(resid_water_saturation),
