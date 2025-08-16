@@ -473,8 +473,6 @@ class Simulation:
             ## STEP 2.1: Increment time and amount of feed used:
                 self.integrated_inlet_flow += self.source_flow_magnitude
                 t += dt
-                
-
             ## STEP 2.2: Compute viscosities:
                 if(self.model_type.value == ModelType.No_Shear_Thinning.value): #if No Polymer Shear Thinning
                     self.water.compute_viscosity(grid = self.mesh,
