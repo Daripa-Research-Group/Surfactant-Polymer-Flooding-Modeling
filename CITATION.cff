@@ -1,0 +1,46 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the following works."
+references:
+  - type: article
+    authors:
+      - family-names: Daripa
+        given-names: Prabir
+      - family-names: Dutta
+        given-names: Sourav
+    title: "Modeling and simulation of surfactant–polymer flooding using a new hybrid method"
+    journal: "Journal of Computational Physics"
+    volume: "335"
+    pages: "249-282"
+    year: 2017
+    doi: "10.1016/j.jcp.2017.01.038"
+    url: "https://www.sciencedirect.com/science/article/pii/S0021999117300542"
+
+  - type: article
+    authors:
+      - family-names: Daripa
+        given-names: Prabir
+      - family-names: Dutta
+        given-names: Sourav
+    title: "On the convergence analysis of a hybrid numerical method for multicomponent transport in porous media"
+    journal: "Applied Numerical Mathematics"
+    volume: "146"
+    pages: "199-220"
+    year: 2019
+    doi: "10.1016/j.apnum.2019.07.009"
+    url: "https://www.sciencedirect.com/science/article/pii/S0168927419301813"
+
+  - type: article
+    authors:
+      - family-names: Daripa
+        given-names: Prabir
+      - family-names: Mishra
+        given-names: Rohit
+    title: "Modeling shear thinning polymer flooding using a dynamic viscosity model"
+    journal: "Physics of Fluids"
+    volume: "35"
+    issue: "4"
+    pages: "046606"
+    year: 2023
+    doi: "10.1063/5.0145061"
+    url: "https://doi.org/10.1063/5.0145061"
+
