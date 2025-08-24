@@ -15,6 +15,7 @@ class Grid:
         self.bottom = bottom
         self.top = top
 
+        ## FIXME: properties here need to be adjusted based on changes to the corresponding methods
         self.tri = None
         self.A = None
         self.B = None
@@ -26,7 +27,7 @@ class Grid:
     
     @property
     def get_meshgrid(self):
-        self.x, self.y = self.set_grid()
+        self.x, self.y = self.set_FD_meshgrid()
         return self.x, self.y
 
     @property
@@ -37,9 +38,11 @@ class Grid:
     def dy(self):
         return (self.top - self.bottom) / self.n
 
-    def set_grid(self):
+    def set_FD_meshgrid(self):
         """
-        Generates coordinate grid for SP-flooding.
+        Generates FD coordinate grid for SP-flooding.
+        Used for the transport equations.
+        
         Returns:
             (x, y) meshgrid arrays
         """
@@ -47,6 +50,14 @@ class Grid:
         y = np.linspace(self.bottom, self.top, self.n + 1)
         self.x, self.y = np.meshgrid(x, y)
         return self.x, self.y
+    
+    ## FIXME: Functions below need to be updated
+    def set_FE_meshgrid(self):
+        """
+        Generate FE coordinate grid for elliptic pressure calculations
+        Analogous to the setGrid.m function in the MATLAB code
+        """
+        pass
 
     def set_triangulation(self):
         xv = self.x.flatten()
