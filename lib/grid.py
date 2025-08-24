@@ -60,10 +60,43 @@ class Grid:
         pass
 
     def set_triangulation(self):
-        xv = self.x.flatten()
-        yv = self.y.flatten()
-        self.tri = Triangulation(xv, yv)
-
+        #  Setting up triangulations for the FEM grid
+        #  U = cell array with each element = array of vertices of Upper Triangle of
+        #  the rectangular cell 
+        #  L = cell array with each element = array of vertices of Lower Triangle of
+        #  the rectangular cell
+        #  At every point (i,j), U{i,j} & L{i,j} are cells with coordinates of vertices
+        #  of the two triangles obtained by bisecting the rectangle starting at
+        #  (i,j). The bisection line goes from NW to SE.
+        U = np.empty((self.m, self.n), dtype=object)
+        L = np.empty((self.m, self.n), dtype=object)
+        
+        for j in range(self.m):
+            for k in range(self.n):
+                x1 = self.left + j * self.dx
+                y1 = self.bottom + k * self.dy
+                x2 = self.left + (j + 1) * self.dx
+                y2 = y1
+                x3 = x1
+                y3 = self.bottom + (k + 1) *self.dy
+                x4 = x2
+                y4 = y3
+                
+                # lower triangle vertices
+                l = np.array([[x1, y2],
+                             [x2, y2],
+                             [x3, y3]])
+                
+                # upper triangle vertices
+                u = np.array([[x4, y4],
+                             [x3, y3],
+                             [x2, y2]])
+                
+                U[j, k] = u
+                L[j, k] = l
+                
+        return U, L
+                
     def set_right_hand(self, rhs_func):
         """
         Sets the right-hand side (source) from a function.
