@@ -51,13 +51,113 @@ class Grid:
         self.x, self.y = np.meshgrid(x, y)
         return self.x, self.y
     
+    def _polyarea(self, x, y):
+        """
+        Calculate the area of a polygon using the Shoelace formula.
+        The vertices are defined by the x and y coordinates.
+
+        Parameters:
+        x (list or array): x-coordinates of the polygon vertices
+        y (list or array): y-coordinates of the polygon vertices
+
+        Returns:
+        float: Area of the polygon
+        """
+        return 0.5 * abs(
+            sum(x[i] * y[i + 1] - y[i] * x[i + 1] for i in range(-1, len(x) - 1))
+        )
+    
+    def _beta_func(self, x, y, beta):
+        """
+        Evaluates the coefficient beta at each grid point
+        $$ \beta = K \lambda $$
+        x and y are the coordinates of the grid point
+        The corresponding index locations in the matrix for beta
+        are determined in mm and nn respectively.
+        
+        Analogous to beta_func.m in the MATLAB code        
+        """
+        mm = round((x - self.left) / self.dx)
+        nn = round((y - self.bottom) / self.dy)
+        
+        return beta[nn, mm]
+    
+    def _set_FE_meshgrid_helper(self, T, beta, V):
+        """
+        Evaluates beta at the vertices of the element triangle
+        
+        Input:
+        % T is a structure array with fields x & y where
+        %   T.x contains x coordinates of vertices of an element triangle
+        %   T.y contains y coordinates of vertices of an element triangle
+        % beta is the average of the value at the vertices of the 
+        %   coefficient $$\beta = K(x) \lambda(s,c,\Gamma)$$
+
+        Analogous to the weak.m function in the MATLAB code
+        """
+        beta_1 = self._beta_func(T["x"][0], T["y"][0], beta)
+        beta_2 = self._beta_func(T["x"][1], T["y"][1], beta)
+        beta_3 = self._beta_func(T["x"][2], T["y"][2], beta)
+        
+        # computing average of the beta values at the vertices
+        beta_avg = sum(beta_1, beta_2, beta_3) / 3
+        
+        s = self.polyarea(T['x'], T['y'])
+        
+        # Create and manipulate matrix M
+        M = np.vstack((T['x'], T['y'], [1, 1, 1])).T
+        M_inv = np.linalg.inv(M)
+        M = M_inv[:2, :]  # Extract the first two rows of M_inv
+        
+        # Calculate vdiff and inte
+        vdiff = np.dot(M, V)
+        inte = np.dot(vdiff.T, beta_avg * np.dot(M, s))
+
+        # Output result
+        inte = np.append(inte, [0])
+
+        return inte
+
     ## FIXME: Functions below need to be updated
-    def set_FE_meshgrid(self):
+    def set_FE_meshgrid(self, U, L, beta):
         """
         Generate FE coordinate grid for elliptic pressure calculations
         Analogous to the setGrid.m function in the MATLAB code
         """
-        pass
+        output = np.empty((self.m + 1, self.n + 1), dtype=object)
+        
+        for j in range(self.m + 1):
+            for l in range(self.n + 1):
+                
+                if j == 0 and l != 0 and l != self.n:
+                    t1 = self._set_FE_meshgrid_helper(L[j, l], beta, np.array([1, 0, 0]))
+                    t2 = np.array([0,0,0,0])
+                    t3 = np.array([0,0,0,0])
+                    t4 = np.array([0,0,0,0])
+                    t5 = self._set_FE_meshgrid_helper(L[j, l - 1], beta, np.array([0, 0, 1]))
+                    t6 = self._set_FE_meshgrid_helper(U[j, l - 1], beta, np.array([0, 1, 0]))
+                    
+                if j == self.m and l != 0 and l != self.n:
+                    t1 = np.array([0,0,0,0])
+                    t2 = self._set_FE_meshgrid_helper(U[j - 1, l], beta, np.array([0, 0, 1]))
+                    t3 = self._set_FE_meshgrid_helper(L[j - 1, l], beta, np.array([0, 1, 0]))
+                    t4 = self._set_FE_meshgrid_helper(U[j - 1, l - 1], beta, np.array([1, 0, 0]))
+                    t5 = np.array([0,0,0,0])
+                    t6 = np.array([0,0,0,0])
+                if j != 0 and j != self.m and l == 0:
+                    pass
+                if j != 0 and j != self.m and l == self.n:
+                    pass
+                if j == 0 and l == 0:
+                    pass
+                if j == 0 and l == self.n:
+                    pass
+                if j == self.m and l == 0:
+                    pass
+                if j == self.m and l == self.n:
+                    pass
+                if j != 0 and j != self.m and l != 0 and l != n:
+                    pass
 
     def set_triangulation(self):
         #  Setting up triangulations for the FEM grid
