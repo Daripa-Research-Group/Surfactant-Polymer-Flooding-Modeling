@@ -144,20 +144,78 @@ class Grid:
                     t4 = self._set_FE_meshgrid_helper(U[j - 1, l - 1], beta, np.array([1, 0, 0]))
                     t5 = np.array([0,0,0,0])
                     t6 = np.array([0,0,0,0])
+                    
                 if j != 0 and j != self.m and l == 0:
-                    pass
+                    t1 = self._set_FE_meshgrid_helper(L[j, l], beta, np.array([1, 0, 0]))
+                    t2 = self._set_FE_meshgrid_helper(U[j - 1, l], beta, np.array([0, 0, 1]))
+                    t3 = self._set_FE_meshgrid_helper(L[j - 1, l], beta, np.array([0, 1, 0]))
+                    t4 = np.array([0, 0, 0, 0])
+                    t5 = np.array([0, 0, 0, 0])
+                    t6 = np.array([0, 0, 0, 0])
+                
                 if j != 0 and j != self.m and l == self.n:
-                    pass
+                    t1 = np.array([0, 0, 0, 0])
+                    t2 = np.array([0, 0, 0, 0])
+                    t3 = np.array([0, 0, 0, 0])
+                    t4 = self._set_FE_meshgrid_helper(U[j - 1, l - 1], beta, np.array([1, 0, 0]))
+                    t5 = self._set_FE_meshgrid_helper(L[j, l - 1], beta, np.array([0, 0, 1]))
+                    t6 = self._set_FE_meshgrid_helper(U[j, l - 1], beta, np.array([0, 1, 0]))
+                    
                 if j == 0 and l == 0:
-                    pass
+                    t1 = self._set_FE_meshgrid_helper(L[j, l], beta, np.array([1, 0, 0]))
+                    t2 = np.array([0, 0, 0, 0])
+                    t3 = np.array([0, 0, 0, 0])
+                    t4 = np.array([0, 0, 0, 0])
+                    t5 = np.array([0, 0, 0, 0])
+                    t6 = np.array([0, 0, 0, 0])
+                
                 if j == 0 and l == self.n:
-                    pass
+                    t1 = np.array([0, 0, 0, 0])
+                    t2 = np.array([0, 0, 0, 0])
+                    t3 = np.array([0, 0, 0, 0])
+                    t4 = np.array([0, 0, 0, 0])
+                    t5 = self._set_FE_meshgrid_helper(L[j, l - 1], beta, np.array([0, 0, 1]))
+                    t6 = self._set_FE_meshgrid_helper(U[j, l - 1], beta, np.array([0, 1, 0]))
+                
                 if j == self.m and l == 0:
-                    pass
+                    t1 = np.array([0, 0, 0, 0])
+                    t2 = self._set_FE_meshgrid_helper(U[j - 1, l], beta, np.array([0, 0, 1]))
+                    t3 = self._set_FE_meshgrid_helper(L[j - 1, l], beta, np.array([0, 1, 0]))
+                    t4 = np.array([0, 0, 0, 0])
+                    t5 = np.array([0, 0, 0, 0])
+                    t6 = np.array([0, 0, 0, 0])
+                
                 if j == self.m and l == self.n:
-                    pass
-                if j != 0 and j != self.m and l != 0 and l != n:
-                    pass
+                    t1 = np.array([0, 0, 0, 0])
+                    t2 = np.array([0, 0, 0, 0])
+                    t3 = np.array([0, 0, 0, 0])
+                    t4 = self._set_FE_meshgrid_helper(U[j - 1, l - 1], beta, np.array([1, 0, 0]))
+                    t5 = np.array([0, 0, 0, 0])
+                    t6 = np.array([0, 0, 0, 0])
+                
+                if j != 0 and j != self.m and l != 0 and l != self.n:
+                    t1 = self._set_FE_meshgrid_helper(L[j, l], beta, np.array([1, 0, 0]))
+                    t2 = self._set_FE_meshgrid_helper(U[j - 1, l], beta, np.array([0, 0, 1]))
+                    t3 = self._set_FE_meshgrid_helper(L[j - 1, l], beta, np.array([0, 1, 0]))
+                    t4 = self._set_FE_meshgrid_helper(U[j - 1, l - 1], beta, np.array([1, 0, 0]))
+                    t5 = self._set_FE_meshgrid_helper(L[j, l - 1], beta, np.array([0, 0, 1]))
+                    t6 = self._set_FE_meshgrid_helper(U[j, l - 1], beta, np.array([0, 1, 0]))      
+                    
+                # formulating grid
+                grid = {
+                    "c" : t1[0] + t2[2] + t3[1] + t4[0] + t5[2] + t6[1],
+                    "w" : t3[0] + t4[1],
+                    "s" : t4[2] + t5[0],
+                    "n" : t1[2] + t2[0],
+                    "e" : t1[1] + t6[0],
+                    "nw" : t2[1] + t3[2],
+                    "se" : t5[1] + t6[2],
+                    "const" : t1[3] + t2[3] + t3[3] + t4[3] + t5[3] + t6[3]
+                }
+                
+                output[j,l] = grid
+        
+        return output
 
     def set_triangulation(self):
         #  Setting up triangulations for the FEM grid
