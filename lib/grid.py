@@ -118,7 +118,6 @@ class Grid:
 
         return inte
 
-    ## FIXME: Functions below need to be updated
     def set_FE_meshgrid(self, U, L, beta):
         """
         Generate FE coordinate grid for elliptic pressure calculations
