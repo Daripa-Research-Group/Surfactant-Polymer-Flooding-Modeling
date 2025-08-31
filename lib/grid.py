@@ -49,14 +49,6 @@ class Grid:
         y = np.linspace(self.bottom, self.top, self.n + 1)
         self.x, self.y = np.meshgrid(x, y)
         return self.x, self.y
-                
-    def set_right_hand(self, rhs_func):
-        """
-        Sets the right-hand side (source) from a function.
-        Args:
-            rhs_func: takes (x, y) arrays and returns a same-shaped source field
-        """
-        self.RHS = rhs_func(self.x, self.y)
 
     def set_A(self, beta_field: np.ndarray):
         """
@@ -119,6 +111,7 @@ class FEMesh(Grid):
         self.U = None
         self.L = None
         self.grid_size = None
+        self.right_hand = None
             
     def set_triangulation(self):
         #  Setting up triangulations for the FEM grid
@@ -320,3 +313,126 @@ class FEMesh(Grid):
                 }
                 
                 self.grid_size[j,l] = grid
+
+    def set_right_hand(self, source_prod_matrix):
+        self.right_hand = np.zeros((self.m + 1) * (self.n + 1), 1)
+        
+        for j in range(self.m + 1):
+            for l in range(self.n + 1):
+                
+                # finding corresponding index
+                idx = j + (l - 1) * (self.m + 1)
+                
+                if j == 0 and l != 0 and l != (self.n + 1):
+                    t1 = self._FInt(self.L[j, l], source_prod_matrix, np.array([1, 0, 0]))
+                    t2 = 0
+                    t3 = 0
+                    t4 = 0
+                    t5 = self._FInt(self.L[j, l - 1], source_prod_matrix, np.array([0, 0, 1]))
+                    t6 = self._FInt(self.U[j, l - 1], source_prod_matrix, np.array([0, 1, 0]))
+                
+                if j == (self.m + 1) and l != 0 and l != (self.n + 1):
+                    t1 = 0
+                    t2 = self._FInt(self.U[j - 1, l], source_prod_matrix, np.array([0, 0, 1]))
+                    t3 = self._FInt(self.L[j - 1, l], source_prod_matrix, np.array([0, 1, 0]))
+                    t4 = self._FInt(self.U[j - 1, l - 1], source_prod_matrix, np.array([1, 0, 0]))
+                    t5 = 0
+                    t6 = 0
+                    
+                if j != 0 and j != (self.m + 1) and l == 0:
+                    t1 = self._FInt(self.L[j, l], source_prod_matrix, np.array([1, 0, 0]))
+                    t2 = self._FInt(self.U[j - 1, l], source_prod_matrix, np.array([0, 0, 1]))
+                    t3 = self._FInt(self.L[j - 1, l], source_prod_matrix, np.array([0, 1, 0]))
+                    t4 = 0
+                    t5 = 0
+                    t6 = 0
+                    
+                if j != 0 and j != (self.m + 1) and l == (self.n + 1):
+                    t1 = 0
+                    t2 = 0
+                    t3 = 0
+                    t4 = self._FInt(self.U[j - 1, l - 1], source_prod_matrix, np.array([1, 0, 0]))
+                    t5 = self._FInt(self.L[j, l - 1], source_prod_matrix, np.array([0, 0, 1]))
+                    t6 = self._FInt(self.U[j, l - 1], source_prod_matrix, np.array([0, 1, 0]))
+                    
+                if j == 0 and l == 0:
+                    t1 = self._FInt(self.L[j, l], source_prod_matrix, np.array([1, 0, 0]))
+                    t2 = 0
+                    t3 = 0
+                    t4 = 0
+                    t5 = 0
+                    t6 = 0
+                
+                if j == 0 and l == (self.n + 1):
+                    t1 = 0
+                    t2 = 0
+                    t3 = 0
+                    t4 = 0
+                    t5 = self._FInt(self.L[j, l - 1], source_prod_matrix, np.array(0, 0, 1))
+                    t6 = self._FInt(self.U[j, l - 1], source_prod_matrix, np.array([0, 1, 0]))
+                    
+                if j == (self.m + 1) and l == 0:
+                    t1 = 0
+                    t2 = self._FInt(self.U[j - 1, l], source_prod_matrix, np.array([0, 0, 1]))
+                    t3 = self._FInt(self.L[j - 1, l], source_prod_matrix, np.array([0, 1, 0]))
+                    t4 = 0
+                    t5 = 0
+                    t6 = 0
+                    
+                if j == (self.m + 1) and l == (self.n + 1):
+                    t1 = 0
+                    t2 = 0
+                    t3 = 0
+                    t4 = self._FInt(self.U[j - 1, l - 1], source_prod_matrix, np.array([1, 0, 0]))
+                    t5 = 0
+                    t6 = 0
+                    
+                if j != 0 and j != (self.m + 1) and l != 0 and l != (self.n + 1):
+                    t1 = self._FInt(self.L[j, l], source_prod_matrix, np.array([1, 0, 0]))
+                    t2 = self._FInt(self.U[j - 1, l], source_prod_matrix, np.array([0, 0, 1]))
+                    t3 = self._FInt(self.L[j - 1, l], source_prod_matrix, np.array([0, 1, 0]))
+                    t4 = self._FInt(self.U[j - 1, l - 1], source_prod_matrix, np.array([1, 0, 0]))
+                    t5 = self._FInt(self.L[j, l - 1], source_prod_matrix, np.array([0, 0, 1]))
+                    t6 = self._FInt(self.U[j, l - 1], source_prod_matrix, np.array([0, 1, 0]))
+            
+                # computing rh
+                self.right_hand[idx] = t1 + t2 + t3 + t4 + t5 + t6
+                
+        
+        
+    def _FInt(self, T, fmatrix, v):
+        # evaluating source term at f at the vertices of the element triangle
+        f_11 = self._f_func(T['x'][0], T['y'][0], fmatrix)
+        f_12 = self._f_func(T['x'][1], T['x'][1], fmatrix)
+        f_13 = self._f_func(T['x'][2], T['y'][2], fmatrix)
+        
+        return self._trmatrix(T, f_11, f_12, f_13, v)
+        
+    def _f_func(self, x, y, f):
+        '''
+        Evaluates the source term 'f' at each grid point
+            % f is non-zero only at injection and production wells
+            % x and y are the coordinates of the grid point
+            % The corresponding index locations in the matrix for f
+            % are determined in mm and nn respectively.
+        '''
+        mm = int(round((x - self.left) / self.dx) + 1)
+        nn = int(round((y - self.bottom) / self.dy) + 1)
+        
+        return f(nn, mm)
+    
+    def _trmatrix(self, T, f_1, f_2, f_3, v):
+        s = self._polyarea(T['x'], T['y'])
+        f_c = (f_1 + f_2 + f_3) / 3
+        v_c = (v[0] + v[1] + v[2]) / 3
+        f_4 = (f_2 + f_3) / 2
+        f_5 = (f_1 + f_3) / 2
+        f_6 = (f_1 + f_2) / 2
+        
+        v_4 = (v[1] + v[2]) / 2
+        v_5 = (v[2] + v[0]) / 2
+        v_6 = (v[0] + v[1]) / 2
+        
+        return (f_4 * v_4 + f_5 * v_5 + f_6 * v_6 + f_c * v_c) * s / 4
+    
+    
