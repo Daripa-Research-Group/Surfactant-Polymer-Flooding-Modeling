@@ -315,13 +315,13 @@ class FEMesh(Grid):
                 self.grid_size[j,l] = grid
 
     def set_right_hand(self, source_prod_matrix):
-        self.right_hand = np.zeros((self.m + 1) * (self.n + 1), 1)
+        self.right_hand = np.zeros(((self.m + 1) * (self.n + 1), 1))
         
         for j in range(self.m + 1):
             for l in range(self.n + 1):
                 
                 # finding corresponding index
-                idx = j + (l - 1) * (self.m + 1)
+                idx = j + l * (self.m + 1)
                 
                 if j == 0 and l != 0 and l != self.n:
                     t1 = self._FInt(self.L[j, l], source_prod_matrix, np.array([1, 0, 0]))
@@ -368,7 +368,7 @@ class FEMesh(Grid):
                     t2 = 0
                     t3 = 0
                     t4 = 0
-                    t5 = self._FInt(self.L[j, l - 1], source_prod_matrix, np.array(0, 0, 1))
+                    t5 = self._FInt(self.L[j, l - 1], source_prod_matrix, np.array([0, 0, 1]))
                     t6 = self._FInt(self.U[j, l - 1], source_prod_matrix, np.array([0, 1, 0]))
                     
                 if j == self.m and l == 0:
@@ -403,7 +403,7 @@ class FEMesh(Grid):
     def _FInt(self, T, fmatrix, v):
         # evaluating source term at f at the vertices of the element triangle
         f_11 = self._f_func(T['x'][0], T['y'][0], fmatrix)
-        f_12 = self._f_func(T['x'][1], T['x'][1], fmatrix)
+        f_12 = self._f_func(T['x'][1], T['y'][1], fmatrix)
         f_13 = self._f_func(T['x'][2], T['y'][2], fmatrix)
         
         return self._trmatrix(T, f_11, f_12, f_13, v)
@@ -416,10 +416,10 @@ class FEMesh(Grid):
             % The corresponding index locations in the matrix for f
             % are determined in mm and nn respectively.
         '''
-        mm = int(round((x - self.left) / self.dx) + 1)
-        nn = int(round((y - self.bottom) / self.dy) + 1)
+        mm = int(round((x - self.left) / self.dx))
+        nn = int(round((y - self.bottom) / self.dy))
         
-        return f(nn, mm)
+        return f[nn, mm]
     
     def _trmatrix(self, T, f_1, f_2, f_3, v):
         s = self._polyarea(T['x'], T['y'])

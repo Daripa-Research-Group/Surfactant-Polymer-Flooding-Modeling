@@ -154,10 +154,10 @@ class Simulation:
         self.water.initialize(grid_shape=grid_shape)
 
         # Properties for Exporting Simulation Results
-        # self.source_prod_flows = np.zeros((self.mesh.m, self.mesh.n)) # ``f`` in MATLAB code (source and sink terms)
         self.COC = np.zeros((1,2000)) #Cumulative Oil Recovered
         self.miuaTcal = np.zeros((1,2000)) # Total Aqueous Viscosity
         self.lambdaTcal = np.zeros((1,2000)) # Total Mobility (λ_o + λ_a)
+        
         ##The following properties require memmaps:
         self.ProdRate, self.CROIP = self._initialize_memmap_properties() #ProdRate (Production Rate) / CROIP (Cummulative Remaining Oil In Place)
         self.MFW = [] # Mean Finger Width (will be converted into a numpy array when reporting)
@@ -174,6 +174,7 @@ class Simulation:
         :return: returns the matrix with the source & and production well flow rates
         :rtype: np.ndarray
         """
+        # setting permeability state
         if(self._source_prod_flow is None):
             self._source_prod_flow = np.zeros((self.mesh.n+1, self.mesh.m+1))
             bool_Homogenous_and_Rectilinear = (self.permeability_flag.value == PermeabilityType.Homogenous.value) \
@@ -183,11 +184,11 @@ class Simulation:
             bool_Heterogenous_and_Quarter_Five_Spot = (self.permeability_flag.value == PermeabilityType.Heterogenous.value) \
                                                 and (self.reservoir_geometry.value == ResevoirGeometry.Quarter_Five_Spot.value) 
             if(bool_Homogenous_and_Rectilinear or bool_Heterogenous_and_Rectilinear):
-                self._source_prod_flow[:, 0] = self.source_flow_magnitude
-                self._source_prod_flow[:, -1] = -1 * self.source_flow_magnitude
-            elif(bool_Heterogenous_and_Quarter_Five_Spot):
-                self._source_prod_flow[0,0] = self.source_flow_magnitude
-                self._source_prod_flow[-1, -1] = -1*self.source_flow_magnitude
+                self._source_prod_flow[:, 0] = self.source_flow_magnitude # intensity of injection well = src
+                self._source_prod_flow[:, -1] = -1 * self.source_flow_magnitude # intensity of production well = -src
+            elif(bool_Heterogenous_and_Quarter_Five_Spot): # Quarter-Five Spot
+                self._source_prod_flow[0,0] = self.source_flow_magnitude # Intensity of injection well = src
+                self._source_prod_flow[-1, -1] = -1*self.source_flow_magnitude # Intensity of production well = -src
 
         return self._source_prod_flow
 
@@ -523,9 +524,7 @@ class Simulation:
             ## STEP 2.4: Calculating Global Pressure and velocity
                 self.FE_mesh.set_triangulation()
                 self.FE_mesh.set_FE_meshgrid(beta)
-               
-
-
+                self.FE_mesh.set_right_hand(self.source_prod_flow)
 
                 break
 
