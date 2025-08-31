@@ -10,7 +10,7 @@ developed by Sourav Dutta and Rohit Mishra.
 import os
 
 import numpy as np
-from grid import Grid
+from grid import Grid, FEMesh
 from enumerations import (
     ModelType,
     PolymerList,
@@ -109,7 +109,7 @@ class Simulation:
         self.relative_permeability_formula = RelativePermeabilityFormula.AmaefuleHandEquation #WILL NEED TO UPDATE TO INCLUDE IN GUI
 
         # Initializing sim properties
-        self.mesh = self._create_mesh()
+        self.mesh, self.FE_mesh = self._create_mesh()
         grid_shape = (self.mesh.n, self.mesh.m)
         self.x, self.y = self.mesh.get_meshgrid 
         self.phi = None  # FIXME: Should check if this functionality code 
@@ -245,13 +245,14 @@ class Simulation:
         """
         (private method)
 
-        :return: Initialized grid
-        :rtype: Grid
+        :return: Initialized FD and FE mesh
+        :rtype: Tuple[Grid, FEMesh]
         """
-        mesh = Grid()
-        mesh.m = self.grid_size
-        mesh.n = self.grid_size
-        return mesh
+        FD_mesh = Grid(self.grid_size, self.grid_size)
+        
+        FE_mesh = FEMesh(self.grid_size, self.grid_size)
+        
+        return FD_mesh, FE_mesh
 
     # def _generate_grid(self):
     #     x = np.arange(self.mesh.left, self.mesh.right + self.mesh.dx, self.mesh.dx)
@@ -375,7 +376,7 @@ class Simulation:
         #     ] = 3
         elif(bool_Heterogenous_and_Quarter_Five_Spot):
             # Load Upper Ness formation (SPE10)
-            mat_data = loadmat('./Resources/KK30Ness.mat') #FIXME: when using master_surf_grid need to change this path
+            mat_data = loadmat('./lib/Resources/KK30Ness.mat') #FIXME: when using master_surf_grid need to change this path
             if 'KK' not in mat_data:
                 raise SimulationCalcInputException('SimulationInputException: KK matrix not found in KK30Ness.mat file.')
             KK = mat_data['KK']
@@ -518,8 +519,10 @@ class Simulation:
                 total_mobility = aqueous_mobility + oleic_mobility
                 assert self.KK is not None,SimulationCalcInputException("SimulationCalcInputError:PermeabilityTensorUnavailable") 
                 beta = self.KK*total_mobility 
+                
             ## STEP 2.4: Calculating Global Pressure and velocity
-                self.mesh.set_triangulation() 
+                self.FE_mesh.set_triangulation()
+                self.FE_mesh.set_FE_meshgrid(beta)
                
 
 
