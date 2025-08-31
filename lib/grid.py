@@ -323,7 +323,7 @@ class FEMesh(Grid):
                 # finding corresponding index
                 idx = j + (l - 1) * (self.m + 1)
                 
-                if j == 0 and l != 0 and l != (self.n + 1):
+                if j == 0 and l != 0 and l != self.n:
                     t1 = self._FInt(self.L[j, l], source_prod_matrix, np.array([1, 0, 0]))
                     t2 = 0
                     t3 = 0
@@ -331,7 +331,7 @@ class FEMesh(Grid):
                     t5 = self._FInt(self.L[j, l - 1], source_prod_matrix, np.array([0, 0, 1]))
                     t6 = self._FInt(self.U[j, l - 1], source_prod_matrix, np.array([0, 1, 0]))
                 
-                if j == (self.m + 1) and l != 0 and l != (self.n + 1):
+                if j == self.m and l != 0 and l != self.n:
                     t1 = 0
                     t2 = self._FInt(self.U[j - 1, l], source_prod_matrix, np.array([0, 0, 1]))
                     t3 = self._FInt(self.L[j - 1, l], source_prod_matrix, np.array([0, 1, 0]))
@@ -339,7 +339,7 @@ class FEMesh(Grid):
                     t5 = 0
                     t6 = 0
                     
-                if j != 0 and j != (self.m + 1) and l == 0:
+                if j != 0 and j != self.m and l == 0:
                     t1 = self._FInt(self.L[j, l], source_prod_matrix, np.array([1, 0, 0]))
                     t2 = self._FInt(self.U[j - 1, l], source_prod_matrix, np.array([0, 0, 1]))
                     t3 = self._FInt(self.L[j - 1, l], source_prod_matrix, np.array([0, 1, 0]))
@@ -347,7 +347,7 @@ class FEMesh(Grid):
                     t5 = 0
                     t6 = 0
                     
-                if j != 0 and j != (self.m + 1) and l == (self.n + 1):
+                if j != 0 and j != self.m and l == self.n:
                     t1 = 0
                     t2 = 0
                     t3 = 0
@@ -363,7 +363,7 @@ class FEMesh(Grid):
                     t5 = 0
                     t6 = 0
                 
-                if j == 0 and l == (self.n + 1):
+                if j == 0 and l == self.n:
                     t1 = 0
                     t2 = 0
                     t3 = 0
@@ -371,7 +371,7 @@ class FEMesh(Grid):
                     t5 = self._FInt(self.L[j, l - 1], source_prod_matrix, np.array(0, 0, 1))
                     t6 = self._FInt(self.U[j, l - 1], source_prod_matrix, np.array([0, 1, 0]))
                     
-                if j == (self.m + 1) and l == 0:
+                if j == self.m and l == 0:
                     t1 = 0
                     t2 = self._FInt(self.U[j - 1, l], source_prod_matrix, np.array([0, 0, 1]))
                     t3 = self._FInt(self.L[j - 1, l], source_prod_matrix, np.array([0, 1, 0]))
@@ -379,7 +379,7 @@ class FEMesh(Grid):
                     t5 = 0
                     t6 = 0
                     
-                if j == (self.m + 1) and l == (self.n + 1):
+                if j == self.m and l == self.n:
                     t1 = 0
                     t2 = 0
                     t3 = 0
@@ -387,7 +387,7 @@ class FEMesh(Grid):
                     t5 = 0
                     t6 = 0
                     
-                if j != 0 and j != (self.m + 1) and l != 0 and l != (self.n + 1):
+                if j != 0 and j != self.m and l != 0 and l != self.n:
                     t1 = self._FInt(self.L[j, l], source_prod_matrix, np.array([1, 0, 0]))
                     t2 = self._FInt(self.U[j - 1, l], source_prod_matrix, np.array([0, 0, 1]))
                     t3 = self._FInt(self.L[j - 1, l], source_prod_matrix, np.array([0, 1, 0]))
