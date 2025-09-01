@@ -231,6 +231,33 @@ class Simulation:
 
         return new_u, new_v
 
+    def get_gradient(self, vn): #FIXME: Came from the main branch but should be updated
+        m = self.mesh.m
+        n = self.mesh.n
+
+        dx = self.mesh.dx
+        dy = self.mesh.dy
+
+        px = np.zeros((n + 1, m + 1))
+        py = px
+
+        for i in range(m + 1):
+            for j in range(n + 1):
+                if i != 0:
+                    px[j, i] = (vn[j, i] - vn[j, i - 1]) / dx
+                if i != m:
+                    px[j, i] = (vn[j, i + 1] - vn[j, i]) / dx
+                if i != 0 and i != m:
+                    px[j, i] = (vn[j, i + 1] - vn[j, i - 1]) / (2 * dx)
+                if j != 0:
+                    py[j, i] = (vn[j, i] - vn[j - 1, i]) / dy
+                if j != n:
+                    py[j, i] = (vn[j + 1, i] - vn[j, i]) / dy
+                if j != 0 and j != n:
+                    py[j, i] = (vn[j + 1, i] - vn[j - 1, i]) / (2 * dy)
+        return [px, py]
+
+
     def _initialize_memmap_properties(self):
         """
         (private method)
