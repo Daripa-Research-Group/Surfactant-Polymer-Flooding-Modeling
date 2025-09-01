@@ -50,46 +50,6 @@ class Grid:
         self.x, self.y = np.meshgrid(x, y)
         return self.x, self.y
 
-    def set_A(self, beta_field: np.ndarray):
-        """
-        Assembles FEM stiffness matrix A
-        """
-        rows, cols, data = [], [], []
-        num_nodes = (self.m + 1) * (self.n + 1)
-
-        def idx(i, j): return i * (self.m + 1) + j
-
-        for i in range(self.n + 1):
-            for j in range(self.m + 1):
-                center = idx(i, j)
-
-                if i > 0:
-                    up = idx(i - 1, j)
-                    rows.append(center)
-                    cols.append(up)
-                    data.append(-beta_field[i, j] / self.dy ** 2)
-                if i < self.n:
-                    down = idx(i + 1, j)
-                    rows.append(center)
-                    cols.append(down)
-                    data.append(-beta_field[i, j] / self.dy ** 2)
-                if j > 0:
-                    left = idx(i, j - 1)
-                    rows.append(center)
-                    cols.append(left)
-                    data.append(-beta_field[i, j] / self.dx ** 2)
-                if j < self.m:
-                    right = idx(i, j + 1)
-                    rows.append(center)
-                    cols.append(right)
-                    data.append(-beta_field[i, j] / self.dx ** 2)
-
-                rows.append(center)
-                cols.append(center)
-                data.append(2 * beta_field[i, j] * (1 / self.dx ** 2 + 1 / self.dy ** 2))
-
-        self.A = coo_matrix((data, (rows, cols)), shape=(num_nodes, num_nodes)).tocsc()
-
     def set_B(self, source_array: np.ndarray | None=None):
         """
         Sets vector B (Right Hand Side of linear system).
@@ -112,6 +72,9 @@ class FEMesh(Grid):
         self.L = None
         self.grid_size = None
         self.right_hand = None
+        self.A = None
+        self.B = None
+        self.sparsed_A = None
             
     def set_triangulation(self):
         #  Setting up triangulations for the FEM grid
@@ -398,8 +361,6 @@ class FEMesh(Grid):
                 # computing rh
                 self.right_hand[idx] = t1 + t2 + t3 + t4 + t5 + t6
                 
-        
-        
     def _FInt(self, T, fmatrix, v):
         # evaluating source term at f at the vertices of the element triangle
         f_11 = self._f_func(T['x'][0], T['y'][0], fmatrix)
@@ -435,4 +396,79 @@ class FEMesh(Grid):
         
         return (f_4 * v_4 + f_5 * v_5 + f_6 * v_6 + f_c * v_c) * s / 4
     
+    def _set_A(self):
+        """
+        Assembles FEM stiffness matrix A
+        Returns A as a sparse matrix
+        
+        Corresponds to the SetA.m function in matlab
+        """
+        self.A = np.zeros(((self.m + 1) * (self.n + 1) * 7, 3))
+        list_idx = 0
+        
+        for j in range(self.m + 1):
+            for l in range(self.n + 1):
+                
+                a = self.grid_size[j, l]
+                idx = j + l * (self.m + 1) 
+                
+                # center
+                self.A[list_idx, :] = np.array([idx, idx, a['c']])
+                list_idx += 1
+
+                # west
+                if j > 0:
+                    self.A[list_idx, :] = np.array([idx, idx - 1, a['w']])
+                    list_idx += 1
+                
+                # northwest
+                if j > 0 and l < self.n:
+                    self.A[list_idx, :] = np.array([idx, idx + self.m, a['nw']])
+                    list_idx += 1
+                    
+                # north
+                if l < self.n:
+                    self.A[list_idx, :] = np.array([idx, idx + (self.m + 1), a['n']])
+                    list_idx += 1
+
+                # east
+                if j < self.m:
+                    self.A[list_idx, :] = np.array([idx, idx + 1, a['e']])
+                    list_idx += 1
+
+                # south
+                if l > 0:
+                    self.A[list_idx, :] = np.array([idx, idx - (self.m + 1), a['s']])
+                    list_idx += 1
+                    
+                # southeast
+                if j < self.m and l > 0:
+                    self.A[list_idx, :] = np.array([idx, idx - self.m, a['se']])
+                    list_idx += 1
+                    
+        self.A = self.A[ : list_idx, :]
+        
+    def _set_B(self):
+        self.B = np.zeros(((self.m + 1) * (self.n + 1), 1))
+        
+        for j in range(self.m + 1):
+            for l in range(self.n + 1):
+                
+                a = self.grid_size[j, l]
+                idx = j + l * (self.m + 1)
+                
+                self.B[idx] = a['const']
+                
+        self.B = self.right_hand - self.B
+        
+    def get_A_B_matrices(self):
+        self._set_A()
+        self._set_B()
+        
+        # creating the sparsed matrix for A
+        rows = np.ravel(self.A[:, 0].reshape(1, -1))
+        cols = np.ravel(self.A[:,1].reshape(1,-1))
+        values = np.ravel(self.A[:,2].reshape(1,-1))
+        self.sparsed_A = coo_matrix((values, (rows, cols)), shape=(np.shape(self.B)[0], np.shape(self.B)[0])) # TODO: Verify correctedness of salf.sparsed_A
+        
     

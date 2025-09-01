@@ -25,6 +25,7 @@ from polymer import Polymer
 from surfactant import Surfactant
 from water import Water 
 from scipy.io import loadmat
+from scipy.sparse.linalg import bicgstab
 os.makedirs("memmaps", exist_ok=True) #ensures that the program works on computers with RAM constraints
 
 
@@ -209,18 +210,26 @@ class Simulation:
 
         return u, v
 
-    def _compute_pressure_and_velocity_matrices(self):
+    def _compute_pressure_and_velocity_matrices(self, sparsed_A, B):
         """
         (private method)
 
         dependent property to calculate the pressure matrix (``u``) 
-        and velocity matrix (``v``). Will rely on functions in the ``Grid`` class.
+        and velocity matrix (``v``). Will rely on functions in the ``FEMesh`` class.
 
         :return: list of update pressure matrix and velocity matrix => [u,v]
         :rtype: list[np.ndarray]
         """
-        pass
+        max_iterations = 1000
+        new_u, convergence_flag = bicgstab(sparsed_A, B, maxiter=max_iterations) # new_u is of shape (900, )
+        assert convergence_flag == 0, SimulationCalcInputException("ConvergenceFailure")
+        
+        new_v = np.zeros((self.FE_mesh.n + 1, self.FE_mesh.m + 1), dtype=object)
+        for i in range(self.FE_mesh.m + 1):
+            for j in range(self.FE_mesh.n + 1):
+                new_v[j, i] = new_u[j * (self.FE_mesh.m + 1) + i]
 
+        return new_u, new_v
 
     def _initialize_memmap_properties(self):
         """
@@ -525,6 +534,13 @@ class Simulation:
                 self.FE_mesh.set_triangulation()
                 self.FE_mesh.set_FE_meshgrid(beta)
                 self.FE_mesh.set_right_hand(self.source_prod_flow)
+                self.FE_mesh.get_A_B_matrices()
+                
+                u_old = self.u
+                v_old = self.v
+                self.u, self.v = self._compute_pressure_and_velocity_matrices(self.FE_mesh.sparsed_A, self.FE_mesh.B)
+                
+                
 
                 break
 
