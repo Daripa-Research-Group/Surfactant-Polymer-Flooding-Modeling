@@ -50,15 +50,6 @@ class Grid:
         self.x, self.y = np.meshgrid(x, y)
         return self.x, self.y
 
-    def set_B(self, source_array: np.ndarray | None=None):
-        """
-        Sets vector B (Right Hand Side of linear system).
-        """
-        num_nodes = (self.m + 1) * (self.n + 1)
-        self.B = np.zeros(num_nodes)
-        if source_array is not None:
-            self.B[:] = source_array.flatten()
-
     def get_flat_index_matrix(self) -> np.ndarray:
         """
         Returns a matrix of shape (n+1, m+1) with flat indices at each grid point.
