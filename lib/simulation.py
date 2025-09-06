@@ -120,7 +120,6 @@ class Simulation:
         self._initialize_simulation() #will initialize phi, KK, and time_step
         if(self.phi is None or self.KK is None or self.time_step is None): #Raise Exception if not properly initialized...
             raise SimulationCalcInputException("SimulationCalcInputError:BadInitialSimulationPropertiesCalculation") 
-        
 
         # Initalizing Polymer Object
         self.polymer = Polymer(
