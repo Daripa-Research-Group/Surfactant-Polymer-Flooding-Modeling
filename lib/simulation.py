@@ -233,6 +233,37 @@ class Simulation:
 
         return self._source_prod_flow
 
+    _scenario_flag = None
+
+    @property
+    def scenario_flag(self):
+        if(self._scenario_flag is None):
+            bool_Homogenous_and_Rectilinear = (
+                self.permeability_flag.value == PermeabilityType.Homogenous.value
+            ) and (self.reservoir_geometry.value == ResevoirGeometry.Rectilinear.value)
+            bool_Heterogenous_and_Rectilinear = (
+                self.permeability_flag.value == PermeabilityType.Heterogenous.value
+            ) and (self.reservoir_geometry.value == ResevoirGeometry.Rectilinear.value)
+            bool_Heterogenous_and_Quarter_Five_Spot = (
+                self.permeability_flag.value == PermeabilityType.Heterogenous.value
+            ) and (
+                self.reservoir_geometry.value
+                == ResevoirGeometry.Quarter_Five_Spot.value
+            )
+            
+            if(bool_Homogenous_and_Rectilinear):
+                self._scenario_flag = 1
+            elif(bool_Heterogenous_and_Rectilinear):
+                self._scenario_flag = 2
+            elif(bool_Heterogenous_and_Quarter_Five_Spot):
+                self._scenario_flag = 3
+            else:
+                raise SimulationCalcInputException("SimulationCalcInputError:InvalidSimulationCase")
+        
+        return self._scenario_flag
+
+
+    # Private Methods of the Simulation Class
     def _initialize_pressure_and_velocity(self):
         """
         (private method)
@@ -569,6 +600,7 @@ class Simulation:
 
         print("Simulation sim_results exported to /sim_results/ folder.")
 
+    # Public Method of Simulation Class
     def run(self):
         """
         Executes simulation loop.
