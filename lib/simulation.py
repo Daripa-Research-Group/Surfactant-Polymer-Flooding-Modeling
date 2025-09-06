@@ -684,6 +684,7 @@ class Simulation:
                 beta = self.KK * total_mobility
 
                 ## STEP 2.4: Calculating Global Pressure and velocity
+                ### STEP 2.4.1: setting FEM Mesh
                 self.FE_mesh.set_triangulation()
                 self.FE_mesh.set_FE_meshgrid(beta)
                 self.FE_mesh.set_right_hand(self.source_prod_flow)
