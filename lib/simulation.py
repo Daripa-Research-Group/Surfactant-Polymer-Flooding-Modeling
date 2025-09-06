@@ -210,7 +210,7 @@ class Simulation:
 
         return u, v
 
-    def _compute_pressure_and_velocity_matrices(self, sparsed_A, B):
+    def _compute_pressure_and_velocity_matrices(self, sparsed_A, B, beta):
         """
         (private method)
 
@@ -228,10 +228,14 @@ class Simulation:
         for i in range(self.FE_mesh.m + 1):
             for j in range(self.FE_mesh.n + 1):
                 new_v[j, i] = new_u[j * (self.FE_mesh.m + 1) + i]
+                
+        px, py = self._get_gradient(new_v)
+        new_u = (-1 * beta) * px
+        new_v = (-1 * beta) * py
 
         return new_u, new_v
 
-    def get_gradient(self, vn): #FIXME: Came from the main branch but should be updated
+    def _get_gradient(self, vn): 
         m = self.mesh.m
         n = self.mesh.n
 
@@ -239,7 +243,7 @@ class Simulation:
         dy = self.mesh.dy
 
         px = np.zeros((n + 1, m + 1))
-        py = px
+        py = np.copy(px)
 
         for i in range(m + 1):
             for j in range(n + 1):
@@ -255,7 +259,8 @@ class Simulation:
                     py[j, i] = (vn[j + 1, i] - vn[j, i]) / dy
                 if j != 0 and j != n:
                     py[j, i] = (vn[j + 1, i] - vn[j - 1, i]) / (2 * dy)
-        return [px, py]
+                    
+        return px, py
 
 
     def _initialize_memmap_properties(self):
@@ -565,7 +570,7 @@ class Simulation:
                 
                 u_old = self.u
                 v_old = self.v
-                self.u, self.v = self._compute_pressure_and_velocity_matrices(self.FE_mesh.sparsed_A, self.FE_mesh.B)
+                self.u, self.v = self._compute_pressure_and_velocity_matrices(self.FE_mesh.sparsed_A, self.FE_mesh.B, beta)
                 
                 
 
