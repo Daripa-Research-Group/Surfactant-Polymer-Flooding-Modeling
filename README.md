@@ -37,7 +37,7 @@ This research aims to view the effects of surfactant in EOR while accounting for
 
 ## Acknowledgments
 ### Principal Investigator:
- - [Professor Prabir Daripa](https://www.math.tamu.edu/directory/formalpg.php?user=daripa) - Texas A&M University, Department of Mathematics
+ - [Professor Prabir Daripa](https://artsci.tamu.edu/mathematics/contact/profiles/prabir-daripa.html) - Texas A&M University, Department of Mathematics
  
 ### Previous Works: 
 This research builds upon the following key works: 
