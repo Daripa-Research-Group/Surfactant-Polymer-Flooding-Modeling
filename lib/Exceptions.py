@@ -13,10 +13,12 @@ class OutOfRangeError(Exception):
         """
         return f"{self.value} -> {self.message}"
 
+
 class SimulationCalcInputException(Exception):
     """
     Exception Handling for required inputs within various stages of the simulation
     """
+
     def __init__(self, message):
         """
         constructor exception object
@@ -32,6 +34,7 @@ class SimulationCalcInputException(Exception):
         :rtype: str
         """
         return self.message
+
 
 class UserInputException(Exception):
     """
@@ -58,4 +61,3 @@ class UserInputException(Exception):
         :rtype: str
         """
         return f"UserInputException: {self.message}"
-

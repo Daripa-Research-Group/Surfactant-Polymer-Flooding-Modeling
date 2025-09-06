@@ -7,7 +7,6 @@ Sourav Dutta and Rohit Mishra.
 @author: Bhargav Akula Ramesh Kumar, Carlos Acosta Caripo
 """
 
-
 from types import LambdaType
 from enumerations import SimulationConstants, SurfactantList
 from grid import Grid
@@ -16,19 +15,21 @@ import numpy as np
 import scipy as sp
 from scipy.sparse.linalg import bicgstab
 
+
 class Surfactant:
     """
     Contains property and calculations related to the surfactant object
     """
+
     def __init__(
-            self,
-            name : SurfactantList,
-            initial_concentration : float,
-            phi : np.ndarray,
-            IFT_equation : LambdaType | None = None,
-            derivative_IFT_equation : LambdaType | None = None,
-            concentration_matrix : np.ndarray | None = None,
-            ):
+        self,
+        name: SurfactantList,
+        initial_concentration: float,
+        phi: np.ndarray,
+        IFT_equation: LambdaType | None = None,
+        derivative_IFT_equation: LambdaType | None = None,
+        concentration_matrix: np.ndarray | None = None,
+    ):
         """
         Creates instance of Surfactant class
 
@@ -52,47 +53,49 @@ class Surfactant:
         """
         self.name = name
         self.concentration = initial_concentration
-        self.concentration_matrix = concentration_matrix 
+        self.concentration_matrix = concentration_matrix
         self.IFT_conc_equ = IFT_equation
         self.derivative_IFT_conc_equ = derivative_IFT_equation
         self.is_surfactant = True if (initial_concentration > 0) else False
         self.phi = phi
 
     def initialize(
-            self,
-            ):
+        self,
+    ):
         """
         This function will initialize the surfactant object
-        
+
         :return: Surfactant object
         :rtype: Surfactant
         """
-        if(self.concentration_matrix is None):
-            if(self.phi is None):
-                raise SimulationCalcInputException("SimulationInputException: phi value not initalized...")
+        if self.concentration_matrix is None:
+            if self.phi is None:
+                raise SimulationCalcInputException(
+                    "SimulationInputException: phi value not initalized..."
+                )
             D = (self.phi > 1e-10) + (np.abs(self.phi) < 1e-10)
             self.concentration_matrix = (~D) * self.concentration
         return self
 
     def compute_concentration(
-            self,
-            grid: tuple,
-            mesh: Grid,
-            u: np.ndarray, 
-            v: np.ndarray,
-            dt: float,
-            initial_water_saturation: float,
-            water_saturation_matrix: np.ndarray,
-            xmod : np.ndarray,
-            ymod : np.ndarray,
-            param_coeff : dict
-            ):
+        self,
+        grid: tuple,
+        mesh: Grid,
+        u: np.ndarray,
+        v: np.ndarray,
+        dt: float,
+        initial_water_saturation: float,
+        water_saturation_matrix: np.ndarray,
+        xmod: np.ndarray,
+        ymod: np.ndarray,
+        param_coeff: dict,
+    ):
         """
         This function will update the surfactant concentration matrix
 
         This function is derived from the section of the 'nmmoc_surf_mod_neumann'
         related to the polymer concentration matrix
-        
+
         :param grid: The FEM grid used for simulation calculations (x and y variables from the MATLAB code)
         :type grid: tuple[NDArray[Any], ...]
 
@@ -128,8 +131,10 @@ class Surfactant:
 
         """
         # initializing constants
-        if(self.concentration_matrix is None):
-            raise SimulationCalcInputException("SimulationInputException: Surfactant concentration matrix not initialized. Please initizlize before running this function.")
+        if self.concentration_matrix is None:
+            raise SimulationCalcInputException(
+                "SimulationInputException: Surfactant concentration matrix not initialized. Please initizlize before running this function."
+            )
         g1 = initial_water_saturation
         g3 = initial_water_saturation * self.concentration
         x = grid[0]
@@ -138,36 +143,46 @@ class Surfactant:
         n = mesh.n
         dx = mesh.dx
         dy = mesh.dy
-        dt_array = dt*np.ones((SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value))
+        dt_array = dt * np.ones(
+            (SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value)
+        )
         Qnew = water_saturation_matrix
 
         x1d = x[0, :]
         y1d = y[:, 0]
         x_sorted = np.all(np.diff(x1d) > 0)
-        y_sorted = np.all(np.diff(y1d) > 0)   
-        
+        y_sorted = np.all(np.diff(y1d) > 0)
+
         # reorder surfactant.concentration_matrix if a dimension isn't sorted
         if not x_sorted:
             x_sort_idx = np.argsort(x1d)
             x1d = x1d[x_sort_idx]
-            self.concentration_matrix = self.concentration_matrix[:, x_sort_idx]  # Sort columns of surfactant.concentration_matrix
+            self.concentration_matrix = self.concentration_matrix[
+                :, x_sort_idx
+            ]  # Sort columns of surfactant.concentration_matrix
         if not y_sorted:
             y_sort_idx = np.argsort(y1d)
             y1d = y1d[y_sort_idx]
-            self.concentration_matrix = self.concentration_matrix[y_sort_idx, :]  # Sort rows of surfactant.concentration_matrix
-            
+            self.concentration_matrix = self.concentration_matrix[
+                y_sort_idx, :
+            ]  # Sort rows of surfactant.concentration_matrix
+
         interp = sp.interpolate.RegularGridInterpolator(
-            (y1d, x1d), self.concentration_matrix ,method='linear', bounds_error=False, fill_value=None
+            (y1d, x1d),
+            self.concentration_matrix,
+            method="linear",
+            bounds_error=False,
+            fill_value=None,
         )
         Gmod = interp((xmod, ymod))
 
         # Updating coefficients using interpolated surfactant concentration
         sigma_mod = self.IFT_conc_equ(Gmod)
         sigma_g_mod = self.derivative_IFT_conc_equ(Gmod)
-        lambda_a = param_coeff['lambda_a']
-        lambda_total = param_coeff['lambda_total']
-        D = param_coeff['D']
-        pc_g = param_coeff['pc_g']
+        lambda_a = param_coeff["lambda_a"]
+        lambda_total = param_coeff["lambda_total"]
+        D = param_coeff["D"]
+        pc_g = param_coeff["pc_g"]
 
         # intermediate parameters for code:
         F = D * pc_g / Qnew
@@ -186,7 +201,9 @@ class Surfactant:
                     if j == i:
                         if idx == 1:
                             if i == 0:
-                                DD[i] = g3 / Qnew[cnt][i] + Gmod[cnt][i] / dt_array[cnt][i]
+                                DD[i] = (
+                                    g3 / Qnew[cnt][i] + Gmod[cnt][i] / dt_array[cnt][i]
+                                )
                                 CC[j][i] = 2 * F[cnt][i] / (dy**2)
                                 BB[j][i] = (
                                     1 / dt_array[cnt][i]
@@ -285,7 +302,7 @@ class Surfactant:
 
         Gnew_flat, info = bicgstab(AAA, DDD, rtol=10 ** (-10), maxiter=600)
         Gnew = Gnew_flat.reshape(m, n)
-        
+
         self.concentration_matrix = Gnew
 
         return self.concentration_matrix

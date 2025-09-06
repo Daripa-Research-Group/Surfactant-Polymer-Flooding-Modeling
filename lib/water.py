@@ -16,19 +16,21 @@ from grid import Grid
 from polymer import Polymer
 from surfactant import Surfactant
 
+
 class Water:
     """
     Contains the properties and methods for water in the SP-Flooding system
     """
+
     def __init__(
-            self, 
-            init_water_saturation: float,
-            init_aqueous_saturation: float,
-            init_oleic_saturation: float, 
-            miuw: float, 
-            miuo: float,
-            phi: np.ndarray
-            ):
+        self,
+        init_water_saturation: float,
+        init_aqueous_saturation: float,
+        init_oleic_saturation: float,
+        miuw: float,
+        miuo: float,
+        phi: np.ndarray,
+    ):
         """
         Constructor for the 'Water' class
 
@@ -55,45 +57,44 @@ class Water:
         self.init_oleic_saturation = init_oleic_saturation
         self.miuw = miuw
         self.miuo = miuo
-        self.water_saturation = None # water saturation matrix
-        self.viscosity_array = None # aqueous viscosity matrix
+        self.water_saturation = None  # water saturation matrix
+        self.viscosity_array = None  # aqueous viscosity matrix
         self.phi = phi
 
-    def initialize(
-            self, 
-            grid_shape: tuple
-            ):
+    def initialize(self, grid_shape: tuple):
         """
         Initializing 'Water' Object properties
-        
+
         :param grid_shape: the n and m parameters from the 'Grid' class
         :type grid_shape: tuple
 
         :return: Updated 'Water' object
         :rtype: Water
         """
-        #getting values for n and m from grid:
+        # getting values for n and m from grid:
         n, m = grid_shape
 
-        #initializing the water saturation matrix
+        # initializing the water saturation matrix
         s0 = np.zeros((n + 1, m + 1))
         D = (self.phi > 1e-10) | (np.abs(self.phi) < 1e-10)
-        s0 = np.logical_not(D).astype(float) + D.astype(float) * (1 - self.init_water_saturation)
+        s0 = np.logical_not(D).astype(float) + D.astype(float) * (
+            1 - self.init_water_saturation
+        )
         self.water_saturation = s0
 
-        #initialize the aqueous viscosity matrix:
-        self.viscosity_array = self.miuw*np.ones((n+1,m+1))
+        # initialize the aqueous viscosity matrix:
+        self.viscosity_array = self.miuw * np.ones((n + 1, m + 1))
 
         return self
 
     def compute_viscosity(
-            self,
-            grid: Grid,
-            model_type: ModelType,
-            polymer: Polymer,
-            u: np.ndarray | None = None,
-            v: np.ndarray | None = None,
-            ):
+        self,
+        grid: Grid,
+        model_type: ModelType,
+        polymer: Polymer,
+        u: np.ndarray | None = None,
+        v: np.ndarray | None = None,
+    ):
         """
         Compute aqueous viscosity.
 
@@ -115,36 +116,54 @@ class Water:
         :return: updated aqueous viscosity matrix
         :rtype: np.ndarray
         """
-        assert self.viscosity_array is not None, SimulationCalcInputException("SimuationInputException: aqueous viscosity matrix not initialized. Please try again")
-        assert polymer is not None and isinstance(polymer, Polymer), SimulationCalcInputException("SimuationInputException: polymer object not initialized. \
-                The polymer object must be initialized before updating aqueous viscosity. Please try again.")
-        assert polymer.concentration_matrix is not None, SimulationCalcInputException("SimuationInputException: Polymer Concentration matrix must be initialized. Please try again...")
-        assert polymer.shear_rate is not None, SimulationCalcInputException("SimuationInputException: Polymer Shear Rate matrix must be initialized. Please try again...")
+        assert self.viscosity_array is not None, SimulationCalcInputException(
+            "SimuationInputException: aqueous viscosity matrix not initialized. Please try again"
+        )
+        assert polymer is not None and isinstance(
+            polymer, Polymer
+        ), SimulationCalcInputException(
+            "SimuationInputException: polymer object not initialized. \
+                The polymer object must be initialized before updating aqueous viscosity. Please try again."
+        )
+        assert polymer.concentration_matrix is not None, SimulationCalcInputException(
+            "SimuationInputException: Polymer Concentration matrix must be initialized. Please try again..."
+        )
+        assert polymer.shear_rate is not None, SimulationCalcInputException(
+            "SimuationInputException: Polymer Shear Rate matrix must be initialized. Please try again..."
+        )
         n = np.size(polymer.concentration_matrix, 0)
         m = np.size(polymer.concentration_matrix, 1)
         initial_polymer_concentration_scalar = polymer.concetration_scalar
-        if(model_type.value == ModelType.No_Shear_Thinning.value): #no shear thinning polymer
+        if (
+            model_type.value == ModelType.No_Shear_Thinning.value
+        ):  # no shear thinning polymer
             miuw = SimulationConstants.Water_Viscosity.value
-            if(initial_polymer_concentration_scalar == 0):
-                self.viscosity_array = miuw*np.ones((n,m))
+            if initial_polymer_concentration_scalar == 0:
+                self.viscosity_array = miuw * np.ones((n, m))
             else:
                 beta1 = SimulationConstants.beta1.value
-                self.viscosity_array = miuw*(1+beta1*polymer.concentration_matrix)
-        elif(model_type.value == ModelType.Shear_Thinning_On.value): #shear thinning polymer
+                self.viscosity_array = miuw * (1 + beta1 * polymer.concentration_matrix)
+        elif (
+            model_type.value == ModelType.Shear_Thinning_On.value
+        ):  # shear thinning polymer
             # using the shear rate and polymer coefficients to understand how its viscosity changes
-            assert u is not None, SimulationCalcInputException("SimuationInputException: variables 'u' not initialized for shear-thinning-on model. Please try again")
-            assert v is not None, SimulationCalcInputException("SimuationInputException: variables 'v' not initialized for shear-thinning-on model. Please try again")
-            
-            #constants:
+            assert u is not None, SimulationCalcInputException(
+                "SimuationInputException: variables 'u' not initialized for shear-thinning-on model. Please try again"
+            )
+            assert v is not None, SimulationCalcInputException(
+                "SimuationInputException: variables 'v' not initialized for shear-thinning-on model. Please try again"
+            )
+
+            # constants:
             rho_water = SimulationConstants.Water_Density.value
             viscosity_water = SimulationConstants.Water_Viscosity.value
 
-            #relevant parameters for power law equation:
-            w1 = polymer.rho*polymer.concentration_matrix
-            w2 = rho_water*(1-polymer.concentration_matrix)
-            wppm = (w1/(w1+w2))*(10**6)
-            
-            #determining ε and n for power law equation:
+            # relevant parameters for power law equation:
+            w1 = polymer.rho * polymer.concentration_matrix
+            w2 = rho_water * (1 - polymer.concentration_matrix)
+            wppm = (w1 / (w1 + w2)) * (10**6)
+
+            # determining ε and n for power law equation:
             # epsilon_val = polymer.e_coeff[0]*(wppm**polymer.e_coeff[1])
             # n_val = min(polymer.n_coeff[0]*(wppm**polymer.n_coeff[1]),1)
 
@@ -163,7 +182,6 @@ class Water:
             epsilon_val = polymer.e_coeff[0] * wppm_safe ** polymer.e_coeff[1]
             n_val = np.minimum(polymer.n_coeff[0] * wppm_safe ** polymer.n_coeff[1], 1)
 
-
             row = np.size(polymer.concentration_matrix, 0)
             col = np.size(polymer.concentration_matrix, 1)
 
@@ -178,20 +196,18 @@ class Water:
             for ii in range(row):
                 for jj in range(col):
                     # Applying constraints
-                    self.viscosity_array[ii,jj] = epsilon_val[ii,jj]*(polymer.shear_rate[ii,jj]**(n_val[ii,jj]-1))
+                    self.viscosity_array[ii, jj] = epsilon_val[ii, jj] * (
+                        polymer.shear_rate[ii, jj] ** (n_val[ii, jj] - 1)
+                    )
                     if self.viscosity_array[ii, jj] < viscosity_water:
                         self.viscosity_array[ii, jj] = viscosity_water
                     if self.viscosity_array[ii, jj] > 100:
                         self.viscosity_array[ii, jj] = 100
-        return self.viscosity_array 
-        
+        return self.viscosity_array
 
     def compute_residual_saturations(
-            self, 
-            sigma: np.ndarray, 
-            u: np.ndarray, 
-            v: np.ndarray
-            ):
+        self, sigma: np.ndarray, u: np.ndarray, v: np.ndarray
+    ):
         """
         Compute swr, sor based on capillary numbers (came from compres.m MATLAB file)
 
@@ -201,7 +217,7 @@ class Water:
         :param u: global pressure matrix.
         :type u: np.ndarray
 
-        :param v: velocity matrix. 
+        :param v: velocity matrix.
         :type v: np.ndarray
 
         :return residual saturation for oil (index 1) and water (index 0) phases
@@ -213,7 +229,7 @@ class Water:
         Nco0 = 1.44e-4
         Nca0 = 1.44e-4
 
-        vel_mag = np.sqrt(u ** 2 + v ** 2)
+        vel_mag = np.sqrt(u**2 + v**2)
         nca = (vel_mag * self.viscosity_array) / sigma
         nco = (vel_mag * self.miuo) / sigma
 
@@ -223,20 +239,20 @@ class Water:
         sor = sor0 * (Nco0 / Nco) ** 0.5213 if Nco >= Nco0 else sor0
         swr = swr0 * (Nca0 / Nca) ** 0.1534 if Nca >= Nca0 else swr0
 
-        return [swr, sor] #[residual water saturation, residual oil saturation]
+        return [swr, sor]  # [residual water saturation, residual oil saturation]
 
     def compute_mobility(
-            self, 
-            c: np.ndarray, 
-            sor: float, 
-            swr: float, 
-            aqueous: bool, 
-            rel_permeability_formula: RelativePermeabilityFormula, 
-            surfactant_conc: float
-            ):
+        self,
+        c: np.ndarray,
+        sor: float,
+        swr: float,
+        aqueous: bool,
+        rel_permeability_formula: RelativePermeabilityFormula,
+        surfactant_conc: float,
+    ):
         """
         Computing mobility (made using the compmob.m MATLAB file)
-        
+
         :param c: polymer concentration matrix
         :type c: np.ndarray
 
@@ -249,7 +265,7 @@ class Water:
         :param aqueous: boolean for whether we are solving for aqoeous or oleic mobility
         :type aqueous: bool
 
-        :param rel_permeability_formula: Select the type of relative Permeability formula from the ``RelativePermeabilityFormula`` Enum 
+        :param rel_permeability_formula: Select the type of relative Permeability formula from the ``RelativePermeabilityFormula`` Enum
         :type has_surfactant: enum ``RelativePermeabilityFormula``
 
         :param surfactant_conc: scalar quantity of the initial surfactant concentration
@@ -258,43 +274,54 @@ class Water:
         :return: aqueous or oleic mobility (depending on the 'aqueous' parameter)
         :rtype: np.ndarray
         """
-        assert self.water_saturation is not None, SimulationCalcInputException("SimuationInputException: water saturation matrix not initialized. Please try again")
-        assert self.viscosity_array is not None, SimulationCalcInputException("SimuationInputException: viscosity matrix not initialized. Please try again")
+        assert self.water_saturation is not None, SimulationCalcInputException(
+            "SimuationInputException: water saturation matrix not initialized. Please try again"
+        )
+        assert self.viscosity_array is not None, SimulationCalcInputException(
+            "SimuationInputException: viscosity matrix not initialized. Please try again"
+        )
         s = self.water_saturation
         miua = self.viscosity_array
-        if rel_permeability_formula.value == RelativePermeabilityFormula.CoreyTypeEquation.value :
-            nsw0 = (s - self.init_aqueous_saturation) / (1 - self.init_aqueous_saturation)
-            nso0 = (s - self.init_aqueous_saturation) / (1 - self.init_aqueous_saturation - self.init_oleic_saturation)
-            krw0 = nsw0 ** 3.5
-            kro0 = ((1 - nso0) ** 2) * (1 - nso0 ** 1.5)
+        if (
+            rel_permeability_formula.value
+            == RelativePermeabilityFormula.CoreyTypeEquation.value
+        ):
+            nsw0 = (s - self.init_aqueous_saturation) / (
+                1 - self.init_aqueous_saturation
+            )
+            nso0 = (s - self.init_aqueous_saturation) / (
+                1 - self.init_aqueous_saturation - self.init_oleic_saturation
+            )
+            krw0 = nsw0**3.5
+            kro0 = ((1 - nso0) ** 2) * (1 - nso0**1.5)
         else:
             nsw = (s - swr) / (1 - swr)
             nso = (s - swr) / (1 - swr - sor)
-            krw0 = nsw * (2.5 * swr * (nsw ** 2 - 1) + 1)
+            krw0 = nsw * (2.5 * swr * (nsw**2 - 1) + 1)
             kro0 = (1 - nso) * (1 - 5 * sor * nso)
 
         return krw0 / miua if aqueous else kro0 / self.miuo
 
     def compute_water_saturation(
-            self,
-            grid: Grid,
-            surfactant: Surfactant,
-            polymer: Polymer,
-            u: np.ndarray,
-            v: np.ndarray,
-            xmod: np.ndarray,
-            ymod: np.ndarray,
-            params: dict
-            ):
+        self,
+        grid: Grid,
+        surfactant: Surfactant,
+        polymer: Polymer,
+        u: np.ndarray,
+        v: np.ndarray,
+        xmod: np.ndarray,
+        ymod: np.ndarray,
+        params: dict,
+    ):
         """
-        Solving saturation equation (comes from part of the nmmoc_surf_mod_neumann.m file that 
+        Solving saturation equation (comes from part of the nmmoc_surf_mod_neumann.m file that
         is for calculating the water saturation)
 
         :raises SimulationCalcInputException: If water saturation matrix is None
 
         :param grid: the 'Grid' object
         :type grid: Grid
-        
+
         :param surfactant: The surfactant object
         :type surfactant: Surfactant
 
@@ -316,40 +343,41 @@ class Water:
         :return: updated water saturation matrix
         :rtype: np.ndarray
         """
-        #Assert statements to ensure that all parameters are property initialized:
-        assert self.water_saturation is not None, SimulationCalcInputException("SimuationInputException: water saturation matrix not initialized. Please try again")
-        #Required constants:
+        # Assert statements to ensure that all parameters are property initialized:
+        assert self.water_saturation is not None, SimulationCalcInputException(
+            "SimuationInputException: water saturation matrix not initialized. Please try again"
+        )
+        # Required constants:
         dx, dy = grid.dx, grid.dy
         x = grid.x
         y = grid.y
         m = grid.m
         n = grid.n
-        phi = 1  
+        phi = 1
         omega1 = SimulationConstants.Capillary_Pressure_Param_1.value
         omega2 = SimulationConstants.Capillary_Pressure_Param_2.value
         S = self.water_saturation
         g1 = self.init_water_saturation
-        
+
         # retrieving relevant parameters for updating the water saturation
         ## Time Step:
-        dt = params['dt']
-        dt_array = dt*np.ones((n,m))
+        dt = params["dt"]
+        dt_array = dt * np.ones((n, m))
         ## fractional flow and derivatives
-        f = params['f']
-        f_c = params['f_c']
-        f_g = params['f_g']
-        #Params related to permeability tensor
-        D = params['D']
-        D_s = params['D_s']
-        D_g = params['D_g']
+        f = params["f"]
+        f_c = params["f_c"]
+        f_g = params["f_g"]
+        # Params related to permeability tensor
+        D = params["D"]
+        D_s = params["D_s"]
+        D_g = params["D_g"]
 
-
-        #Determining Smod matrix
+        # Determining Smod matrix
         interp = RegularGridInterpolator((y[:, 0], x[0, :]), S)
         coords = np.array([ymod.flatten(), xmod.flatten()]).T
         Qmod = interp(coords).reshape(S.shape)
 
-        #Updating coefficients with interpolated saturations
+        # Updating coefficients with interpolated saturations
         idx = 1
         AAA = np.zeros((n * m, n * m))
         DDD = np.zeros((n * m, 1))
@@ -756,7 +784,7 @@ class Water:
                                 )
                             )
                             AA[j][i] = (D_s[cnt - 1][i] + D_s[cnt][i]) / (2 * dy**2)
-                            
+
                             CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (2 * dy**2)
 
                             BB[j][i] = 1 / dt_array[cnt][i] - (
@@ -790,4 +818,3 @@ class Water:
         self.water_saturation = Qnew
 
         return Qnew
-

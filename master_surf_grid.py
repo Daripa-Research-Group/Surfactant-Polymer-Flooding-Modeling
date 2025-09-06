@@ -19,6 +19,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
 from user_input.gui import UserInputGUI
 from lib.simulation import Simulation
 
+
 def main() -> None:
     """
     Main Function for simulation :) !!!
@@ -32,6 +33,7 @@ def main() -> None:
         # Will need to pass the dictionary into the simulation class
         sim_object = Simulation(user_input_dict=simulation)
         sim_object.run()
+
 
 if __name__ == "__main__":
     main()

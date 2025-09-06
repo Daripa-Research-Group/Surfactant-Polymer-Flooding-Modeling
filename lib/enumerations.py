@@ -6,6 +6,7 @@ Sourav Dutta and Rohit Mishra.
 
 @author: Bhargav Akula Ramesh Kumar, Carlos Acosta Caripo
 """
+
 from enum import Enum
 import numpy as np
 
@@ -34,15 +35,27 @@ class SimulationConstants(Enum):
     Time_Step = 1 / 50
     Grid_Size = 29
     Source_Flow_Magnitude = 120000
-    
+
     beta1 = 15000
+
 
 class PolymerList(Enum):
     """
     List of Polymers that can be selected for the simulation runs
     """
-    Xanthane = (1, 1500, np.array([[3.05428284], [-0.27294817]]), np.array([[1.15410398e-04], [2.04937780e00]]))
-    Schizophyllan = (2, 1300, np.array([[4.86265534], [-0.41570227]]), np.array([[0.03647214], [1.32175949]]))
+
+    Xanthane = (
+        1,
+        1500,
+        np.array([[3.05428284], [-0.27294817]]),
+        np.array([[1.15410398e-04], [2.04937780e00]]),
+    )
+    Schizophyllan = (
+        2,
+        1300,
+        np.array([[4.86265534], [-0.41570227]]),
+        np.array([[0.03647214], [1.32175949]]),
+    )
     No_Polymer = (3, 0, [0, 0], [0, 0])
 
     @property
@@ -50,15 +63,15 @@ class PolymerList(Enum):
         return self.value[0]
 
     @property
-    def Density(self): # kg/m^3
+    def Density(self):  # kg/m^3
         return self.value[1]
 
     @property
-    def n_coeff(self): #dimensionless
+    def n_coeff(self):  # dimensionless
         return self.value[2]
 
     @property
-    def e_coeff(self): #dimensionless
+    def e_coeff(self):  # dimensionless
         return self.value[3]
 
     @classmethod
@@ -71,7 +84,12 @@ class SurfactantList(Enum):
     """
     List of Surfactants that can be selected for the simulation runs
     """
-    Alkyl_Ether_Sulfate = (1, lambda GG: 10.001 / (GG + 1),lambda GG: (-10.001)/((GG + 1) ** 2))
+
+    Alkyl_Ether_Sulfate = (
+        1,
+        lambda GG: 10.001 / (GG + 1),
+        lambda GG: (-10.001) / ((GG + 1) ** 2),
+    )
     No_Surfactant = (2, lambda GG: 0, lambda GG: 0)
 
     @property
@@ -92,11 +110,11 @@ class SurfactantList(Enum):
         return member
 
 
-
 class ModelType(Enum):
     """
     The simulation model types that can be selected
     """
+
     No_Shear_Thinning = 1
     Sourav_Implementation = 2
     Shear_Thinning_On = 3
@@ -106,6 +124,7 @@ class PlotType(Enum):
     """
     Selection of types of plots that can be created for the user
     """
+
     Saturation_Plot = 1
     Polymer_Concentration_Plot = 2
     Surfactant_Concentration_Plot = 3
@@ -115,6 +134,7 @@ class ResevoirGeometry(Enum):
     """
     Selection of the geometry of the resevoir for the simulation
     """
+
     Rectilinear = 1
     Quarter_Five_Spot = 2
 
@@ -123,13 +143,16 @@ class PermeabilityType(Enum):
     """
     Selection of the permeability profile for each of the simulation runs
     """
+
     Homogenous = 1
     Heterogenous = 2
 
+
 class RelativePermeabilityFormula(Enum):
     """
-    Selection of the relative permeability formuala 
+    Selection of the relative permeability formuala
     (krw, Kro)
     """
+
     AmaefuleHandEquation = 1
     CoreyTypeEquation = 2
