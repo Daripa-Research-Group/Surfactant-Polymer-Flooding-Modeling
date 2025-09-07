@@ -83,6 +83,8 @@ class PolymerList(Enum):
 class SurfactantList(Enum):
     """
     List of Surfactants that can be selected for the simulation runs
+    
+    FIXME: need to adjust when implementing 'autodiff'
     """
 
     Alkyl_Ether_Sulfate = (

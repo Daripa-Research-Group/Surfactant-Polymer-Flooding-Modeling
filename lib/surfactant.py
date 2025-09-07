@@ -55,7 +55,7 @@ class Surfactant:
         self.concentration = initial_concentration
         self.concentration_matrix = concentration_matrix
         self.IFT_conc_equ = IFT_equation
-        self.derivative_IFT_conc_equ = derivative_IFT_equation
+        self.derivative_IFT_conc_equ = derivative_IFT_equation #FIXME: need to adjust when implementing 'autodiff' 
         self.is_surfactant = True if (initial_concentration > 0) else False
         self.phi = phi
 
@@ -71,6 +71,8 @@ class Surfactant:
     def eval_dIFT_dGamma(self):
         """
         evaluate the dσ/dΓ at a particular surfactant concentration matrix
+        
+        FIXME: need to adjust when implementing 'autodiff'
         """
         assert self.derivative_IFT_conc_equ is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownDerivativeIFTEquation')
         return self.derivative_IFT_conc_equ(self.concentration_matrix)
