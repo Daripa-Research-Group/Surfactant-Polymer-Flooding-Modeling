@@ -531,6 +531,108 @@ class Simulation:
         #     raise SimulationCalcInputException("SimulationInputException: Unknown permeability flag.")
         return KK
 
+    def _transport_equation_solver(self, dt):
+        """
+        This method of the ``Simulation`` class will solve the transport equations
+        for the surfactant concentration, polymer concentration, and water saturation
+
+        Based on the 'nmmoc_surf_mod_neumann.m' function within the MATLAB version
+
+        :return: tuple[Water, Polymer, Surfactant] 
+        """
+        # Initialize constant parameters
+        const_parameters = {}
+        const_parameters['inlet_total_flow'] = self.source_flow_magnitude # G1
+        const_parameters['inlet_polymer_flow'] = self.polymer.concetration_scalar * self.source_flow_magnitude # G2
+        const_parameters['inlet_surfactant_flow'] = self.surfactant.concentration * self.source_flow_magnitude # G3
+        assert self.water.water_saturation is not None, SimulationCalcInputException("SimulationCalcInputError:UndefinedWaterSaturationMatrix")
+        n = np.shape(self.water.water_saturation)[0]
+        m = np.shape(self.water.water_saturation)[1]
+        const_parameters['FD_grid_constants'] = {
+                'n'         : n,
+                'm'         : m,
+                'dx'        : self.mesh.dx,
+                'dy'        : self.mesh.dy,
+                'dt'        : dt,
+                'dt_matrix' : dt*np.ones((n,m)),
+                'x'         : self.mesh.x,
+                'y'         : self.mesh.y
+                }
+        ## parameters around Pc calculations
+        const_parameters['Pc_constants'] = {'omega1' : 0.1, 'omega2' : 0.4}
+        ## parameters around capillary number for residual saturation calcs
+        const_parameters['resid_saturation_constants'] = {'Nco0' : 10**(-5), 'Nca0' : 10**(-5)}
+
+        # Initialize variable parameters
+        varying_parameters = {}
+        ## residual water and oil saturations
+        [swr, sor] = self.water.compute_residual_saturations(sigma=self.surfactant.eval_IFT, u=self.u, v=self.v)
+        varying_parameters['swr'] = swr
+        varying_parameters['sor'] = sor
+        ## recomputing mobilities
+        assert self.polymer.concentration_matrix is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownPolymerConcentrationMatrix')
+        lambda_a = self.water.compute_mobility(
+                    c=self.polymer.concentration_matrix,
+                    sor=float(sor),
+                    swr=float(swr),
+                    aqueous=True,
+                    rel_permeability_formula=self.relative_permeability_formula,
+                    surfactant_conc=self.surfactant.concentration
+                )
+        lambda_o = self.water.compute_mobility(
+                    c=self.polymer.concentration_matrix,
+                    sor=float(sor),
+                    swr=float(swr),
+                    aqueous=False,
+                    rel_permeability_formula=self.relative_permeability_formula,
+                    surfactant_conc=self.surfactant.concentration
+                )
+        lambda_total = lambda_a + lambda_o
+        varying_parameters['mobility_parameters'] = {
+                    'lambda_a'     : lambda_a,
+                    'lambda_o'     : lambda_o,
+                    'lambda_total' : lambda_total
+                }
+        ## fractional flow calculations
+        f = lambda_a / lambda_total
+        assert self.KK is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownPermeabilityTensor')
+        D = self.KK * lambda_o * f
+        varying_parameters['fractional_flow_parameters'] = {
+                    'f' : f,
+                    'D' : D
+                }
+        ## calculating dσ/dΓ
+        derivative_IFT = self.surfactant.eval_dIFT_dGamma
+        varying_parameters['derivative_IFT'] = derivative_IFT
+        ## compute capillary number
+        assert self.water.viscosity_array is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownAqueousViscosityMatrix')
+        nca = np.sqrt((self.u**2) + (self.v**2))*self.water.viscosity_array/self.surfactant.eval_IFT
+        nco = np.sqrt((self.u**2) + (self.v**2))*SimulationConstants.Oil_Viscosity.value/self.surfactant.eval_IFT
+        norm_nca = np.linalg.norm(nca)
+        norm_nco = np.linalg.norm(nco)
+        ## compute derivatives of residual saturations with respect to surfactant concentration
+        
+
+
+
+        # Update Water Saturation Matrix
+
+
+
+
+        # Update the Polymer Concentration Matrix
+
+
+
+
+        # Update the Surfactant Concentration matrix
+
+
+
+        
+        # Returning updated Water, Polymer, and Surfactant objects
+        return self.water, self.polymer, self.surfactant
+
     def _characteristic_coordinates(
         self, x, y, s, snew, g, f, f_s, D, pc_s, pc_g, u, v, dt, para, flag
     ):
@@ -538,6 +640,8 @@ class Simulation:
         (private method)
 
         Compute redefined characteristic coordinates (xmod, ymod) according to Neumann boundary conditions.
+
+        will be a helper function to the ``self._transport_equation_solver()`` method.
         """
         dx, dy = para.box.dx, para.box.dy
         m, n = para.box.m, para.box.n
@@ -721,12 +825,15 @@ class Simulation:
                 self.FE_mesh.set_FE_meshgrid(beta)
                 self.FE_mesh.set_right_hand(self.source_prod_flow)
                 self.FE_mesh.get_A_B_matrices()
-
-                u_old = self.u
-                v_old = self.v
+                ### STEP 2.4.2: updating the pressure & velocity matrices
+                u_old = self.u #updating pressure matrix
+                v_old = self.v #updating velocity matrix
                 self.u, self.v = self._compute_pressure_and_velocity_matrices(
                     self.FE_mesh.sparsed_A, self.FE_mesh.B, beta
                 )
+
+                ## STEP 2.5: Solving Transport Equations
+
 
                 break
 

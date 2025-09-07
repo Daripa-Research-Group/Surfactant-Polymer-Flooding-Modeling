@@ -59,6 +59,22 @@ class Surfactant:
         self.is_surfactant = True if (initial_concentration > 0) else False
         self.phi = phi
 
+    @property
+    def eval_IFT(self):
+        """
+        evaluate IFT at a given surfactant concentration_matrix
+        """
+        assert self.IFT_conc_equ is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownIFTEquation')
+        return self.IFT_conc_equ(self.concentration_matrix)
+
+    @property
+    def eval_dIFT_dGamma(self):
+        """
+        evaluate the dσ/dΓ at a particular surfactant concentration matrix
+        """
+        assert self.derivative_IFT_conc_equ is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownDerivativeIFTEquation')
+        return self.derivative_IFT_conc_equ(self.concentration_matrix)
+
     def initialize(
         self,
     ):
