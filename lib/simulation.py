@@ -871,8 +871,8 @@ class Simulation:
                 self.FE_mesh.set_right_hand(self.source_prod_flow)
                 self.FE_mesh.get_A_B_matrices()
                 ### STEP 2.4.2: updating the pressure & velocity matrices
-                u_old = self.u #updating pressure matrix
-                v_old = self.v #updating velocity matrix
+                u_old = self.u #storing old pressure matrix
+                v_old = self.v #storing old velocity matrix
                 self.u, self.v = self._compute_pressure_and_velocity_matrices(
                     self.FE_mesh.sparsed_A, self.FE_mesh.B, beta
                 )
