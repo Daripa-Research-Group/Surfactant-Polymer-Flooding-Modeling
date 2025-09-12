@@ -34,7 +34,7 @@ class SimulationConstants(Enum):
     Injection_Rate = 200
     Time_Step = 1 / 50
     Grid_Size = 29
-    Source_Flow_Magnitude = 120000
+    Source_Flow_Magnitude = 120000 #FIXME: Update in v2.0 to allow for multiple Injection Rates!
 
     beta1 = 15000
 
