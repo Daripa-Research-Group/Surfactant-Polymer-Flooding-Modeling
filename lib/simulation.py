@@ -529,6 +529,8 @@ class Simulation:
 
     def _transport_equation_solver(self, dt):
         """
+        (Private method)
+
         This method of the ``Simulation`` class will solve the transport equations
         for the surfactant concentration, polymer concentration, and water saturation
 
@@ -640,17 +642,17 @@ class Simulation:
                     'dnsw_dg' : dswr_dg*(self.water.water_saturation-1) / (1-swr)**2,
                     'dnso_dg' : (dswr_dg*(self.water.water_saturation + sor - 1) + dsor_dg*(self.water.water_saturation-swr)) / (1-swr-sor)**2
                 }
-        ## computing relative permeability with respect to surfactant concentration
+        ## computing relative permeability with respect to surfactant concentration (FIXME: Need to update when inplementing autodiff!)
         varying_parameters['relative_permeability_derivatives'] = {
                     'dkra_ds' : 2.5*dswr_dg*(nsw**3-nsw) + (self.water.water_saturation-1)*(2.5*swr*(3*nsw**2-1)+1)*varying_parameters['normalized_saturation_derivatives']['dnsw_dg']/(1-swr)**2,
                     'dkro_ds' : 1-5*sor*nso+(1-nso)*(1-5*nso*dsor_dg)-(1+5*sor-10*sor*nso)*varying_parameters['normalized_saturation_derivatives']['dnso_dg']
                 }
-        ## computing fractional flow derivatives with respect to concentrations and saturations
+        ## computing fractional flow derivatives with respect to concentrations and saturations(FIXME: Need to update when inplementing autodiff!)
         varying_parameters['fractional_flow_derivatives'] = {
                     'df_ds' : varying_parameters['relative_permeaability_derivatives']['dkra_ds'] * lambda_o / (lambda_total**2*self.water.viscosity_array) - \
                             varying_parameters['relative_permeaability_derivatives']['dkro_ds']*lambda_a / (lambda_total**2*self.water.miuo)
                 }
-        ## computing capillary pressure derivatives with respect to concentrations and saturations
+        ## computing capillary pressure derivatives with respect to concentrations and saturations (FIXME: Need to update when inplementing autodiff!)
         assert self.phi is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownPorosityTensor')
         pc =  (self.surfactant.eval_IFT*const_parameters['Pc_constants']['omega2']*(self.phi**(0.5))) / (self.KK**(0.5)*(1-nso)**(1/const_parameters['Pc_constants']['omega1']))
         varying_parameters['capillary_pressure_and_derivatives'] = {
