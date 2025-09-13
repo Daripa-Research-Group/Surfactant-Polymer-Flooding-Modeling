@@ -675,7 +675,7 @@ class Simulation:
                 }
         # Update Water Saturation Matrix
         ## Calculate ``xmod`` and ``ymod``
-        [xmod, ymod] = self._characteristic_coordinates(1, self.water.water_saturation, const_parameters, varying_parameters)
+        [xmod, ymod] = self._characteristic_coordinates(1, self.water.water_saturation, const_parameters, varying_parameters) #FIXME: ``ymod`` is ok but ``xmod`` needs to be fixed
         print('[DEBUG] xmod shape', np.shape(xmod))
         print('[DEBUG] xmod:', xmod, '\n')
         print('[DEBUG] ymod shape', np.shape(ymod))
