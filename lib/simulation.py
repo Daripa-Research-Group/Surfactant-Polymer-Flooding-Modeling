@@ -727,8 +727,8 @@ class Simulation:
             yjump = y - f_s * self.v * dt
         elif flag == 2:
             # Calculate gradients
-            sx, sy = np.gradient(self.water.water_saturation, dx, dy, edge_order=2)
-            gx, gy = np.gradient(self.surfactant.concentration_matrix, dx, dy, edge_order=2)
+            sx, sy = self._get_gradient(self.water.water_saturation) 
+            gx, gy = self._get_gradient(self.surfactant.concentration_matrix)
 
             xjump = (
                 x
@@ -741,7 +741,7 @@ class Simulation:
                 * dt
             )
         elif flag == 3:
-            sx, sy = np.gradient(self.water.water_saturation, dx, dy, edge_order=2)
+            sx, sy = self._get_gradient(self.water.water_saturation) 
 
             xjump = x - ((f / snew) * self.u + (D * pc_s / snew) * sx) * dt
             yjump = y - ((f / snew) * self.v + (D * pc_s / snew) * sy) * dt
@@ -749,9 +749,11 @@ class Simulation:
         # Apply Neumann reflection conditions
         if xjump is None or yjump is None:
             raise SimulationCalcInputException(
-                "SimulationInputException: xjump or yjump not initialized..."
+                "SimulationInputException:UnknownXJumpYJumpMatrices"
             )
-
+        
+        print('[DEBUG] xjump = ', xjump)
+        print('[DEBUG] yjump = ', yjump)
         xmod = np.where(xjump <= 1, np.abs(xjump), 2 - xjump)
         ymod = np.where(yjump <= 1, np.abs(yjump), 2 - yjump)
 
