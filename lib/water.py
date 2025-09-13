@@ -311,7 +311,8 @@ class Water:
         v: np.ndarray,
         xmod: np.ndarray,
         ymod: np.ndarray,
-        params: dict,
+        const_parameters : dict,
+        varying_parameters: dict
     ):
         """
         Solving saturation equation (comes from part of the nmmoc_surf_mod_neumann.m file that
@@ -340,6 +341,12 @@ class Water:
         :param ymod: y-dimension coordinate points for formulating the 'Qmod' matrix
         :type ymod: np.ndarray
 
+        :param const_parameters: constant parameters used in the method
+        :type const_parameters: dict
+
+        :param varying_parameters: parameters whose values can change
+        :type varying_parameters: dict
+
         :return: updated water saturation matrix
         :rtype: np.ndarray
         """
@@ -348,29 +355,30 @@ class Water:
             "SimuationInputException: water saturation matrix not initialized. Please try again"
         )
         # Required constants:
-        dx, dy = grid.dx, grid.dy
-        x = grid.x
-        y = grid.y
-        m = grid.m
-        n = grid.n
-        phi = 1
-        omega1 = SimulationConstants.Capillary_Pressure_Param_1.value
-        omega2 = SimulationConstants.Capillary_Pressure_Param_2.value
+        dx = const_parameters['FD_grid_constants']['dx']
+        dy = const_parameters['FD_grid_constants']['dy']
+        x = const_parameters['FD_grid_constants']['x']
+        y = const_parameters['FD_grid_constants']['y']
+        m = const_parameters['FD_grid_constants']['m']
+        n = const_parameters['FD_grid_constants']['n']
+        phi = self.phi
+        omega1 = const_parameters['Pc_constants']['omega1']
+        omega2 = const_parameters['Pc_constants']['omega2']
         S = self.water_saturation
-        g1 = self.init_water_saturation
+        g1 = const_parameters['inlet_water_flow']
 
         # retrieving relevant parameters for updating the water saturation
         ## Time Step:
-        dt = params["dt"]
-        dt_array = dt * np.ones((n, m))
+        dt = const_parameters['FD_grid_constants']['dt']
+        dt_array = const_parameters['FD_grid_constants']['dt_matrix']
         ## fractional flow and derivatives
-        f = params["f"]
-        f_c = params["f_c"]
-        f_g = params["f_g"]
+        f = varying_parameters['fractional_flow_parameters']["f"]
+        f_c = varying_parameters['fractional_flow_derivatives']["f_c"]
+        f_g = varying_parameters['fractional_flow_derivatives']["f_g"]
         # Params related to permeability tensor
-        D = params["D"]
-        D_s = params["D_s"]
-        D_g = params["D_g"]
+        D = varying_parameters['fracitioonal_flow_parameters']["D"]
+        D_s = varying_parameters['fractional_flow_derivatives']["D_s"]
+        D_g = varying_parameters['fractional_flow_derivatives']["D_g"]
 
         # Determining Smod matrix
         interp = RegularGridInterpolator((y[:, 0], x[0, :]), S)

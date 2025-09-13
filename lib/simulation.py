@@ -644,24 +644,33 @@ class Simulation:
                 }
         ## computing relative permeability with respect to surfactant concentration (FIXME: Need to update when inplementing autodiff!)
         varying_parameters['relative_permeability_derivatives'] = {
-                    'dkra_ds' : 2.5*dswr_dg*(nsw**3-nsw) + (self.water.water_saturation-1)*(2.5*swr*(3*nsw**2-1)+1)*varying_parameters['normalized_saturation_derivatives']['dnsw_dg']/(1-swr)**2,
-                    'dkro_ds' : 1-5*sor*nso+(1-nso)*(1-5*nso*dsor_dg)-(1+5*sor-10*sor*nso)*varying_parameters['normalized_saturation_derivatives']['dnso_dg']
-                }
-        ## computing fractional flow derivatives with respect to concentrations and saturations(FIXME: Need to update when inplementing autodiff!)
-        varying_parameters['fractional_flow_derivatives'] = {
-                    'df_ds' : varying_parameters['relative_permeaability_derivatives']['dkra_ds'] * lambda_o / (lambda_total**2*self.water.viscosity_array) - \
-                            varying_parameters['relative_permeaability_derivatives']['dkro_ds']*lambda_a / (lambda_total**2*self.water.miuo)
+                    'dkra_dg' : 2.5*dswr_dg*(nsw**3-nsw) + (self.water.water_saturation-1)*(2.5*swr*(3*nsw**2-1)+1)*varying_parameters['normalized_saturation_derivatives']['dnsw_dg']/(1-swr)**2,
+                    'dkro_dg' : 1-5*sor*nso+(1-nso)*(1-5*nso*dsor_dg)-(1+5*sor-10*sor*nso)*varying_parameters['normalized_saturation_derivatives']['dnso_dg']
                 }
         ## computing capillary pressure derivatives with respect to concentrations and saturations (FIXME: Need to update when inplementing autodiff!)
         assert self.phi is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownPorosityTensor')
         pc =  (self.surfactant.eval_IFT*const_parameters['Pc_constants']['omega2']*(self.phi**(0.5))) / (self.KK**(0.5)*(1-nso)**(1/const_parameters['Pc_constants']['omega1']))
         varying_parameters['capillary_pressure_and_derivatives'] = {
-                    'pc'     : pc, 
-                    'dpc_ds' : pc/(const_parameters['Pc_constants']['omega1']*(1-nso)),
-                    'dpc_dg' : (pc/self.surfactant.eval_IFT) * self.surfactant.eval_dIFT_dGamma + (pc/(const_parameters['Pc_constants']['omega1']*(1-nso)))
+                'pc'     : pc, 
+                'dpc_ds' : pc/(const_parameters['Pc_constants']['omega1']*(1-nso)),
+                'dpc_dg' : (pc/self.surfactant.eval_IFT) * self.surfactant.eval_dIFT_dGamma + (pc/(const_parameters['Pc_constants']['omega1']*(1-nso)))
+                }
+        ## computing fractional flow derivatives with respect to concentrations and saturations (FIXME: Need to update when inplementing autodiff!)
+        varying_parameters['fractional_flow_derivatives'] = {
+                    'df_ds' : varying_parameters['relative_permeaability_derivatives']['dkra_ds'] * lambda_o / (lambda_total**2*self.water.viscosity_array) - \
+                            varying_parameters['relative_permeaability_derivatives']['dkro_ds']*lambda_a / (lambda_total**2*self.water.miuo),
+                    'df_dc' : (-1*(lambda_o*lambda_a*self.water.miuo)) / ((lambda_total**2)*self.water.viscosity_array),
+                    'df_dg' : ((varying_parameters['relative_permeability_derivatives']['dkra_dg']*lambda_o)/((lambda_total**2)*self.water.viscosity_array)) \
+                            - ((varying_parameters['relative_permeability_derivatives']['dkro_dg']*lambda_a)/((lambda_total**2)*self.water.viscosity_array)),
+                    'dD_dg' : D * varying_parameters['capillary_pressure_and_derivatives']['dpc_dg'],
+                    'dD_ds' : D * varying_parameters['capillary_pressure_and_derivatives']['dpc_ds']
+
                 }
         # Update Water Saturation Matrix
+        ## Calculate ``xmod`` and ``ymod``
 
+        ## Pass in parameters into ``compute_water_saturation`` method of the ``Water`` class
+        
 
 
 
@@ -679,7 +688,7 @@ class Simulation:
         return self.water, self.polymer, self.surfactant
 
     def _characteristic_coordinates(
-        self, x, y, s, snew, g, f, f_s, D, pc_s, pc_g, u, v, dt, para, flag
+        self, flag, new_water_saturation_matrix, const_parameters, varying_parameters,
     ):
         """
         (private method)
@@ -688,33 +697,43 @@ class Simulation:
 
         will be a helper function to the ``self._transport_equation_solver()`` method.
         """
-        dx, dy = para.box.dx, para.box.dy
-        m, n = para.box.m, para.box.n
+        assert self.water.water_saturation is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownWaterSaturationMatrix')
+        assert self.surfactant.concentration_matrix is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownSurfactantConcentrationMatrix')
+        dx, dy = const_parameters['FD_grid_constants']['dx'], const_parameters['FD_grid_constants']['dy']
+        x, y = const_parameters['FD_grid_constants']['x'], const_parameters['FD_grid_constants']['y']
+        dt = const_parameters['FD_grid_constants']['dt']
         xjump = None
         yjump = None
+        f = varying_parameters['fractional_flow_parameters']['f']
+        f_s = varying_parameters['fractional_flow_derivatives']['df_ds']
+        D = varying_parameters['fractional_flow_parameters']['D']
+        pc_s = varying_parameters['capillary_pressure_and_derivatives']['dpc_ds']
+        pc_g = varying_parameters['capillary_pressure_and_derivatives']['dpc_dg']
+        snew = new_water_saturation_matrix
+
         if flag == 1:
-            xjump = x - f_s * u * dt
-            yjump = y - f_s * v * dt
+            xjump = x - f_s * self.u * dt
+            yjump = y - f_s * self.v * dt
         elif flag == 2:
             # Calculate gradients
-            sx, sy = np.gradient(s, dx, dy, edge_order=2)
-            gx, gy = np.gradient(g, dx, dy, edge_order=2)
+            sx, sy = np.gradient(self.water.water_saturation, dx, dy, edge_order=2)
+            gx, gy = np.gradient(self.surfactant.concentration_matrix, dx, dy, edge_order=2)
 
             xjump = (
                 x
-                - ((f / snew) * u + (D * pc_s / snew) * sx + (D * pc_g / snew) * gx)
+                - ((f / snew) * self.u + (D * pc_s / snew) * sx + (D * pc_g / snew) * gx)
                 * dt
             )
             yjump = (
                 y
-                - ((f / snew) * v + (D * pc_s / snew) * sy + (D * pc_g / snew) * gy)
+                - ((f / snew) * self.v + (D * pc_s / snew) * sy + (D * pc_g / snew) * gy)
                 * dt
             )
         elif flag == 3:
-            sx, sy = np.gradient(s, dx, dy, edge_order=2)
+            sx, sy = np.gradient(self.water.water_saturation, dx, dy, edge_order=2)
 
-            xjump = x - ((f / snew) * u + (D * pc_s / snew) * sx) * dt
-            yjump = y - ((f / snew) * v + (D * pc_s / snew) * sy) * dt
+            xjump = x - ((f / snew) * self.u + (D * pc_s / snew) * sx) * dt
+            yjump = y - ((f / snew) * self.v + (D * pc_s / snew) * sy) * dt
 
         # Apply Neumann reflection conditions
         if xjump is None or yjump is None:

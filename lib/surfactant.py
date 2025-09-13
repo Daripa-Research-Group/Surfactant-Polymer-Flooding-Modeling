@@ -27,7 +27,7 @@ class Surfactant:
         initial_concentration: float,
         phi: np.ndarray,
         IFT_equation: LambdaType | None = None,
-        derivative_IFT_equation: LambdaType | None = None,
+        derivative_IFT_equation: LambdaType | None = None, #FIXME: can remove once implemented `autodiff` capabilities
         concentration_matrix: np.ndarray | None = None,
     ):
         """
@@ -68,7 +68,7 @@ class Surfactant:
         return self.IFT_conc_equ(self.concentration_matrix)
 
     @property
-    def eval_dIFT_dGamma(self):
+    def eval_dIFT_dGamma(self): #FIXME: Need to adjust when implementing 'autodiff'
         """
         evaluate the dσ/dΓ at a particular surfactant concentration matrix
         
