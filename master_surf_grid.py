@@ -29,7 +29,7 @@ def main() -> None:
     root.mainloop()
 
     user_input = app.get_input()
-    for index, simulation in enumerate(user_input):
+    for index, simulation in enumerate(user_input): #FIXME:Can update to implement multithreading capabilities 
         # Will need to pass the dictionary into the simulation class
         sim_object = Simulation(user_input_dict=simulation)
         sim_object.run()
