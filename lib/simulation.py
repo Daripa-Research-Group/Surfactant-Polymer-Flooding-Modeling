@@ -630,7 +630,6 @@ class Simulation:
         swr_0 = SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value
         sor_0 = SimulationConstants.Resid_Oleic_Phase_Saturation_Initial.value
         assert self.surfactant.concentration_matrix is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownSurfactantConcentrationMatrix')
-        print('[DEBUG] Reaches here!')
         for j in range(n):
             for i in range(m):
                 if(norm_nca >= const_parameters['resid_saturation_constants']['Nca0']):
@@ -681,7 +680,18 @@ class Simulation:
         print('[DEBUG] ymod shape', np.shape(ymod))
         print('[DEBUG] ymod:', ymod)
         ## Pass in parameters into ``compute_water_saturation`` method of the ``Water`` class
-        
+        # FIXME: Uncomment when ready to test this function!!!
+        # self.water.compute_water_saturation(
+        #         grid = self.mesh,
+        #         surfactant = self.surfactant,
+        #         polymer = self.polymer,
+        #         u = self.u,
+        #         v = self.v,
+        #         xmod = xmod,
+        #         ymod = ymod,
+        #         const_parameters = const_parameters,
+        #         varying_parameters = varying_parameters
+        #         )
 
 
 
@@ -712,7 +722,7 @@ class Simulation:
         assert self.surfactant.concentration_matrix is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownSurfactantConcentrationMatrix')
         dx, dy = const_parameters['FD_grid_constants']['dx'], const_parameters['FD_grid_constants']['dy']
         x, y = const_parameters['FD_grid_constants']['x'], const_parameters['FD_grid_constants']['y']
-        dt = const_parameters['FD_grid_constants']['dt_matrix']
+        dt_matrix = const_parameters['FD_grid_constants']['dt_matrix']
         xjump = None
         yjump = None
         f = varying_parameters['fractional_flow_parameters']['f']
@@ -723,8 +733,8 @@ class Simulation:
         snew = new_water_saturation_matrix
 
         if flag == 1:
-            xjump = x - f_s * self.u * dt
-            yjump = y - f_s * self.v * dt
+            xjump = x - f_s * self.u * dt_matrix
+            yjump = y - f_s * self.v * dt_matrix
         elif flag == 2:
             # Calculate gradients
             sx, sy = self._get_gradient(self.water.water_saturation) 
@@ -733,18 +743,18 @@ class Simulation:
             xjump = (
                 x
                 - ((f / snew) * self.u + (D * pc_s / snew) * sx + (D * pc_g / snew) * gx)
-                * dt
+                * dt_matrix
             )
             yjump = (
                 y
                 - ((f / snew) * self.v + (D * pc_s / snew) * sy + (D * pc_g / snew) * gy)
-                * dt
+                * dt_matrix
             )
         elif flag == 3:
             sx, sy = self._get_gradient(self.water.water_saturation) 
 
-            xjump = x - ((f / snew) * self.u + (D * pc_s / snew) * sx) * dt
-            yjump = y - ((f / snew) * self.v + (D * pc_s / snew) * sy) * dt
+            xjump = x - ((f / snew) * self.u + (D * pc_s / snew) * sx) * dt_matrix
+            yjump = y - ((f / snew) * self.v + (D * pc_s / snew) * sy) * dt_matrix
 
         # Apply Neumann reflection conditions
         if xjump is None or yjump is None:
