@@ -309,6 +309,12 @@ class Simulation:
         return new_u, new_v
 
     def _get_gradient(self, vn):
+        """
+        Helper function to determine the gradients with respect to x and y dimensions
+
+        :return: tuple with px py which are numpy matrices that hold the gradient wrt to x and y dimensions
+        :rtype: tuple[_Array[tuple[int, int], float64], NDArray[float64]]
+        """
         m = self.mesh.m
         n = self.mesh.n
 
