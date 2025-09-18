@@ -516,7 +516,7 @@ class Simulation:
         elif bool_Heterogenous_and_Quarter_Five_Spot:
             # Load Upper Ness formation (SPE10)
             mat_data = loadmat(
-                "./Resources/KK30Ness.mat"
+                "./lib/Resources/KK30Ness.mat"
             )  # FIXME: when using master_surf_grid need to change this path
             if "KK" not in mat_data:
                 raise SimulationCalcInputException(
@@ -726,7 +726,6 @@ class Simulation:
         """
         assert self.water.water_saturation is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownWaterSaturationMatrix')
         assert self.surfactant.concentration_matrix is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownSurfactantConcentrationMatrix')
-        dx, dy = const_parameters['FD_grid_constants']['dx'], const_parameters['FD_grid_constants']['dy']
         x, y = const_parameters['FD_grid_constants']['x'], const_parameters['FD_grid_constants']['y']
         dt_matrix = const_parameters['FD_grid_constants']['dt_matrix']
         xjump = None
@@ -768,10 +767,23 @@ class Simulation:
                 "SimulationInputException:UnknownXJumpYJumpMatrices"
             )
         
-        print('[DEBUG] xjump = ', xjump)
-        print('[DEBUG] yjump = ', yjump)
-        xmod = np.where(xjump <= 1, np.abs(xjump), 2 - xjump)
-        ymod = np.where(yjump <= 1, np.abs(yjump), 2 - yjump)
+        xmod = x
+        ymod = y
+        
+        for j in range(np.shape(y)[0]):
+            for i in range(np.shape(x)[1]):
+                if xjump[j, i] <= 1 and yjump[j, i] <= 1:
+                    xmod[j, i] = np.abs(xjump[j, i])
+                    ymod[j, i] = np.abs(yjump[j, i])
+                elif xjump[j, i] > 1 and yjump[j, i] <= 1:
+                    xmod[j, i] = 2 - xjump[j, i]
+                    ymod[j, i] = np.abs(yjump[j, i])
+                elif xjump[j, i] <= 1 and yjump[j, i] > 1:
+                    xmod[j, i] = np.abs(xjump[j, i])
+                    ymod[j, i] = 2 - yjump[j, i]
+                elif xjump[j, i] > 1 and yjump[j, i] > 1:
+                    xmod[j, i] = 2 - xjump[j, i]
+                    ymod[j, i] = 2 - yjump[j, i]
 
         return xmod, ymod
 
