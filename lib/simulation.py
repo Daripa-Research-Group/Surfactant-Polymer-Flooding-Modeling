@@ -728,6 +728,8 @@ class Simulation:
             + (1 - nso) * (1 - 5 * nso * dsor_dg)
             - (1 + 5 * sor - 10 * sor * nso)
             * varying_parameters["normalized_saturation_derivatives"]["dnso_dg"],
+            "dkra_ds" : 2.5*swr*(3*((nsw)**2)+1),
+            "dkro_ds" : 10*sor*nso - 5*sor-1
         }
         ## computing capillary pressure derivatives with respect to concentrations and saturations (FIXME: Need to update when inplementing autodiff!)
         pc = (
@@ -742,18 +744,19 @@ class Simulation:
                 ),
             )
         )
+        dpc_ds = pc / (const_parameters["Pc_constants"]["omega1"] * (1 - nso))
+        dpc_dg = (pc / self.surfactant.eval_IFT) * self.surfactant.eval_dIFT_dGamma + dpc_ds
         varying_parameters["capillary_pressure_and_derivatives"] = {
             "pc": pc,
-            "dpc_ds": pc / (const_parameters["Pc_constants"]["omega1"] * (1 - nso)),
-            "dpc_dg": (pc / self.surfactant.eval_IFT) * self.surfactant.eval_dIFT_dGamma
-            + (pc / (const_parameters["Pc_constants"]["omega1"] * (1 - nso))),
+            "dpc_ds": dpc_ds,
+            "dpc_dg": dpc_dg,
         }
         ## computing fractional flow derivatives with respect to concentrations and saturations (FIXME: Need to update when inplementing autodiff!)
         varying_parameters["fractional_flow_derivatives"] = {
-            "df_ds": varying_parameters["relative_permeability_derivatives"]["dkra_dg"]
+            "df_ds": varying_parameters["relative_permeability_derivatives"]["dkra_ds"]
             * lambda_o
             / (lambda_total**2 * self.water.viscosity_array)
-            - varying_parameters["relative_permeability_derivatives"]["dkro_dg"]
+            - varying_parameters["relative_permeability_derivatives"]["dkro_ds"]
             * lambda_a
             / (lambda_total**2 * self.water.miuo),
             "df_dc": (-1 * (lambda_o * lambda_a * self.water.miuo))
@@ -787,7 +790,7 @@ class Simulation:
         print("[DEBUG] ymod shape", np.shape(ymod))
         print("[DEBUG] ymod:", ymod)
         ## Pass in parameters into ``compute_water_saturation`` method of the ``Water`` class
-        # FIXME: Uncomment when ready to test this function!!!
+        # FIXME: Uncomment when ready to test this function!!! <-- also need to make sure to return the updated version of ``varying_parameters``
         # self.water.compute_water_saturation(
         #         grid = self.mesh,
         #         surfactant = self.surfactant,
