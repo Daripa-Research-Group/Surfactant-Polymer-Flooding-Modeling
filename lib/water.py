@@ -248,7 +248,6 @@ class Water:
         swr: float,
         aqueous: bool,
         rel_permeability_formula: RelativePermeabilityFormula,
-        surfactant_conc: float,
     ):
         """
         Computing mobility (made using the compmob.m MATLAB file)
@@ -347,8 +346,8 @@ class Water:
         :param varying_parameters: parameters whose values can change
         :type varying_parameters: dict
 
-        :return: updated water saturation matrix
-        :rtype: np.ndarray
+        :return: updated ``water_saturation`` matrix and ``varying_parameters`` dict
+        :rtype: [np.ndarray, list]
         """
         # Assert statements to ensure that all parameters are property initialized:
         assert self.water_saturation is not None, SimulationCalcInputException(
@@ -825,4 +824,4 @@ class Water:
 
         self.water_saturation = Qnew
 
-        return Qnew
+        return [Qnew, varying_parameters]

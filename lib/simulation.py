@@ -611,7 +611,6 @@ class Simulation:
             swr=float(swr),
             aqueous=True,
             rel_permeability_formula=self.relative_permeability_formula,
-            surfactant_conc=self.surfactant.concentration,
         )
         lambda_o = self.water.compute_mobility(
             c=self.polymer.concentration_matrix,
@@ -619,7 +618,6 @@ class Simulation:
             swr=float(swr),
             aqueous=False,
             rel_permeability_formula=self.relative_permeability_formula,
-            surfactant_conc=self.surfactant.concentration,
         )
         lambda_total = lambda_a + lambda_o
         varying_parameters["mobility_parameters"] = {
@@ -1025,7 +1023,6 @@ class Simulation:
                     swr=float(resid_water_saturation),
                     aqueous=True,
                     rel_permeability_formula=self.relative_permeability_formula,
-                    surfactant_conc=self.surfactant.concentration,
                 )
                 oleic_mobility = self.water.compute_mobility(
                     c=self.polymer.concentration_matrix,
@@ -1033,7 +1030,6 @@ class Simulation:
                     swr=float(resid_water_saturation),
                     aqueous=False,
                     rel_permeability_formula=self.relative_permeability_formula,
-                    surfactant_conc=self.surfactant.concentration,
                 )
                 total_mobility = aqueous_mobility + oleic_mobility
                 assert self.KK is not None, SimulationCalcInputException(
