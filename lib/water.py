@@ -15,7 +15,7 @@ from Exceptions import SimulationCalcInputException
 from grid import Grid
 from polymer import Polymer
 from surfactant import Surfactant
-
+from scipy.linalg import fractional_matrix_power
 
 class Water:
     """
@@ -248,6 +248,7 @@ class Water:
         swr: float,
         aqueous: bool,
         rel_permeability_formula: RelativePermeabilityFormula,
+        modified_water_saturation: np.ndarray | None=None
     ):
         """
         Computing mobility (made using the compmob.m MATLAB file)
@@ -279,7 +280,7 @@ class Water:
         assert self.viscosity_array is not None, SimulationCalcInputException(
             "SimuationInputException: viscosity matrix not initialized. Please try again"
         )
-        s = self.water_saturation
+        s = self.water_saturation if(modified_water_saturation is None) else modified_water_saturation
         miua = self.viscosity_array
         if (
             rel_permeability_formula.value
@@ -365,24 +366,91 @@ class Water:
         omega2 = const_parameters['Pc_constants']['omega2']
         S = self.water_saturation
         g1 = const_parameters['inlet_water_flow']
+        KK = const_parameters['KK']
+        relative_permeability_formula = const_parameters['relative_permeability_formula']
 
         # retrieving relevant parameters for updating the water saturation
         ## Time Step:
         dt = const_parameters['FD_grid_constants']['dt']
         dt_array = const_parameters['FD_grid_constants']['dt_matrix']
-        ## fractional flow and derivatives
-        f = varying_parameters['fractional_flow_parameters']["f"]
-        f_c = varying_parameters['fractional_flow_derivatives']["f_c"]
-        f_g = varying_parameters['fractional_flow_derivatives']["f_g"]
-        # Params related to permeability tensor
-        D = varying_parameters['fracitioonal_flow_parameters']["D"]
-        D_s = varying_parameters['fractional_flow_derivatives']["D_s"]
-        D_g = varying_parameters['fractional_flow_derivatives']["D_g"]
 
         # Determining Smod matrix
         interp = RegularGridInterpolator((y[:, 0], x[0, :]), S)
         coords = np.array([ymod.flatten(), xmod.flatten()]).T
         Qmod = interp(coords).reshape(S.shape)
+
+        swr = varying_parameters['swr']
+        sor = varying_parameters['sor']
+        nsw = (Qmod - swr) / (1 - swr)
+        nso = (Qmod - swr) / (1 - swr - sor)
+        varying_parameters["nsw"] = nsw
+        varying_parameters["nso"] = nso
+
+        ## fractional flow and derivatives
+        assert (
+            polymer.concentration_matrix is not None
+        ), SimulationCalcInputException(
+            "SimulationCalcInputError:UnknownPolymerConcentrationMatrix"
+        )
+        lambda_a = self.compute_mobility(
+            c=polymer.concentration_matrix,
+            sor=float(sor),
+            swr=float(swr),
+            aqueous=True,
+            rel_permeability_formula=relative_permeability_formula,
+            modified_water_saturation=Qmod
+        )
+        lambda_o = self.compute_mobility(
+            c=polymer.concentration_matrix,
+            sor=float(sor),
+            swr=float(swr),
+            aqueous=False,
+            rel_permeability_formula=relative_permeability_formula,
+            modified_water_saturation=Qmod
+        )
+        lambda_total = lambda_a + lambda_o
+        varying_parameters["mobility_parameters"] = {
+            "lambda_a": lambda_a,
+            "lambda_o": lambda_o,
+            "lambda_total": lambda_total,
+        }
+        ## fractional flow calculations
+        f = lambda_a / lambda_total
+        assert KK is not None, SimulationCalcInputException(
+            "SimulationCalcInputError:UnknownPermeabilityTensor"
+        )
+        D = KK * lambda_o * f
+        assert self.viscosity_array is not None, SimulationCalcInputException(
+            "SimulationCalcInputError:UnkownWaterViscosityMatrix"
+        )
+        varying_parameters["fractional_flow_parameters"] = {"f": f, "D": D}
+        pc = (
+            surfactant.eval_IFT
+            * const_parameters["Pc_constants"]["omega2"]
+            * np.sqrt(const_parameters["porosity"])
+        ) / (
+            np.matmul(
+                KK ** (0.5),
+                fractional_matrix_power(
+                    1 - nso, 1 / const_parameters["Pc_constants"]["omega1"]
+                ),
+            )
+        )
+        pc_s = pc / (const_parameters["Pc_constants"]["omega1"] * (1 - nso))
+        pc_g = (pc / surfactant.eval_IFT) * surfactant.eval_dIFT_dGamma + pc_s
+        varying_parameters["capillary_pressure_and_derivatives"] = {
+            "pc": pc,
+            "dpc_ds": pc_s,
+            "dpc_dg": pc_g,
+        }
+        f_c = (-1 * (lambda_o * lambda_a * self.miuo)) / ((lambda_total**2) * self.viscosity_array)
+        f_g =((varying_parameters["relative_permeability_derivatives"]["dkra_dg"]* lambda_o) / ((lambda_total**2) * self.viscosity_array))
+        varying_parameters["fractional_flow_derivatives"]['df_dc'] = f_c
+        varying_parameters["fractional_flow_derivatives"]['df_dg'] = f_g
+        D_g = D * pc_g
+        D_s = D * pc_s
+        varying_parameters["fractional_flow_derivatives"]['dD_dg'] = D_g
+        varying_parameters["fractional_flow_derivatives"]['dD_ds'] = D_s
 
         # Updating coefficients with interpolated saturations
         idx = 1
@@ -689,7 +757,7 @@ class Water:
                                 + (
                                     (D_g[cnt][i] + D_g[cnt][i - 1]) / (dx**2)
                                     + (
-                                        D_g[cnt - 1][i]
+                          D_g[cnt - 1][i]
                                         + 2 * D_g[cnt][i]
                                         + D_g[cnt + 1][i]
                                     )

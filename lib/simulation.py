@@ -587,6 +587,10 @@ class Simulation:
         ## porosity parameter
         const_parameters["porosity"] = 1
 
+        ## Permeability
+        const_parameters['KK'] = self.KK
+        const_parameters['relative_permeability_formula'] = self.relative_permeability_formula
+
         # Initialize variable parameters
         varying_parameters = {}
         ## residual water and oil saturations
