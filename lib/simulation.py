@@ -726,7 +726,7 @@ class Simulation:
             + (1 - nso) * (1 - 5 * nso * dsor_dg)
             - (1 + 5 * sor - 10 * sor * nso)
             * varying_parameters["normalized_saturation_derivatives"]["dnso_dg"],
-            "dkra_ds" : 2.5*swr*(3*((nsw)**2)+1),
+            "dkra_ds" : 2.5*swr*(3*(nsw)**2-1)+1,
             "dkro_ds" : 10*sor*nso - 5*sor-1
         }
         ## computing capillary pressure derivatives with respect to concentrations and saturations (FIXME: Need to update when inplementing autodiff!)
