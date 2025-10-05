@@ -782,24 +782,20 @@ class Simulation:
         ## Calculate ``xmod`` and ``ymod``
         [xmod, ymod] = self._characteristic_coordinates(
             1, self.water.water_saturation, const_parameters, varying_parameters
-        )  # FIXME: ``ymod`` is ok but ``xmod`` needs to be fixed
-        print("[DEBUG] xmod shape", np.shape(xmod))
-        print("[DEBUG] xmod:", xmod, "\n")
-        print("[DEBUG] ymod shape", np.shape(ymod))
-        print("[DEBUG] ymod:", ymod)
+        )  
         ## Pass in parameters into ``compute_water_saturation`` method of the ``Water`` class
         # FIXME: Uncomment when ready to test this function!!! <-- also need to make sure to return the updated version of ``varying_parameters``
-        # self.water.compute_water_saturation(
-        #         grid = self.mesh,
-        #         surfactant = self.surfactant,
-        #         polymer = self.polymer,
-        #         u = self.u,
-        #         v = self.v,
-        #         xmod = xmod,
-        #         ymod = ymod,
-        #         const_parameters = const_parameters,
-        #         varying_parameters = varying_parameters
-        #         )
+        self.water.compute_water_saturation(
+                grid = self.mesh,
+                surfactant = self.surfactant,
+                polymer = self.polymer,
+                u = self.u,
+                v = self.v,
+                xmod = xmod,
+                ymod = ymod,
+                const_parameters = const_parameters,
+                varying_parameters = varying_parameters
+                )
 
         # Update the Polymer Concentration Matrix
 
