@@ -6,16 +6,21 @@ Sourav Dutta and Rohit Mishra.
 
 @author: Bhargav Akula Ramesh Kumar, Carlos Acosta Caripo
 """
-
+##EXTERNAL IMPORTS
 import numpy as np
+import scipy as sp
+from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
+from scipy.linalg import fractional_matrix_power
 from scipy.interpolate import RegularGridInterpolator
 from scipy.sparse.linalg import bicgstab
+
+##INTERNAL IMPORTS
 from enumerations import ModelType, RelativePermeabilityFormula, SimulationConstants
 from Exceptions import SimulationCalcInputException
 from grid import Grid
 from polymer import Polymer
 from surfactant import Surfactant
-from scipy.linalg import fractional_matrix_power
+
 
 class Water:
     """
@@ -364,7 +369,7 @@ class Water:
         phi = self.phi
         omega1 = const_parameters['Pc_constants']['omega1']
         omega2 = const_parameters['Pc_constants']['omega2']
-        S = self.water_saturation
+        Q = self.water_saturation
         g1 = const_parameters['inlet_water_flow']
         KK = const_parameters['KK']
         relative_permeability_formula = const_parameters['relative_permeability_formula']
@@ -375,9 +380,30 @@ class Water:
         dt_array = const_parameters['FD_grid_constants']['dt_matrix']
 
         # Determining Smod matrix
-        interp = RegularGridInterpolator((y[:, 0], x[0, :]), S)
-        coords = np.array([ymod.flatten(), xmod.flatten()]).T
-        Qmod = interp(coords).reshape(S.shape)
+        # Smod = sp.interpolate.griddata((x,y), S, (xmod,ymod))
+        x1d = x[0, :]
+        y1d = y[:, 0]
+        x_sorted = np.all(np.diff(x1d) > 0)
+        y_sorted = np.all(np.diff(y1d) > 0)  
+       
+        # reorder Q if a dimension isn't sorted
+        if not x_sorted:
+            x_sort_idx = np.argsort(x1d)
+            x1d = x1d[x_sort_idx]
+            Q = Q[:, x_sort_idx]  # Sort columns of S
+        if not y_sorted:
+            y_sort_idx = np.argsort(y1d)
+            y1d = y1d[y_sort_idx]
+            Q = Q[y_sort_idx, :]  # Sort rows of Q
+           
+        interp_func = sp.interpolate.RegularGridInterpolator((y1d, x1d), Q, method='linear', bounds_error=False, fill_value=None)
+
+        query_points = np.stack([ymod.ravel(), xmod.ravel()], axis=-1)
+        Qmod = interp_func(query_points).reshape(xmod.shape)
+
+        # interp = RegularGridInterpolator((y[:, 0], x[0, :]), S)
+        # coords = np.array([ymod.flatten(), xmod.flatten()]).T
+        # Qmod = interp(coords).reshape(S.shape)
 
         swr = varying_parameters['swr']
         sor = varying_parameters['sor']
