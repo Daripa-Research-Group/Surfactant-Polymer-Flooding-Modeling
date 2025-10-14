@@ -379,8 +379,7 @@ class Water:
         dt = const_parameters['FD_grid_constants']['dt']
         dt_array = const_parameters['FD_grid_constants']['dt_matrix']
 
-        # Determining Smod matrix
-        # Smod = sp.interpolate.griddata((x,y), S, (xmod,ymod))
+        # Determining Qmod matrix
         x1d = x[0, :]
         y1d = y[:, 0]
         x_sorted = np.all(np.diff(x1d) > 0)
@@ -400,10 +399,6 @@ class Water:
 
         query_points = np.stack([ymod.ravel(), xmod.ravel()], axis=-1)
         Qmod = interp_func(query_points).reshape(xmod.shape)
-
-        # interp = RegularGridInterpolator((y[:, 0], x[0, :]), S)
-        # coords = np.array([ymod.flatten(), xmod.flatten()]).T
-        # Qmod = interp(coords).reshape(S.shape)
 
         swr = varying_parameters['swr']
         sor = varying_parameters['sor']
