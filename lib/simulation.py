@@ -882,8 +882,8 @@ class Simulation:
                 "SimulationInputException:UnknownXJumpYJumpMatrices"
             )
 
-        xmod = x
-        ymod = y
+        xmod = np.copy(x)
+        ymod = np.copy(y)
 
         for j in range(np.shape(y)[0]):
             for i in range(np.shape(x)[1]):
