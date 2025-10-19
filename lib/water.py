@@ -6,6 +6,7 @@ Sourav Dutta and Rohit Mishra.
 
 @author: Bhargav Akula Ramesh Kumar, Carlos Acosta Caripo
 """
+
 ##EXTERNAL IMPORTS
 import numpy as np
 import scipy as sp
@@ -253,7 +254,7 @@ class Water:
         swr: float,
         aqueous: bool,
         rel_permeability_formula: RelativePermeabilityFormula,
-        modified_water_saturation: np.ndarray | None=None
+        modified_water_saturation: np.ndarray | None = None,
     ):
         """
         Computing mobility (made using the compmob.m MATLAB file)
@@ -285,7 +286,11 @@ class Water:
         assert self.viscosity_array is not None, SimulationCalcInputException(
             "SimuationInputException: viscosity matrix not initialized. Please try again"
         )
-        s = self.water_saturation if(modified_water_saturation is None) else modified_water_saturation
+        s = (
+            self.water_saturation
+            if (modified_water_saturation is None)
+            else modified_water_saturation
+        )
         miua = self.viscosity_array
         if (
             rel_permeability_formula.value
@@ -316,8 +321,8 @@ class Water:
         v: np.ndarray,
         xmod: np.ndarray,
         ymod: np.ndarray,
-        const_parameters : dict,
-        varying_parameters: dict
+        const_parameters: dict,
+        varying_parameters: dict,
     ):
         """
         Solving saturation equation (comes from part of the nmmoc_surf_mod_neumann.m file that
@@ -360,31 +365,33 @@ class Water:
             "SimuationInputException: water saturation matrix not initialized. Please try again"
         )
         # Required constants:
-        dx = const_parameters['FD_grid_constants']['dx']
-        dy = const_parameters['FD_grid_constants']['dy']
-        x = const_parameters['FD_grid_constants']['x']
-        y = const_parameters['FD_grid_constants']['y']
-        m = const_parameters['FD_grid_constants']['m']
-        n = const_parameters['FD_grid_constants']['n']
+        dx = const_parameters["FD_grid_constants"]["dx"]
+        dy = const_parameters["FD_grid_constants"]["dy"]
+        x = const_parameters["FD_grid_constants"]["x"]
+        y = const_parameters["FD_grid_constants"]["y"]
+        m = const_parameters["FD_grid_constants"]["m"]
+        n = const_parameters["FD_grid_constants"]["n"]
         phi = self.phi
-        omega1 = const_parameters['Pc_constants']['omega1']
-        omega2 = const_parameters['Pc_constants']['omega2']
+        omega1 = const_parameters["Pc_constants"]["omega1"]
+        omega2 = const_parameters["Pc_constants"]["omega2"]
         Q = self.water_saturation
-        g1 = const_parameters['inlet_total_flow']
-        KK = const_parameters['KK']
-        relative_permeability_formula = const_parameters['relative_permeability_formula']
+        g1 = const_parameters["inlet_total_flow"]
+        KK = const_parameters["KK"]
+        relative_permeability_formula = const_parameters[
+            "relative_permeability_formula"
+        ]
 
         # retrieving relevant parameters for updating the water saturation
         ## Time Step:
-        dt = const_parameters['FD_grid_constants']['dt']
-        dt_array = const_parameters['FD_grid_constants']['dt_matrix']
+        dt = const_parameters["FD_grid_constants"]["dt"]
+        dt_array = const_parameters["FD_grid_constants"]["dt_matrix"]
 
         # Determining Qmod matrix
         x1d = x[0, :]
         y1d = y[:, 0]
         x_sorted = np.all(np.diff(x1d) > 0)
-        y_sorted = np.all(np.diff(y1d) > 0)  
-       
+        y_sorted = np.all(np.diff(y1d) > 0)
+
         # reorder Q if a dimension isn't sorted
         if not x_sorted:
             x_sort_idx = np.argsort(x1d)
@@ -394,23 +401,23 @@ class Water:
             y_sort_idx = np.argsort(y1d)
             y1d = y1d[y_sort_idx]
             Q = Q[y_sort_idx, :]  # Sort rows of Q
-           
-        interp_func = sp.interpolate.RegularGridInterpolator((y1d, x1d), Q, method='linear', bounds_error=False, fill_value=None)
+
+        interp_func = sp.interpolate.RegularGridInterpolator(
+            (y1d, x1d), Q, method="linear", bounds_error=False, fill_value=None
+        )
 
         query_points = np.stack([ymod.ravel(), xmod.ravel()], axis=-1)
         Qmod = interp_func(query_points).reshape(xmod.shape)
 
-        swr = varying_parameters['swr']
-        sor = varying_parameters['sor']
+        swr = varying_parameters["swr"]
+        sor = varying_parameters["sor"]
         nsw = (Qmod - swr) / (1 - swr)
         nso = (Qmod - swr) / (1 - swr - sor)
         varying_parameters["nsw"] = nsw
         varying_parameters["nso"] = nso
 
         ## fractional flow and derivatives
-        assert (
-            polymer.concentration_matrix is not None
-        ), SimulationCalcInputException(
+        assert polymer.concentration_matrix is not None, SimulationCalcInputException(
             "SimulationCalcInputError:UnknownPolymerConcentrationMatrix"
         )
         lambda_a = self.compute_mobility(
@@ -419,7 +426,7 @@ class Water:
             swr=float(swr),
             aqueous=True,
             rel_permeability_formula=relative_permeability_formula,
-            modified_water_saturation=Qmod
+            modified_water_saturation=Qmod,
         )
         lambda_o = self.compute_mobility(
             c=polymer.concentration_matrix,
@@ -427,7 +434,7 @@ class Water:
             swr=float(swr),
             aqueous=False,
             rel_permeability_formula=relative_permeability_formula,
-            modified_water_saturation=Qmod
+            modified_water_saturation=Qmod,
         )
         lambda_total = lambda_a + lambda_o
         varying_parameters["mobility_parameters"] = {
@@ -464,14 +471,19 @@ class Water:
             "dpc_ds": pc_s,
             "dpc_dg": pc_g,
         }
-        f_c = (-1 * (lambda_o * lambda_a * self.miuo)) / ((lambda_total**2) * self.viscosity_array)
-        f_g =((varying_parameters["relative_permeability_derivatives"]["dkra_dg"]* lambda_o) / ((lambda_total**2) * self.viscosity_array))
-        varying_parameters["fractional_flow_derivatives"]['df_dc'] = f_c
-        varying_parameters["fractional_flow_derivatives"]['df_dg'] = f_g
+        f_c = (-1 * (lambda_o * lambda_a * self.miuo)) / (
+            (lambda_total**2) * self.viscosity_array
+        )
+        f_g = (
+            varying_parameters["relative_permeability_derivatives"]["dkra_dg"]
+            * lambda_o
+        ) / ((lambda_total**2) * self.viscosity_array)
+        varying_parameters["fractional_flow_derivatives"]["df_dc"] = f_c
+        varying_parameters["fractional_flow_derivatives"]["df_dg"] = f_g
         D_g = D * pc_g
         D_s = D * pc_s
-        varying_parameters["fractional_flow_derivatives"]['dD_dg'] = D_g
-        varying_parameters["fractional_flow_derivatives"]['dD_ds'] = D_s
+        varying_parameters["fractional_flow_derivatives"]["dD_dg"] = D_g
+        varying_parameters["fractional_flow_derivatives"]["dD_ds"] = D_s
 
         # Updating coefficients with interpolated saturations
         idx = 1
@@ -563,7 +575,9 @@ class Water:
                                         u[cnt][i]
                                         * (
                                             surfactant.concentration_matrix[cnt][i + 1]
-                                            - surfactant.concentration_matrix[cnt][i - 1]
+                                            - surfactant.concentration_matrix[cnt][
+                                                i - 1
+                                            ]
                                         )
                                         / (2 * dx)
                                     )
@@ -590,15 +604,23 @@ class Water:
 
                                 BB[j][i] = (
                                     1 / dt_array[cnt][i]
-                                    - (D_s[cnt][i + 1] + D_s[cnt][i - 1] + 2 * D_s[cnt][i])
+                                    - (
+                                        D_s[cnt][i + 1]
+                                        + D_s[cnt][i - 1]
+                                        + 2 * D_s[cnt][i]
+                                    )
                                     / (2 * dx**2)
                                     - (D_s[cnt + 1][i] + D_s[cnt][i]) / (dy**2)
                                 )
-                                BB[j][i - 1] = (D_s[cnt][i - 1] + D_s[cnt][i]) / (2 * dx**2)
-                                BB[j][i + 1] = (D_s[cnt][i + 1] + D_s[cnt][i]) / (2 * dx**2)
+                                BB[j][i - 1] = (D_s[cnt][i - 1] + D_s[cnt][i]) / (
+                                    2 * dx**2
+                                )
+                                BB[j][i + 1] = (D_s[cnt][i + 1] + D_s[cnt][i]) / (
+                                    2 * dx**2
+                                )
 
                                 CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (dy**2)
-                                
+
                         elif idx == (m) * (n - 1) + 1:  # topmost row of grid
                             if i == 0:  # leftmost column
                                 DD[i] = (
@@ -667,7 +689,9 @@ class Water:
                                         u[cnt][i]
                                         * (
                                             surfactant.concentration_matrix[cnt][i + 1]
-                                            - surfactant.concentration_matrix[cnt][i - 1]
+                                            - surfactant.concentration_matrix[cnt][
+                                                i - 1
+                                            ]
                                         )
                                         / (2 * dx)
                                     )
@@ -694,15 +718,23 @@ class Water:
 
                                 BB[j][i] = (
                                     1 / dt_array[cnt][i]
-                                    - (D_s[cnt][i + 1] + D_s[cnt][i - 1] + 2 * D_s[cnt][i])
+                                    - (
+                                        D_s[cnt][i + 1]
+                                        + D_s[cnt][i - 1]
+                                        + 2 * D_s[cnt][i]
+                                    )
                                     / (2 * dx**2)
                                     - (D_s[cnt - 1][i] + D_s[cnt][i]) / (dy**2)
                                 )
-                                BB[j][i - 1] = (D_s[cnt][i - 1] + D_s[cnt][i]) / (2 * dx**2)
-                                BB[j][i + 1] = (D_s[cnt][i + 1] + D_s[cnt][i]) / (2 * dx**2)
+                                BB[j][i - 1] = (D_s[cnt][i - 1] + D_s[cnt][i]) / (
+                                    2 * dx**2
+                                )
+                                BB[j][i + 1] = (D_s[cnt][i + 1] + D_s[cnt][i]) / (
+                                    2 * dx**2
+                                )
 
                                 AA[j][i] = (D_s[cnt][i] + D_s[cnt - 1][i]) / (dy**2)
-                                
+
                         else:
                             if i == 0:
                                 DD[i] = (
@@ -751,7 +783,11 @@ class Water:
                                 BB[j][i] = (
                                     1 / dt_array[cnt][i]
                                     - (D_s[cnt][i] + D_s[cnt][i + 1]) / (dx**2)
-                                    - (D_s[cnt - 1][i] + 2 * D_s[cnt][i] + D_s[cnt + 1][i])
+                                    - (
+                                        D_s[cnt - 1][i]
+                                        + 2 * D_s[cnt][i]
+                                        + D_s[cnt + 1][i]
+                                    )
                                     / (2 * dy**2)
                                 )
                                 BB[j][i + 1] = (D_s[cnt][i + 1] + D_s[cnt][i]) / (dx**2)
@@ -781,7 +817,7 @@ class Water:
                                     + (
                                         (D_g[cnt][i] + D_g[cnt][i - 1]) / (dx**2)
                                         + (
-                            D_g[cnt - 1][i]
+                                            D_g[cnt - 1][i]
                                             + 2 * D_g[cnt][i]
                                             + D_g[cnt + 1][i]
                                         )
@@ -804,7 +840,11 @@ class Water:
                                 BB[j][i] = (
                                     1 / dt_array[cnt][i]
                                     - (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
-                                    - (D_s[cnt - 1][i] + 2 * D_s[cnt][i] + D_s[cnt + 1][i])
+                                    - (
+                                        D_s[cnt - 1][i]
+                                        + 2 * D_s[cnt][i]
+                                        + D_s[cnt + 1][i]
+                                    )
                                     / (2 * dy**2)
                                 )
                                 BB[j][i - 1] = (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
@@ -833,13 +873,17 @@ class Water:
                                         u[cnt][i]
                                         * (
                                             surfactant.concentration_matrix[cnt][i + 1]
-                                            - surfactant.concentration_matrix[cnt][i - 1]
+                                            - surfactant.concentration_matrix[cnt][
+                                                i - 1
+                                            ]
                                         )
                                         / (2 * dx)
                                         + v[cnt][i]
                                         * (
                                             surfactant.concentration_matrix[cnt + 1][i]
-                                            - surfactant.concentration_matrix[cnt - 1][i]
+                                            - surfactant.concentration_matrix[cnt - 1][
+                                                i
+                                            ]
                                         )
                                         / (2 * dy)
                                     )
@@ -860,7 +904,9 @@ class Water:
                                         / (2 * dx**2)
                                         * (
                                             surfactant.concentration_matrix[cnt][i - 1]
-                                            - surfactant.concentration_matrix[cnt][i + 1]
+                                            - surfactant.concentration_matrix[cnt][
+                                                i + 1
+                                            ]
                                         )
                                         + D_g[cnt + 1][i]
                                         / (2 * dx**2)
@@ -890,11 +936,19 @@ class Water:
                                     (1 / (2 * dx**2))
                                     * (D_s[cnt][i] + 2 * D_s[cnt][i] + D_s[cnt][i + 1])
                                     + (1 / (2 * dy**2))
-                                    * (D_s[cnt - 1][i] + 2 * D_s[cnt][i] + D_s[cnt + 1][i])
+                                    * (
+                                        D_s[cnt - 1][i]
+                                        + 2 * D_s[cnt][i]
+                                        + D_s[cnt + 1][i]
+                                    )
                                 )
-                                BB[j][i + 1] = (D_s[cnt][i] + D_s[cnt][i + 1]) / (2 * dx**2)
-                                BB[j][i - 1] = (D_s[cnt][i - 1] + D_s[cnt][i]) / (2 * dx**2)
-                                
+                                BB[j][i + 1] = (D_s[cnt][i] + D_s[cnt][i + 1]) / (
+                                    2 * dx**2
+                                )
+                                BB[j][i - 1] = (D_s[cnt][i - 1] + D_s[cnt][i]) / (
+                                    2 * dx**2
+                                )
+
             if cnt == 0:
                 AAA[:n, : 2 * m] = np.hstack([BB, CC])
             elif cnt == n - 1:
