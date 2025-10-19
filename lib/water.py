@@ -479,418 +479,422 @@ class Water:
         DDD = np.zeros((n * m, 1))
 
         while (
-            idx <= (m) * (n - 1) + 1
+            idx <= m * (n - 1) + 1
             and surfactant.concentration_matrix is not None
             and polymer.concentration_matrix is not None
         ):
             cnt = (idx - 1) // m  # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
             BB = np.zeros((n, m))
-            AA = BB
-            CC = BB
+            AA = np.copy(BB)
+            CC = np.copy(BB)
             DD = np.zeros((m, 1))
 
             #'cnt+1' in matlab is 'cnt' in python as matlab indexes from 1 but python indexes from 0
             print(f"DT is of this type: {type(dt)} of value = {dt}")
-            for i in range(m - 1):
-                for j in range(n - 1):
-                    if idx == 1:
-                        if i == 0:  # first/left column
-                            DD[i] = (
-                                (Qmod[cnt][i] / dt_array[cnt][i])
-                                + g1 * (1 - f[cnt][i])
-                                + (
-                                    (D_g[cnt][i] + D_g[cnt][i + 1]) / (dx**2)
-                                    + (D_g[cnt + 1][i] + D_g[cnt + 1][i]) / (dx**1)
-                                )
-                                * surfactant.concentration_matrix[cnt][i]
-                                - (D_g[cnt][i] + D_g[cnt][i + 1])
-                                / (dx**2)
-                                * surfactant.concentration_matrix[cnt][i + 1]
-                                - (D_g[cnt][i] + D_g[cnt + 2][i])
-                                / (dy**2)
-                                * surfactant.concentration_matrix[cnt + 2][i]
-                            )
-
-                            CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (dy**2)
-
-                            BB[j][i] = (
-                                1 / dt_array[cnt][i]
-                                - (D_s[cnt + 1][i] + D_s[cnt][i + 1]) / (dx**2)
-                                - (D_s[cnt + 1][i] + D_s[cnt][i]) / (dy**2)
-                            )
-
-                            BB[j][i + 1] = (D_s[cnt][i] + D_s[cnt][i + 1]) * (dx**2)
-                        elif i == m:  # last/rightmost column
-                            DD[i] = (
-                                Qmod[cnt][i] / dt_array[cnt][i]
-                                + (
-                                    (D_g[cnt][i] + D_g[cnt][i - 1]) / (dx**2)
-                                    + (D_g[cnt + 1][i] + D_g[cnt][i]) / (dy**2)
-                                )
-                                * surfactant.concentration_matrix[cnt][i]
-                                - (D_g[cnt][i] + D_g[cnt][i - 1])
-                                / (dx**2)
-                                * surfactant.concentration_matrix[cnt][i - 1]
-                                - (D_g[cnt][i] + D_g[cnt + 1][i])
-                                / (dy**2)
-                                * surfactant.concentration_matrix[cnt + 1][i]
-                            )
-
-                            BB[j][i - 1] = (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
-
-                            BB[i][i] = (
-                                1 / dt_array[cnt][i]
-                                - (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
-                                - (D_s[cnt + 1][i] + D_s[cnt][i]) / (dy**2)
-                            )
-
-                            CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (dy**2)
-                        else:
-                            DD[i] = (
-                                Qmod[cnt][i] / dt_array[cnt][i]
-                                - f_c[cnt][i]
-                                * (
-                                    u[cnt][i]
-                                    * (
-                                        polymer.concentration_matrix[cnt][i + 1]
-                                        - polymer.concentration_matrix[cnt][i - 1]
-                                    )
-                                    / (2 * dx)
-                                )
-                                - f_g[cnt][i]
-                                * (
-                                    u[cnt][i]
-                                    * (
-                                        surfactant.concentration_matrix[cnt][i + 1]
-                                        - surfactant.concentration_matrix[cnt][i - 1]
-                                    )
-                                    / (2 * dx)
-                                )
-                                + (
-                                    (
-                                        D_g[cnt][i + 1]
-                                        + D_g[cnt][i - 1]
-                                        + 2 * D_g[cnt][i]
-                                    )
-                                    / (2 * dx**2)
-                                    + (D_g[cnt][i + 1] + D_g[cnt][i]) / (dy**2)
-                                )
-                                * surfactant.concentration_matrix[cnt][i]
-                                - (D_g[cnt][i + 1] + D_g[cnt][i])
-                                / (2 * dx**2)
-                                * surfactant.concentration_matrix[cnt][i + 1]
-                                - (D_g[cnt][i - 1] + D_g[cnt][i])
-                                / (2 * dx**2)
-                                * surfactant.concentration_matrix[cnt][i - 1]
-                                - (D_g[cnt][i] + D_g[cnt + 1][i])
-                                / (dy**2)
-                                * surfactant.concentration_matrix[cnt + 1][i]
-                            )
-
-                            BB[j][i] = (
-                                1 / dt_array[cnt][i]
-                                - (D_s[cnt][i + 1] + D_s[cnt][i - 1] + 2 * D_s[cnt][i])
-                                / (2 * dx**2)
-                                - (D_s[cnt + 1][i] + D_s[cnt][i]) / (dy**2)
-                            )
-                            BB[j][i - 1] = (D_s[cnt][i - 1] + D_s[cnt][i]) / (2 * dx**2)
-                            BB[j][i + 1] = (D_s[cnt][i + 1] + D_s[cnt][i]) / (2 * dx**2)
-
-                            CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (dy**2)
-                    elif idx == (m) * (n - 1) + 1:  # topmost row of grid
-                        if i == 0:  # leftmost column
-                            DD[i] = (
-                                (Qmod[cnt][i] / dt_array[cnt][i])
-                                + (
-                                    (D_g[cnt][i] + D_g[cnt][i + 1]) / (dx**2)
-                                    + (D_g[cnt - 1][i] + D_g[cnt][i]) / (dy**2)
-                                )
-                                * surfactant.concentration_matrix[cnt][i]
-                                - (D_g[cnt][i] + D_g[cnt][i + 1])
-                                / (dx**2)
-                                * surfactant.concentration_matrix[cnt][i + 1]
-                                - (D_g[cnt][i] + D_g[cnt - 1][i])
-                                / (dy**2)
-                                * surfactant.concentration_matrix[cnt - 1][i]
-                            )
-
-                            AA[j][i] = (D_s[cnt][i] + D_s[cnt - 1][i]) / (dy**2)
-
-                            BB[j][i] = (
-                                1 / dt_array[cnt][i]
-                                - (D_s[cnt][i] + D_s[cnt][i + 1]) / (dx**2)
-                                - (D_s[cnt - 1][i] + D_s[cnt][i]) / (dy**2)
-                            )
-
-                            BB[j][i + 1] = (D_s[cnt][i] + D_s[cnt][i + 1]) / (dx**2)
-                        elif i == m - 1:  # rightmost column
-                            DD[i] = (
-                                (Qmod[cnt][i] / dt_array[cnt][i])
-                                + (
-                                    (D_g[cnt][i] + D_g[cnt][i - 1]) / (dx**2)
-                                    + (D_g[cnt - 1][i] + D_g[cnt][i]) / (dy**2)
-                                )
-                                * surfactant.concentration_matrix[cnt][i]
-                                - (D_g[cnt][i] + D_g[cnt][i - 1])
-                                / (dx**2)
-                                * surfactant.concentration_matrix[cnt][i - 1]
-                                - (D_g[cnt][i] + D_g[cnt - 1][i])
-                                / (dy**2)
-                                * surfactant.concentration_matrix[cnt - 1][i]
-                            )
-
-                            BB[j][i - 1] = (D_s[cnt][i] + D_s[cnt][i - 1]) / (dy**2)
-
-                            BB[j][i] = (
-                                1 / dt_array[cnt][i]
-                                - (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
-                                - (D_s[cnt - 1][i] + D_s[cnt][i]) / (dy**2)
-                            )
-
-                            AA[j][i] = (D_s[cnt][i] + D_s[cnt - 1][i]) / (dy**2)
-                        else:
-                            DD[i] = (
-                                Qmod[cnt][i] / dt_array[cnt][i]
-                                - f_c[cnt][i]
-                                * (
-                                    u[cnt][i]
-                                    * (
-                                        polymer.concentration_matrix[cnt][i + 1]
-                                        - polymer.concentration_matrix[cnt][i - 1]
-                                    )
-                                    / (2 * dx)
-                                )
-                                - f_g[cnt][i]
-                                * (
-                                    u[cnt][i]
-                                    * (
-                                        surfactant.concentration_matrix[cnt][i + 1]
-                                        - surfactant.concentration_matrix[cnt][i - 1]
-                                    )
-                                    / (2 * dx)
-                                )
-                                + (
-                                    (
-                                        D_g[cnt][i + 1]
-                                        + D_g[cnt][i - 1]
-                                        + 2 * D_g[cnt][i]
-                                    )
-                                    / (2 * dx**2)
-                                    + (D_g[cnt][i + 1] + D_g[cnt][i]) / (dy**2)
-                                )
-                                * surfactant.concentration_matrix[cnt][i]
-                                - (D_g[cnt][i + 1] + D_g[cnt][i])
-                                / (2 * dx**2)
-                                * surfactant.concentration_matrix[cnt][i + 1]
-                                - (D_g[cnt][i - 1] + D_g[cnt][i])
-                                / (2 * dx**2)
-                                * surfactant.concentration_matrix[cnt][i - 1]
-                                - (D_g[cnt][i] + D_g[cnt - 1][i])
-                                / (dy**2)
-                                * surfactant.concentration_matrix[cnt - 1][i]
-                            )
-
-                            BB[j][i] = (
-                                1 / dt_array[cnt][i]
-                                - (D_s[cnt][i + 1] + D_s[cnt][i - 1] + 2 * D_s[cnt][i])
-                                / (2 * dx**2)
-                                - (D_s[cnt - 1][i] + D_s[cnt][i]) / (dy**2)
-                            )
-                            BB[j][i - 1] = (D_s[cnt][i - 1] + D_s[cnt][i]) / (2 * dx**2)
-                            BB[j][i + 1] = (D_s[cnt][i + 1] + D_s[cnt][i]) / (2 * dx**2)
-
-                            AA[j][i] = (D_s[cnt][i] + D_s[cnt - 1][i]) / (dy**2)
-                    else:
-                        if i == 0:
-                            DD[i] = (
-                                Qmod[cnt][i] / dt_array[cnt][i]
-                                - f_c[cnt][i]
-                                * (
-                                    v[cnt][i]
-                                    * (
-                                        polymer.concentration_matrix[cnt + 1][i]
-                                        - polymer.concentration_matrix[cnt][i]
-                                    )
-                                    / (2 * dy)
-                                )
-                                - f_g[cnt][i]
-                                * (
-                                    v[cnt][i]
-                                    * (
-                                        surfactant.concentration_matrix[cnt + 1][i]
-                                        - surfactant.concentration_matrix[cnt][i]
-                                    )
-                                    / (2 * dy)
-                                )
-                                + (
-                                    (D_g[cnt][i] + D_g[cnt][i + 1]) / (dx**2)
+            for i in range(m):
+                for j in range(n):
+                    if j == i:
+                        if idx == 1:
+                            if i == 0:  # first/left column
+                                DD[i] = (
+                                    (Qmod[cnt][i] / dt_array[cnt][i])
+                                    + g1 * (1 - f[cnt][i])
                                     + (
-                                        D_g[cnt - 1][i]
-                                        + 2 * D_g[cnt][i]
-                                        + D_g[cnt + 1][i]
+                                        (D_g[cnt][i] + D_g[cnt][i + 1]) / (dx**2)
+                                        + (D_g[cnt + 1][i] + D_g[cnt + 1][i]) / (dx**1)
                                     )
+                                    * surfactant.concentration_matrix[cnt][i]
+                                    - (D_g[cnt][i] + D_g[cnt][i + 1])
+                                    / (dx**2)
+                                    * surfactant.concentration_matrix[cnt][i + 1]
+                                    - (D_g[cnt][i] + D_g[cnt + 2][i])
+                                    / (dy**2)
+                                    * surfactant.concentration_matrix[cnt + 2][i]
+                                )
+
+                                CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (dy**2)
+
+                                BB[j][i] = (
+                                    1 / dt_array[cnt][i]
+                                    - (D_s[cnt + 1][i] + D_s[cnt][i + 1]) / (dx**2)
+                                    - (D_s[cnt + 1][i] + D_s[cnt][i]) / (dy**2)
+                                )
+
+                                BB[j][i + 1] = (D_s[cnt][i] + D_s[cnt][i + 1]) * (dx**2)
+                            elif i == m - 1:  # last/rightmost column
+                                DD[i] = (
+                                    Qmod[cnt][i] / dt_array[cnt][i]
+                                    + (
+                                        (D_g[cnt][i] + D_g[cnt][i - 1]) / (dx**2)
+                                        + (D_g[cnt + 1][i] + D_g[cnt][i]) / (dy**2)
+                                    )
+                                    * surfactant.concentration_matrix[cnt][i]
+                                    - (D_g[cnt][i] + D_g[cnt][i - 1])
+                                    / (dx**2)
+                                    * surfactant.concentration_matrix[cnt][i - 1]
+                                    - (D_g[cnt][i] + D_g[cnt + 1][i])
+                                    / (dy**2)
+                                    * surfactant.concentration_matrix[cnt + 1][i]
+                                )
+
+                                BB[j][i - 1] = (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
+
+                                BB[i][i] = (
+                                    1 / dt_array[cnt][i]
+                                    - (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
+                                    - (D_s[cnt + 1][i] + D_s[cnt][i]) / (dy**2)
+                                )
+
+                                CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (dy**2)
+                            else:
+                                DD[i] = (
+                                    Qmod[cnt][i] / dt_array[cnt][i]
+                                    - f_c[cnt][i]
+                                    * (
+                                        u[cnt][i]
+                                        * (
+                                            polymer.concentration_matrix[cnt][i + 1]
+                                            - polymer.concentration_matrix[cnt][i - 1]
+                                        )
+                                        / (2 * dx)
+                                    )
+                                    - f_g[cnt][i]
+                                    * (
+                                        u[cnt][i]
+                                        * (
+                                            surfactant.concentration_matrix[cnt][i + 1]
+                                            - surfactant.concentration_matrix[cnt][i - 1]
+                                        )
+                                        / (2 * dx)
+                                    )
+                                    + (
+                                        (
+                                            D_g[cnt][i + 1]
+                                            + D_g[cnt][i - 1]
+                                            + 2 * D_g[cnt][i]
+                                        )
+                                        / (2 * dx**2)
+                                        + (D_g[cnt][i + 1] + D_g[cnt][i]) / (dy**2)
+                                    )
+                                    * surfactant.concentration_matrix[cnt][i]
+                                    - (D_g[cnt][i + 1] + D_g[cnt][i])
+                                    / (2 * dx**2)
+                                    * surfactant.concentration_matrix[cnt][i + 1]
+                                    - (D_g[cnt][i - 1] + D_g[cnt][i])
+                                    / (2 * dx**2)
+                                    * surfactant.concentration_matrix[cnt][i - 1]
+                                    - (D_g[cnt][i] + D_g[cnt + 1][i])
+                                    / (dy**2)
+                                    * surfactant.concentration_matrix[cnt + 1][i]
+                                )
+
+                                BB[j][i] = (
+                                    1 / dt_array[cnt][i]
+                                    - (D_s[cnt][i + 1] + D_s[cnt][i - 1] + 2 * D_s[cnt][i])
+                                    / (2 * dx**2)
+                                    - (D_s[cnt + 1][i] + D_s[cnt][i]) / (dy**2)
+                                )
+                                BB[j][i - 1] = (D_s[cnt][i - 1] + D_s[cnt][i]) / (2 * dx**2)
+                                BB[j][i + 1] = (D_s[cnt][i + 1] + D_s[cnt][i]) / (2 * dx**2)
+
+                                CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (dy**2)
+                                
+                        elif idx == (m) * (n - 1) + 1:  # topmost row of grid
+                            if i == 0:  # leftmost column
+                                DD[i] = (
+                                    (Qmod[cnt][i] / dt_array[cnt][i])
+                                    + (
+                                        (D_g[cnt][i] + D_g[cnt][i + 1]) / (dx**2)
+                                        + (D_g[cnt - 1][i] + D_g[cnt][i]) / (dy**2)
+                                    )
+                                    * surfactant.concentration_matrix[cnt][i]
+                                    - (D_g[cnt][i] + D_g[cnt][i + 1])
+                                    / (dx**2)
+                                    * surfactant.concentration_matrix[cnt][i + 1]
+                                    - (D_g[cnt][i] + D_g[cnt - 1][i])
+                                    / (dy**2)
+                                    * surfactant.concentration_matrix[cnt - 1][i]
+                                )
+
+                                AA[j][i] = (D_s[cnt][i] + D_s[cnt - 1][i]) / (dy**2)
+
+                                BB[j][i] = (
+                                    1 / dt_array[cnt][i]
+                                    - (D_s[cnt][i] + D_s[cnt][i + 1]) / (dx**2)
+                                    - (D_s[cnt - 1][i] + D_s[cnt][i]) / (dy**2)
+                                )
+
+                                BB[j][i + 1] = (D_s[cnt][i] + D_s[cnt][i + 1]) / (dx**2)
+                            elif i == m - 1:  # rightmost column
+                                DD[i] = (
+                                    (Qmod[cnt][i] / dt_array[cnt][i])
+                                    + (
+                                        (D_g[cnt][i] + D_g[cnt][i - 1]) / (dx**2)
+                                        + (D_g[cnt - 1][i] + D_g[cnt][i]) / (dy**2)
+                                    )
+                                    * surfactant.concentration_matrix[cnt][i]
+                                    - (D_g[cnt][i] + D_g[cnt][i - 1])
+                                    / (dx**2)
+                                    * surfactant.concentration_matrix[cnt][i - 1]
+                                    - (D_g[cnt][i] + D_g[cnt - 1][i])
+                                    / (dy**2)
+                                    * surfactant.concentration_matrix[cnt - 1][i]
+                                )
+
+                                BB[j][i - 1] = (D_s[cnt][i] + D_s[cnt][i - 1]) / (dy**2)
+
+                                BB[j][i] = (
+                                    1 / dt_array[cnt][i]
+                                    - (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
+                                    - (D_s[cnt - 1][i] + D_s[cnt][i]) / (dy**2)
+                                )
+
+                                AA[j][i] = (D_s[cnt][i] + D_s[cnt - 1][i]) / (dy**2)
+                            else:
+                                DD[i] = (
+                                    Qmod[cnt][i] / dt_array[cnt][i]
+                                    - f_c[cnt][i]
+                                    * (
+                                        u[cnt][i]
+                                        * (
+                                            polymer.concentration_matrix[cnt][i + 1]
+                                            - polymer.concentration_matrix[cnt][i - 1]
+                                        )
+                                        / (2 * dx)
+                                    )
+                                    - f_g[cnt][i]
+                                    * (
+                                        u[cnt][i]
+                                        * (
+                                            surfactant.concentration_matrix[cnt][i + 1]
+                                            - surfactant.concentration_matrix[cnt][i - 1]
+                                        )
+                                        / (2 * dx)
+                                    )
+                                    + (
+                                        (
+                                            D_g[cnt][i + 1]
+                                            + D_g[cnt][i - 1]
+                                            + 2 * D_g[cnt][i]
+                                        )
+                                        / (2 * dx**2)
+                                        + (D_g[cnt][i + 1] + D_g[cnt][i]) / (dy**2)
+                                    )
+                                    * surfactant.concentration_matrix[cnt][i]
+                                    - (D_g[cnt][i + 1] + D_g[cnt][i])
+                                    / (2 * dx**2)
+                                    * surfactant.concentration_matrix[cnt][i + 1]
+                                    - (D_g[cnt][i - 1] + D_g[cnt][i])
+                                    / (2 * dx**2)
+                                    * surfactant.concentration_matrix[cnt][i - 1]
+                                    - (D_g[cnt][i] + D_g[cnt - 1][i])
+                                    / (dy**2)
+                                    * surfactant.concentration_matrix[cnt - 1][i]
+                                )
+
+                                BB[j][i] = (
+                                    1 / dt_array[cnt][i]
+                                    - (D_s[cnt][i + 1] + D_s[cnt][i - 1] + 2 * D_s[cnt][i])
+                                    / (2 * dx**2)
+                                    - (D_s[cnt - 1][i] + D_s[cnt][i]) / (dy**2)
+                                )
+                                BB[j][i - 1] = (D_s[cnt][i - 1] + D_s[cnt][i]) / (2 * dx**2)
+                                BB[j][i + 1] = (D_s[cnt][i + 1] + D_s[cnt][i]) / (2 * dx**2)
+
+                                AA[j][i] = (D_s[cnt][i] + D_s[cnt - 1][i]) / (dy**2)
+                                
+                        else:
+                            if i == 0:
+                                DD[i] = (
+                                    Qmod[cnt][i] / dt_array[cnt][i]
+                                    - f_c[cnt][i]
+                                    * (
+                                        v[cnt][i]
+                                        * (
+                                            polymer.concentration_matrix[cnt + 1][i]
+                                            - polymer.concentration_matrix[cnt][i]
+                                        )
+                                        / (2 * dy)
+                                    )
+                                    - f_g[cnt][i]
+                                    * (
+                                        v[cnt][i]
+                                        * (
+                                            surfactant.concentration_matrix[cnt + 1][i]
+                                            - surfactant.concentration_matrix[cnt][i]
+                                        )
+                                        / (2 * dy)
+                                    )
+                                    + (
+                                        (D_g[cnt][i] + D_g[cnt][i + 1]) / (dx**2)
+                                        + (
+                                            D_g[cnt - 1][i]
+                                            + 2 * D_g[cnt][i]
+                                            + D_g[cnt + 1][i]
+                                        )
+                                        / (2 * dy**2)
+                                    )
+                                    * surfactant.concentration_matrix[cnt][i]
+                                    - (D_g[cnt][i] + D_g[cnt][i + 1])
+                                    / (dx**2)
+                                    * surfactant.concentration_matrix[cnt][i + 1]
+                                    - (D_g[cnt][i] + D_g[cnt + 1][i])
+                                    / (2 * dy**2)
+                                    * surfactant.concentration_matrix[cnt + 1][i]
+                                    - (D_g[cnt][i] + D_g[cnt - 1][i])
+                                    / (2 * dy**2)
+                                    * surfactant.concentration_matrix[cnt - 1][i]
+                                )
+
+                                AA[j][i] = (D_s[cnt][i] + D_s[cnt - 1][i]) / (2 * dy**2)
+
+                                BB[j][i] = (
+                                    1 / dt_array[cnt][i]
+                                    - (D_s[cnt][i] + D_s[cnt][i + 1]) / (dx**2)
+                                    - (D_s[cnt - 1][i] + 2 * D_s[cnt][i] + D_s[cnt + 1][i])
                                     / (2 * dy**2)
                                 )
-                                * surfactant.concentration_matrix[cnt][i]
-                                - (D_g[cnt][i] + D_g[cnt][i + 1])
-                                / (dx**2)
-                                * surfactant.concentration_matrix[cnt][i + 1]
-                                - (D_g[cnt][i] + D_g[cnt + 1][i])
-                                / (2 * dy**2)
-                                * surfactant.concentration_matrix[cnt + 1][i]
-                                - (D_g[cnt][i] + D_g[cnt - 1][i])
-                                / (2 * dy**2)
-                                * surfactant.concentration_matrix[cnt - 1][i]
-                            )
+                                BB[j][i + 1] = (D_s[cnt][i + 1] + D_s[cnt][i]) / (dx**2)
 
-                            AA[j][i] = (D_s[cnt][i] + D_s[cnt - 1][i]) / (2 * dy**2)
-
-                            BB[j][i] = (
-                                1 / dt_array[cnt][i]
-                                - (D_s[cnt][i] + D_s[cnt][i + 1]) / (dx**2)
-                                - (D_s[cnt - 1][i] + 2 * D_s[cnt][i] + D_s[cnt + 1][i])
-                                / (2 * dy**2)
-                            )
-                            BB[j][i + 1] = (D_s[cnt][i + 1] + D_s[cnt][i]) / (dx**2)
-
-                            CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (2 * dy**2)
-                        elif i == m - 1:
-                            DD[i] = (
-                                Qmod[cnt][i] / dt_array[cnt][i]
-                                - f_c[cnt][i]
-                                * (
-                                    v[cnt][i]
+                                CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (2 * dy**2)
+                            elif i == m - 1:
+                                DD[i] = (
+                                    Qmod[cnt][i] / dt_array[cnt][i]
+                                    - f_c[cnt][i]
                                     * (
-                                        polymer.concentration_matrix[cnt + 1][i]
-                                        - polymer.concentration_matrix[cnt][i]
+                                        v[cnt][i]
+                                        * (
+                                            polymer.concentration_matrix[cnt + 1][i]
+                                            - polymer.concentration_matrix[cnt][i]
+                                        )
+                                        / (2 * dy)
                                     )
-                                    / (2 * dy)
-                                )
-                                - f_g[cnt][i]
-                                * (
-                                    v[cnt][i]
+                                    - f_g[cnt][i]
                                     * (
-                                        surfactant.concentration_matrix[cnt + 1][i]
-                                        - surfactant.concentration_matrix[cnt][i]
+                                        v[cnt][i]
+                                        * (
+                                            surfactant.concentration_matrix[cnt + 1][i]
+                                            - surfactant.concentration_matrix[cnt][i]
+                                        )
+                                        / (2 * dy)
                                     )
-                                    / (2 * dy)
-                                )
-                                + (
-                                    (D_g[cnt][i] + D_g[cnt][i - 1]) / (dx**2)
                                     + (
-                          D_g[cnt - 1][i]
-                                        + 2 * D_g[cnt][i]
-                                        + D_g[cnt + 1][i]
+                                        (D_g[cnt][i] + D_g[cnt][i - 1]) / (dx**2)
+                                        + (
+                            D_g[cnt - 1][i]
+                                            + 2 * D_g[cnt][i]
+                                            + D_g[cnt + 1][i]
+                                        )
+                                        / (2 * dy**2)
                                     )
+                                    * surfactant.concentration_matrix[cnt][i]
+                                    - (D_g[cnt][i] + D_g[cnt][i - 1])
+                                    / (dx**2)
+                                    * surfactant.concentration_matrix[cnt][i - 1]
+                                    - (D_g[cnt][i] + D_g[cnt + 1][i])
+                                    / (2 * dy**2)
+                                    * surfactant.concentration_matrix[cnt + 1][i]
+                                    - (D_g[cnt][i] + D_g[cnt - 1][i])
+                                    / (2 * dy**2)
+                                    * surfactant.concentration_matrix[cnt - 1][i]
+                                )
+
+                                AA[j][i] = (D_s[cnt][i] + D_s[cnt - 1][i]) / (2 * dy**2)
+
+                                BB[j][i] = (
+                                    1 / dt_array[cnt][i]
+                                    - (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
+                                    - (D_s[cnt - 1][i] + 2 * D_s[cnt][i] + D_s[cnt + 1][i])
                                     / (2 * dy**2)
                                 )
-                                * surfactant.concentration_matrix[cnt][i]
-                                - (D_g[cnt][i] + D_g[cnt][i - 1])
-                                / (dx**2)
-                                * surfactant.concentration_matrix[cnt][i - 1]
-                                - (D_g[cnt][i] + D_g[cnt + 1][i])
-                                / (2 * dy**2)
-                                * surfactant.concentration_matrix[cnt + 1][i]
-                                - (D_g[cnt][i] + D_g[cnt - 1][i])
-                                / (2 * dy**2)
-                                * surfactant.concentration_matrix[cnt - 1][i]
-                            )
+                                BB[j][i - 1] = (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
 
-                            AA[j][i] = (D_s[cnt][i] + D_s[cnt - 1][i]) / (2 * dy**2)
-
-                            BB[j][i] = (
-                                1 / dt_array[cnt][i]
-                                - (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
-                                - (D_s[cnt - 1][i] + 2 * D_s[cnt][i] + D_s[cnt + 1][i])
-                                / (2 * dy**2)
-                            )
-                            BB[j][i - 1] = (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
-
-                            CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (2 * dy**2)
-                        else:
-                            DD[i] = (
-                                (Qmod[cnt][i] / dt_array[cnt][i])
-                                - f_c[cnt][i]
-                                * (
-                                    u[cnt][i]
+                                CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (2 * dy**2)
+                            else:
+                                DD[i] = (
+                                    (Qmod[cnt][i] / dt_array[cnt][i])
+                                    - f_c[cnt][i]
                                     * (
-                                        polymer.concentration_matrix[cnt][i + 1]
-                                        - polymer.concentration_matrix[cnt][i - 1]
+                                        u[cnt][i]
+                                        * (
+                                            polymer.concentration_matrix[cnt][i + 1]
+                                            - polymer.concentration_matrix[cnt][i - 1]
+                                        )
+                                        / (2 * dx)
+                                        + v[cnt][i]
+                                        * (
+                                            polymer.concentration_matrix[cnt + 1][i]
+                                            - polymer.concentration_matrix[cnt - 1][i]
+                                        )
+                                        / (2 * dy)
                                     )
-                                    / (2 * dx)
-                                    + v[cnt][i]
+                                    - f_g[cnt][i]
                                     * (
-                                        polymer.concentration_matrix[cnt + 1][i]
-                                        - polymer.concentration_matrix[cnt - 1][i]
+                                        u[cnt][i]
+                                        * (
+                                            surfactant.concentration_matrix[cnt][i + 1]
+                                            - surfactant.concentration_matrix[cnt][i - 1]
+                                        )
+                                        / (2 * dx)
+                                        + v[cnt][i]
+                                        * (
+                                            surfactant.concentration_matrix[cnt + 1][i]
+                                            - surfactant.concentration_matrix[cnt - 1][i]
+                                        )
+                                        / (2 * dy)
                                     )
-                                    / (2 * dy)
-                                )
-                                - f_g[cnt][i]
-                                * (
-                                    u[cnt][i]
-                                    * (
-                                        surfactant.concentration_matrix[cnt][i + 1]
-                                        - surfactant.concentration_matrix[cnt][i - 1]
-                                    )
-                                    / (2 * dx)
-                                    + v[cnt][i]
-                                    * (
-                                        surfactant.concentration_matrix[cnt + 1][i]
-                                        - surfactant.concentration_matrix[cnt - 1][i]
-                                    )
-                                    / (2 * dy)
-                                )
-                                - (
-                                    D_g[cnt][i + 1]
-                                    / (2 * dx**2)
-                                    * (
-                                        surfactant.concentration_matrix[cnt][i + 1]
-                                        - surfactant.concentration_matrix[cnt][i]
-                                    )
-                                    - D_g[cnt][i - 1]
-                                    / (2 * dx**2)
-                                    * (
-                                        surfactant.concentration_matrix[cnt][i - 1]
-                                        - surfactant.concentration_matrix[cnt][i]
-                                    )
-                                    + D_g[cnt][i - 1]
-                                    / (2 * dx**2)
-                                    * (
-                                        surfactant.concentration_matrix[cnt][i - 1]
-                                        - surfactant.concentration_matrix[cnt][i + 1]
-                                    )
-                                    + D_g[cnt + 1][i]
-                                    / (2 * dx**2)
-                                    * (
-                                        surfactant.concentration_matrix[cnt + 1][i]
-                                        - surfactant.concentration_matrix[cnt][i]
-                                    )
-                                    + D_g[cnt - 1][i]
-                                    / (2 * dx**2)
-                                    * (
-                                        surfactant.concentration_matrix[cnt - 1][i]
-                                        - surfactant.concentration_matrix[cnt][i]
-                                    )
-                                    + D_g[cnt][i]
-                                    / (2 * dx**2)
-                                    * (
-                                        surfactant.concentration_matrix[cnt + 1][i]
-                                        - surfactant.concentration_matrix[cnt][i]
+                                    - (
+                                        D_g[cnt][i + 1]
+                                        / (2 * dx**2)
+                                        * (
+                                            surfactant.concentration_matrix[cnt][i + 1]
+                                            - surfactant.concentration_matrix[cnt][i]
+                                        )
+                                        - D_g[cnt][i - 1]
+                                        / (2 * dx**2)
+                                        * (
+                                            surfactant.concentration_matrix[cnt][i - 1]
+                                            - surfactant.concentration_matrix[cnt][i]
+                                        )
+                                        + D_g[cnt][i - 1]
+                                        / (2 * dx**2)
+                                        * (
+                                            surfactant.concentration_matrix[cnt][i - 1]
+                                            - surfactant.concentration_matrix[cnt][i + 1]
+                                        )
+                                        + D_g[cnt + 1][i]
+                                        / (2 * dx**2)
+                                        * (
+                                            surfactant.concentration_matrix[cnt + 1][i]
+                                            - surfactant.concentration_matrix[cnt][i]
+                                        )
+                                        + D_g[cnt - 1][i]
+                                        / (2 * dx**2)
+                                        * (
+                                            surfactant.concentration_matrix[cnt - 1][i]
+                                            - surfactant.concentration_matrix[cnt][i]
+                                        )
+                                        + D_g[cnt][i]
+                                        / (2 * dx**2)
+                                        * (
+                                            surfactant.concentration_matrix[cnt + 1][i]
+                                            - surfactant.concentration_matrix[cnt][i]
+                                        )
                                     )
                                 )
-                            )
-                            AA[j][i] = (D_s[cnt - 1][i] + D_s[cnt][i]) / (2 * dy**2)
+                                AA[j][i] = (D_s[cnt - 1][i] + D_s[cnt][i]) / (2 * dy**2)
 
-                            CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (2 * dy**2)
+                                CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (2 * dy**2)
 
-                            BB[j][i] = 1 / dt_array[cnt][i] - (
-                                (1 / (2 * dx**2))
-                                * (D_s[cnt][i] + 2 * D_s[cnt][i] + D_s[cnt][i + 1])
-                                + (1 / (2 * dy**2))
-                                * (D_s[cnt - 1][i] + 2 * D_s[cnt][i] + D_s[cnt + 1][i])
-                            )
-                            BB[j][i + 1] = (D_s[cnt][i] + D_s[cnt][i + 1]) / (2 * dx**2)
-                            BB[j][i - 1] = (D_s[cnt][i - 1] + D_s[cnt][i]) / (2 * dx**2)
+                                BB[j][i] = 1 / dt_array[cnt][i] - (
+                                    (1 / (2 * dx**2))
+                                    * (D_s[cnt][i] + 2 * D_s[cnt][i] + D_s[cnt][i + 1])
+                                    + (1 / (2 * dy**2))
+                                    * (D_s[cnt - 1][i] + 2 * D_s[cnt][i] + D_s[cnt + 1][i])
+                                )
+                                BB[j][i + 1] = (D_s[cnt][i] + D_s[cnt][i + 1]) / (2 * dx**2)
+                                BB[j][i - 1] = (D_s[cnt][i - 1] + D_s[cnt][i]) / (2 * dx**2)
+                                
             if cnt == 0:
                 AAA[:n, : 2 * m] = np.hstack([BB, CC])
             elif cnt == n - 1:
