@@ -502,7 +502,6 @@ class Water:
             DD = np.zeros((m, 1))
 
             #'cnt+1' in matlab is 'cnt' in python as matlab indexes from 1 but python indexes from 0
-            print(f"DT is of this type: {type(dt)} of value = {dt}")
             for i in range(m):
                 for j in range(n):
                     if j == i:
