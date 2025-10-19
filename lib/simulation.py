@@ -787,9 +787,9 @@ class Simulation:
         [xmod, ymod] = self._characteristic_coordinates(
             1, self.water.water_saturation, const_parameters, varying_parameters
         )  
+        
         ## Pass in parameters into ``compute_water_saturation`` method of the ``Water`` class
-        # FIXME: Uncomment when ready to test this function!!! <-- also need to make sure to return the updated version of ``varying_parameters``
-        self.water.compute_water_saturation(
+        varying_parameters = self.water.compute_water_saturation(
                 grid = self.mesh,
                 surfactant = self.surfactant,
                 polymer = self.polymer,
@@ -802,6 +802,9 @@ class Simulation:
                 )
 
         # Update the Polymer Concentration Matrix
+        # varying_parameters = self.polymer.compute_concentration(
+            
+        # )
 
         # Update the Surfactant Concentration matrix
 
