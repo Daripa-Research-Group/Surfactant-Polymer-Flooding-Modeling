@@ -971,4 +971,4 @@ class Water:
 
         self.water_saturation = Qnew
 
-        return [Qnew, varying_parameters]
+        return varying_parameters
