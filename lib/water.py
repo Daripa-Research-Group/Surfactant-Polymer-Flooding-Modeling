@@ -970,4 +970,4 @@ class Water:
 
         self.water_saturation = Qnew
 
-        return varying_parameters
+        return Qmod, varying_parameters

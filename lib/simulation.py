@@ -11,6 +11,7 @@ developed by Sourav Dutta and Rohit Mishra.
 import os
 
 import numpy as np
+import scipy as sp
 from grid import Grid, FEMesh
 from enumerations import (
     ModelType,
@@ -28,7 +29,7 @@ from water import Water
 from scipy.io import loadmat
 from scipy.sparse.linalg import bicgstab
 from scipy.linalg import fractional_matrix_power
-
+from scipy.interpolate import RegularGridInterpolator
 os.makedirs(
     "memmaps", exist_ok=True
 )  # ensures that the program works on computers with RAM constraints
@@ -789,8 +790,8 @@ class Simulation:
         )  
         
         ## Pass in parameters into ``compute_water_saturation`` method of the ``Water`` class
-        Q_old = self.water.water_saturation
-        varying_parameters = self.water.compute_water_saturation(
+        Q_old = np.copy(self.water.water_saturation)
+        Qmod, varying_parameters = self.water.compute_water_saturation(
                 grid = self.mesh,
                 surfactant = self.surfactant,
                 polymer = self.polymer,
@@ -806,7 +807,7 @@ class Simulation:
         [xmod, ymod] = self._characteristic_coordinates(
             2, Q_old, self.water.water_saturation, const_parameters, varying_parameters
         )  
-        C_old = self.polymer.concentration_matrix
+        C_old = np.copy(self.polymer.concentration_matrix)
         varying_parameters = self.polymer.compute_concentration(
             grid = self.mesh,
             water_sat = self.water.water_saturation,
@@ -819,6 +820,92 @@ class Simulation:
         )
 
         # Update the Surfactant Concentration matrix
+        [xmod, ymod] = self._characteristic_coordinates(
+            3, Q_old, self.water.water_saturation, const_parameters, varying_parameters
+        )  
+        G_old = np.copy(self.surfactant.concentration_matrix)
+        G = self.surfactant.concentration_matrix
+        x1d = self.mesh.x[0, :]
+        y1d = self.mesh.y[:, 0]
+        x_sorted = np.all(np.diff(x1d) > 0)
+        y_sorted = np.all(np.diff(y1d) > 0)
+        
+        # reorder surfactant.concentration_matrix if a dimension isn't sorted
+        if not x_sorted:
+            x_sort_idx = np.argsort(x1d)
+            x1d = x1d[x_sort_idx]
+            G = G[
+                :, x_sort_idx
+            ]  # Sort columns of surfactant.concentration_matrix
+        if not y_sorted:
+            y_sort_idx = np.argsort(y1d)
+            y1d = y1d[y_sort_idx]
+            G = G[
+                y_sort_idx, :
+            ]  # Sort rows of surfactant.concentration_matrix
+
+        interp = sp.interpolate.RegularGridInterpolator(
+            (y1d, x1d),
+            G,
+            method="linear",
+            bounds_error=False,
+            fill_value=None,
+        )
+        query_points = np.stack([ymod.ravel(), xmod.ravel()], axis=-1)
+        Gmod = interp(query_points).reshape(xmod.shape)
+
+        # Updating coefficients using interpolated surfactant concentration
+        assert self.surfactant.IFT_conc_equ is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownIFTEquation')
+        assert self.surfactant.derivative_IFT_conc_equ is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownDerivativeIFTEquation')
+        sigma_mod = self.surfactant.IFT_conc_equ(Gmod)
+        sigma_g_mod = self.surfactant.derivative_IFT_conc_equ(Gmod)
+        [swr, sor] = self.water.compute_residual_saturations(
+            sigma=sigma_mod, u=self.u, v=self.v
+        )
+        lambda_a = self.water.compute_mobility(
+            c=self.polymer.concentration_matrix,
+            sor=float(sor),
+            swr=float(swr),
+            aqueous=True,
+            rel_permeability_formula=self.relative_permeability_formula,
+            modified_water_saturation=Qmod,
+        )
+        lambda_o = self.water.compute_mobility(
+            c=self.polymer.concentration_matrix,
+            sor=float(sor),
+            swr=float(swr),
+            aqueous=False,
+            rel_permeability_formula=self.relative_permeability_formula,
+            modified_water_saturation=Qmod,
+        )
+        lambda_total = lambda_a + lambda_o
+        varying_parameters["mobility_parameters"] = {
+            "lambda_a": lambda_a,
+            "lambda_o": lambda_o,
+            "lambda_total": lambda_total,
+        }
+        f = lambda_a / lambda_total
+        assert self.KK is not None, SimulationCalcInputException(
+            "SimulationCalcInputError:UnknownPermeabilityTensor"
+        )
+        D = self.KK * lambda_o * f
+        varying_parameters["fractional_flow_parameters"] = {"f": f, "D": D}
+        dpc_ds = pc / (const_parameters["Pc_constants"]["omega1"] * (1 - nso))
+        dpc_dg = (pc / sigma_mod) * sigma_g_mod + dpc_ds
+        varying_parameters["capillary_pressure_and_derivatives"] = {
+            "pc": pc,
+            "dpc_ds": dpc_ds,
+            "dpc_dg": dpc_dg,
+        }
+        F = D * dpc_dg / self.water.water_saturation
+        varying_parameters = self.surfactant.compute_concentration(
+            grid = self.mesh,
+            water_sat = self.water.water_saturation,
+            const_parameters = const_parameters,
+            varying_parameters = varying_parameters,
+            F = F,
+            Gmod = Gmod
+        )
 
         # Returning updated Water, Polymer, and Surfactant objects
         return self.water, self.polymer, self.surfactant
