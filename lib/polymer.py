@@ -13,6 +13,8 @@ from scipy.sparse.linalg import bicgstab
 from enumerations import ModelType, PolymerList, SimulationConstants
 from Exceptions import SimulationCalcInputException
 from grid import Grid
+from water import Water
+from surfactant import Surfactant
 
 
 class Polymer:
@@ -269,16 +271,15 @@ class Polymer:
 
     def compute_concentration(
         self,
-        grid: tuple,
-        mesh: Grid,
-        u: np.ndarray,
-        v: np.ndarray,
-        dt: float,
-        f_lambda: np.ndarray,
-        initial_water_saturation: float,
-        water_saturation_matrix: np.ndarray,
-        xmod: np.ndarray,
-        ymod: np.ndarray,
+        grid : Grid,
+        surfactant : Surfactant,
+        water : Water,
+        u : np.ndarray,
+        v : np.ndarray,
+        xmod : np.ndarray,
+        ymod : np.ndarray,
+        const_parameters : dict,
+        varying_parameters : dict
     ):
         """
         Update the polymer concentration matrix and the shear rate tensor
@@ -320,21 +321,39 @@ class Polymer:
         :rtype: np.ndarray
         """
         # initializing variables:
-        if self.concentration_matrix is None:
-            raise SimulationCalcInputException(
-                "SimulationInputException: Polymer concentration matrix not initialized. Please initalize before running method."
-            )
-        x = grid[0]
-        y = grid[1]
-        m = mesh.m
-        n = mesh.n
-        dt_array = dt * np.ones(
-            (SimulationConstants.Grid_Size.value, SimulationConstants.Grid_Size.value)
+        # Assert statements to ensure that all parameters are property initialized:
+        assert water.water_saturation is not None, SimulationCalcInputException(
+            "SimuationInputException: water saturation matrix not initialized. Please try again"
         )
-        Qnew = water_saturation_matrix
+        assert self.concentration_matrix is not None, SimulationCalcInputException(
+            "SimuationInputException: polymer concentration matrix not initialized. Please try again"
+        )
+        # Required constants:
+        dx = const_parameters["FD_grid_constants"]["dx"]
+        dy = const_parameters["FD_grid_constants"]["dy"]
+        x = const_parameters["FD_grid_constants"]["x"]
+        y = const_parameters["FD_grid_constants"]["y"]
+        m = const_parameters["FD_grid_constants"]["m"]
+        n = const_parameters["FD_grid_constants"]["n"]
+        phi = self.phi
+        omega1 = const_parameters["Pc_constants"]["omega1"]
+        omega2 = const_parameters["Pc_constants"]["omega2"]
+        Qnew = water.water_saturation
+        C = self.concentration_matrix
+        g1 = const_parameters['inlet_total_flow']
+        g2 = const_parameters["inlet_polymer_flow"]
+        KK = const_parameters["KK"]
+        relative_permeability_formula = const_parameters[
+            "relative_permeability_formula"
+        ]
 
-        g1 = initial_water_saturation
-        g2 = initial_water_saturation * self.concetration_scalar
+        # retrieving relevant parameters for updating the water saturation
+        ## Time Step:
+        dt = const_parameters["FD_grid_constants"]["dt"]
+        dt_array = const_parameters["FD_grid_constants"]["dt_matrix"]
+
+        #retrieving fractional flow variable
+        f = varying_parameters['fractional_flow_parameters']['f']
 
         # Determining 'Cmod'
         x1d = x[0, :]
@@ -346,13 +365,13 @@ class Polymer:
         if not x_sorted:
             x_sort_idx = np.argsort(x1d)
             x1d = x1d[x_sort_idx]
-            self.concentration_matrix = self.concentration_matrix[
+            C = C[
                 :, x_sort_idx
             ]  # Sort columns of vec_concentration
         if not y_sorted:
             y_sort_idx = np.argsort(y1d)
             y1d = y1d[y_sort_idx]
-            self.concentration_matrix = self.concentration_matrix[
+            C = C[
                 y_sort_idx, :
             ]  # Sort rows of vec_concentration
 
@@ -363,7 +382,8 @@ class Polymer:
             bounds_error=False,
             fill_value=None,
         )
-        Cmod = interp((xmod, ymod))
+        query_points = np.stack([ymod.ravel(), xmod.ravel()], axis=-1)
+        Cmod = interp(query_points).reshape(xmod.shape)
 
         # Using 'Cmod' and 'Qnew' to update the polymer concentration matrix
         idx = 1
@@ -393,7 +413,7 @@ class Polymer:
                                 DD[i] = Cmod[cnt][i] / dt_array[cnt][i]
                                 BB[j][i] = (
                                     1 / dt_array[cnt][i]
-                                    - g1 * f_lambda[cnt][i] / Qnew[cnt][i]
+                                    - g1 * f[cnt][i] / Qnew[cnt][i]
                                 )
                             else:
                                 DD[i] = Cmod[cnt][i] / dt_array[cnt][i]
@@ -419,7 +439,7 @@ class Polymer:
         Cnew = Cnew_flat.reshape(m, n)
         self.concentration_matrix = Cnew
 
-        return self.concentration_matrix
+        return varying_parameters
 
     def divergence(self, Fx, Fy, dx=1.0, dy=1.0):
         """

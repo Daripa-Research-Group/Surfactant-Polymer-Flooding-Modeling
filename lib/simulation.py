@@ -785,10 +785,11 @@ class Simulation:
         # Update Water Saturation Matrix
         ## Calculate ``xmod`` and ``ymod``
         [xmod, ymod] = self._characteristic_coordinates(
-            1, self.water.water_saturation, const_parameters, varying_parameters
+            1, self.water.water_saturation, self.water.water_saturation, const_parameters, varying_parameters
         )  
         
         ## Pass in parameters into ``compute_water_saturation`` method of the ``Water`` class
+        Q_old = self.water.water_saturation
         varying_parameters = self.water.compute_water_saturation(
                 grid = self.mesh,
                 surfactant = self.surfactant,
@@ -802,9 +803,21 @@ class Simulation:
                 )
 
         # Update the Polymer Concentration Matrix
-        # varying_parameters = self.polymer.compute_concentration(
-            
-        # )
+        [xmod, ymod] = self._characteristic_coordinates(
+            2, Q_old, self.water.water_saturation, const_parameters, varying_parameters
+        )  
+        C_old = self.polymer.concentration_matrix
+        varying_parameters = self.polymer.compute_concentration(
+            grid = self.mesh,
+            surfactant = self.surfactant,
+            water = self.water,
+            u = self.u,
+            v = self.v,
+            xmod = xmod,
+            ymod = ymod,
+            const_parameters = const_parameters,
+            varying_parameters = varying_parameters
+        )
 
         # Update the Surfactant Concentration matrix
 
@@ -814,6 +827,7 @@ class Simulation:
     def _characteristic_coordinates(
         self,
         flag,
+        old_water_saturation_matrix,
         new_water_saturation_matrix,
         const_parameters,
         varying_parameters,
@@ -845,6 +859,7 @@ class Simulation:
         D = varying_parameters["fractional_flow_parameters"]["D"]
         pc_s = varying_parameters["capillary_pressure_and_derivatives"]["dpc_ds"]
         pc_g = varying_parameters["capillary_pressure_and_derivatives"]["dpc_dg"]
+        sold = old_water_saturation_matrix
         snew = new_water_saturation_matrix
 
         if flag == 1:
@@ -852,7 +867,7 @@ class Simulation:
             yjump = y - f_s * self.v * dt_matrix
         elif flag == 2:
             # Calculate gradients
-            sx, sy = self._get_gradient(self.water.water_saturation)
+            sx, sy = self._get_gradient(sold)
             gx, gy = self._get_gradient(self.surfactant.concentration_matrix)
 
             xjump = (
@@ -874,7 +889,7 @@ class Simulation:
                 * dt_matrix
             )
         elif flag == 3:
-            sx, sy = self._get_gradient(self.water.water_saturation)
+            sx, sy = self._get_gradient(sold)
 
             xjump = x - ((f / snew) * self.u + (D * pc_s / snew) * sx) * dt_matrix
             yjump = y - ((f / snew) * self.v + (D * pc_s / snew) * sy) * dt_matrix
