@@ -863,7 +863,7 @@ class Simulation:
             sigma=sigma_mod, u=self.u, v=self.v
         )
         lambda_a = self.water.compute_mobility(
-            c=self.polymer.concentration_matrix,
+            c= C_old,
             sor=float(sor),
             swr=float(swr),
             aqueous=True,
@@ -871,7 +871,7 @@ class Simulation:
             modified_water_saturation=Qmod,
         )
         lambda_o = self.water.compute_mobility(
-            c=self.polymer.concentration_matrix,
+            c= C_old,
             sor=float(sor),
             swr=float(swr),
             aqueous=False,
