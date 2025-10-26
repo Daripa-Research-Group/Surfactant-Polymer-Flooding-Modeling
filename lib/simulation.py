@@ -809,8 +809,7 @@ class Simulation:
         C_old = self.polymer.concentration_matrix
         varying_parameters = self.polymer.compute_concentration(
             grid = self.mesh,
-            surfactant = self.surfactant,
-            water = self.water,
+            water_sat = self.water.water_saturation,
             u = self.u,
             v = self.v,
             xmod = xmod,

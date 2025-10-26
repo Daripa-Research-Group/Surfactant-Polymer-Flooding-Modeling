@@ -13,8 +13,6 @@ from scipy.sparse.linalg import bicgstab
 from enumerations import ModelType, PolymerList, SimulationConstants
 from Exceptions import SimulationCalcInputException
 from grid import Grid
-from water import Water
-from surfactant import Surfactant
 
 
 class Polymer:
@@ -272,8 +270,7 @@ class Polymer:
     def compute_concentration(
         self,
         grid : Grid,
-        surfactant : Surfactant,
-        water : Water,
+        water_sat : np.ndarray,
         u : np.ndarray,
         v : np.ndarray,
         xmod : np.ndarray,
@@ -281,50 +278,8 @@ class Polymer:
         const_parameters : dict,
         varying_parameters : dict
     ):
-        """
-        Update the polymer concentration matrix and the shear rate tensor
-
-        This function is derived from the section of the 'nmmoc_surf_mod_neumann'
-        related to the polymer concentration matrix
-
-        :param grid: The FEM grid used for simulation calculations (x and y variables from the MATLAB code)
-        :type grid: tuple[NDArray[Any], ...]
-
-        :param mesh: 'Box' object containing information for the FEM grid
-        :type mesh: Box
-
-        :param u: Matrix related to the global pressure
-        :type u: np.ndarray
-
-        :param v: Matrix related to the velocity matrix
-        :type v: np.ndarray
-
-        :param dt: time-step
-        :type dt: float
-
-        :param f_lambda: fraction of lambda_aqueous / lambda_total
-        :type f_lambda: np.ndarray
-
-        :param initial_water_saturation: the scalar quantity of the initial water saturation in sim
-        :type initial_water_saturation: float
-
-        :param water_saturation_matrix: the updated water saturation matrix
-        :type water_saturation_matrix: np.ndarray
-
-        :param xmod: x-dimension coordinate points for formulating the 'Cmod' matrix
-        :type xmod: np.ndarray
-
-        :param ymod: y-dimension coordinate points for formulating the 'Cmod' matrix
-        :type ymod: np.ndarray
-
-        :return: Polymer concentration matrix
-        :rtype: np.ndarray
-        """
         # initializing variables:
         # Assert statements to ensure that all parameters are property initialized:
-        assert water.water_saturation is not None, SimulationCalcInputException(
-            "SimuationInputException: water saturation matrix not initialized. Please try again"
-        )
         assert self.concentration_matrix is not None, SimulationCalcInputException(
             "SimuationInputException: polymer concentration matrix not initialized. Please try again"
         )
@@ -338,7 +293,7 @@ class Polymer:
         phi = self.phi
         omega1 = const_parameters["Pc_constants"]["omega1"]
         omega2 = const_parameters["Pc_constants"]["omega2"]
-        Qnew = water.water_saturation
+        Qnew = water_sat
         C = self.concentration_matrix
         g1 = const_parameters['inlet_total_flow']
         g2 = const_parameters["inlet_polymer_flow"]
