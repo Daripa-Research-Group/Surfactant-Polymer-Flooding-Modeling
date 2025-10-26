@@ -348,8 +348,8 @@ class Polymer:
         while idx <= (m) * (n - 1) + 1:
             cnt = (idx - 1) // m  # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
             BB = np.zeros((n, m))
-            AA = BB
-            CC = BB
+            AA = np.copy(BB)
+            CC = np.copy(BB)
             DD = np.zeros((m, 1))
             for i in range(m - 1):
                 for j in range(n - 1):
