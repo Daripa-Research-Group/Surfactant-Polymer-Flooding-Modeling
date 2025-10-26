@@ -351,8 +351,8 @@ class Polymer:
             AA = np.copy(BB)
             CC = np.copy(BB)
             DD = np.zeros((m, 1))
-            for i in range(m - 1):
-                for j in range(n - 1):
+            for i in range(m):
+                for j in range(n):
                     if j == i:
                         if idx == 1:  # lowermost row of grid
                             if i == 1:  # leftmost point (source)

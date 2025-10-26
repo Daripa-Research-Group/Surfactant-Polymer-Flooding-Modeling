@@ -147,8 +147,8 @@ class Surfactant:
             AA = np.copy(BB)
             CC = np.copy(BB)
             DD = np.zeros((m, 1))
-            for i in range(m - 1):
-                for j in range(n - 1):
+            for i in range(m):
+                for j in range(n):
                     if j == i:
                         if idx == 1:
                             if i == 0:
@@ -178,7 +178,7 @@ class Surfactant:
                                     - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
                                 )
                                 BB[j][i - 1] = F[cnt][i] / (dx**2)
-                                BB[j][i + 1] = 2 * F[cnt][i] / (dx**2)
+                                BB[j][i + 1] = F[cnt][i] / (dx**2)
                         elif idx == (m) * (n - 1) + 1:
                             if i == 0:
                                 DD[i] = Gmod[cnt][i] / dt_array[cnt][i]
@@ -236,8 +236,8 @@ class Surfactant:
                                     1 / dt_array[cnt][i]
                                     - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
                                 )
-                                BB[j][i - 1] = 2 * F[cnt][i] / (dx**2)
-                                BB[j][i + 1] = 2 * F[cnt][i] / (dx**2)
+                                BB[j][i - 1] = F[cnt][i] / (dx**2)
+                                BB[j][i + 1] = F[cnt][i] / (dx**2)
                                 CC[j][i] = F[cnt][i] / (dy**2)
             if cnt == 0:
                 AAA[:n, : 2 * m] = np.hstack([BB, CC])
