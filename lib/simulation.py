@@ -30,6 +30,7 @@ from scipy.io import loadmat
 from scipy.sparse.linalg import bicgstab
 from scipy.linalg import fractional_matrix_power
 from scipy.interpolate import RegularGridInterpolator
+
 os.makedirs(
     "memmaps", exist_ok=True
 )  # ensures that the program works on computers with RAM constraints
@@ -589,8 +590,10 @@ class Simulation:
         const_parameters["porosity"] = 1
 
         ## Permeability
-        const_parameters['KK'] = self.KK
-        const_parameters['relative_permeability_formula'] = self.relative_permeability_formula
+        const_parameters["KK"] = self.KK
+        const_parameters["relative_permeability_formula"] = (
+            self.relative_permeability_formula
+        )
 
         # Initialize variable parameters
         varying_parameters = {}
@@ -731,8 +734,8 @@ class Simulation:
             + (1 - nso) * (1 - 5 * nso * dsor_dg)
             - (1 + 5 * sor - 10 * sor * nso)
             * varying_parameters["normalized_saturation_derivatives"]["dnso_dg"],
-            "dkra_ds" : 2.5*swr*(3*(nsw)**2-1)+1,
-            "dkro_ds" : 10*sor*nso - 5*sor-1
+            "dkra_ds": 2.5 * swr * (3 * (nsw) ** 2 - 1) + 1,
+            "dkro_ds": 10 * sor * nso - 5 * sor - 1,
         }
         ## computing capillary pressure derivatives with respect to concentrations and saturations (FIXME: Need to update when inplementing autodiff!)
         pc = (
@@ -748,7 +751,9 @@ class Simulation:
             )
         )
         dpc_ds = pc / (const_parameters["Pc_constants"]["omega1"] * (1 - nso))
-        dpc_dg = (pc / self.surfactant.eval_IFT) * self.surfactant.eval_dIFT_dGamma + dpc_ds
+        dpc_dg = (
+            pc / self.surfactant.eval_IFT
+        ) * self.surfactant.eval_dIFT_dGamma + dpc_ds
         varying_parameters["capillary_pressure_and_derivatives"] = {
             "pc": pc,
             "dpc_ds": dpc_ds,
@@ -786,63 +791,63 @@ class Simulation:
         # Update Water Saturation Matrix
         ## Calculate ``xmod`` and ``ymod``
         [xmod, ymod] = self._characteristic_coordinates(
-            1, self.water.water_saturation, self.water.water_saturation, const_parameters, varying_parameters
-        )  
-        
+            1,
+            self.water.water_saturation,
+            self.water.water_saturation,
+            const_parameters,
+            varying_parameters,
+        )
+
         ## Pass in parameters into ``compute_water_saturation`` method of the ``Water`` class
         Q_old = np.copy(self.water.water_saturation)
         Qmod, varying_parameters = self.water.compute_water_saturation(
-                grid = self.mesh,
-                surfactant = self.surfactant,
-                polymer = self.polymer,
-                u = self.u,
-                v = self.v,
-                xmod = xmod,
-                ymod = ymod,
-                const_parameters = const_parameters,
-                varying_parameters = varying_parameters
-                )
+            grid=self.mesh,
+            surfactant=self.surfactant,
+            polymer=self.polymer,
+            u=self.u,
+            v=self.v,
+            xmod=xmod,
+            ymod=ymod,
+            const_parameters=const_parameters,
+            varying_parameters=varying_parameters,
+        )
 
         # Update the Polymer Concentration Matrix
         [xmod, ymod] = self._characteristic_coordinates(
             2, Q_old, self.water.water_saturation, const_parameters, varying_parameters
-        )  
+        )
         C_old = np.copy(self.polymer.concentration_matrix)
         varying_parameters = self.polymer.compute_concentration(
-            grid = self.mesh,
-            water_sat = self.water.water_saturation,
-            u = self.u,
-            v = self.v,
-            xmod = xmod,
-            ymod = ymod,
-            const_parameters = const_parameters,
-            varying_parameters = varying_parameters
+            grid=self.mesh,
+            water_sat=self.water.water_saturation,
+            u=self.u,
+            v=self.v,
+            xmod=xmod,
+            ymod=ymod,
+            const_parameters=const_parameters,
+            varying_parameters=varying_parameters,
         )
 
         # Update the Surfactant Concentration matrix
         [xmod, ymod] = self._characteristic_coordinates(
             3, Q_old, self.water.water_saturation, const_parameters, varying_parameters
-        )  
+        )
         G_old = np.copy(self.surfactant.concentration_matrix)
         G = self.surfactant.concentration_matrix
         x1d = self.mesh.x[0, :]
         y1d = self.mesh.y[:, 0]
         x_sorted = np.all(np.diff(x1d) > 0)
         y_sorted = np.all(np.diff(y1d) > 0)
-        
+
         # reorder surfactant.concentration_matrix if a dimension isn't sorted
         if not x_sorted:
             x_sort_idx = np.argsort(x1d)
             x1d = x1d[x_sort_idx]
-            G = G[
-                :, x_sort_idx
-            ]  # Sort columns of surfactant.concentration_matrix
+            G = G[:, x_sort_idx]  # Sort columns of surfactant.concentration_matrix
         if not y_sorted:
             y_sort_idx = np.argsort(y1d)
             y1d = y1d[y_sort_idx]
-            G = G[
-                y_sort_idx, :
-            ]  # Sort rows of surfactant.concentration_matrix
+            G = G[y_sort_idx, :]  # Sort rows of surfactant.concentration_matrix
 
         interp = sp.interpolate.RegularGridInterpolator(
             (y1d, x1d),
@@ -855,15 +860,21 @@ class Simulation:
         Gmod = interp(query_points).reshape(xmod.shape)
 
         # Updating coefficients using interpolated surfactant concentration
-        assert self.surfactant.IFT_conc_equ is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownIFTEquation')
-        assert self.surfactant.derivative_IFT_conc_equ is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownDerivativeIFTEquation')
+        assert self.surfactant.IFT_conc_equ is not None, SimulationCalcInputException(
+            "SimulationCalcInputError:UnknownIFTEquation"
+        )
+        assert (
+            self.surfactant.derivative_IFT_conc_equ is not None
+        ), SimulationCalcInputException(
+            "SimulationCalcInputError:UnknownDerivativeIFTEquation"
+        )
         sigma_mod = self.surfactant.IFT_conc_equ(Gmod)
         sigma_g_mod = self.surfactant.derivative_IFT_conc_equ(Gmod)
         [swr, sor] = self.water.compute_residual_saturations(
             sigma=sigma_mod, u=self.u, v=self.v
         )
         lambda_a = self.water.compute_mobility(
-            c= C_old,
+            c=C_old,
             sor=float(sor),
             swr=float(swr),
             aqueous=True,
@@ -871,7 +882,7 @@ class Simulation:
             modified_water_saturation=Qmod,
         )
         lambda_o = self.water.compute_mobility(
-            c= C_old,
+            c=C_old,
             sor=float(sor),
             swr=float(swr),
             aqueous=False,
@@ -899,12 +910,12 @@ class Simulation:
         }
         F = D * dpc_dg / self.water.water_saturation
         varying_parameters = self.surfactant.compute_concentration(
-            grid = self.mesh,
-            water_sat = self.water.water_saturation,
-            const_parameters = const_parameters,
-            varying_parameters = varying_parameters,
-            F = F,
-            Gmod = Gmod
+            grid=self.mesh,
+            water_sat=self.water.water_saturation,
+            const_parameters=const_parameters,
+            varying_parameters=varying_parameters,
+            F=F,
+            Gmod=Gmod,
         )
 
         # Returning updated Water, Polymer, and Surfactant objects

@@ -269,14 +269,14 @@ class Polymer:
 
     def compute_concentration(
         self,
-        grid : Grid,
-        water_sat : np.ndarray,
-        u : np.ndarray,
-        v : np.ndarray,
-        xmod : np.ndarray,
-        ymod : np.ndarray,
-        const_parameters : dict,
-        varying_parameters : dict
+        grid: Grid,
+        water_sat: np.ndarray,
+        u: np.ndarray,
+        v: np.ndarray,
+        xmod: np.ndarray,
+        ymod: np.ndarray,
+        const_parameters: dict,
+        varying_parameters: dict,
     ):
         # initializing variables:
         # Assert statements to ensure that all parameters are property initialized:
@@ -295,7 +295,7 @@ class Polymer:
         omega2 = const_parameters["Pc_constants"]["omega2"]
         Qnew = water_sat
         C = self.concentration_matrix
-        g1 = const_parameters['inlet_total_flow']
+        g1 = const_parameters["inlet_total_flow"]
         g2 = const_parameters["inlet_polymer_flow"]
         KK = const_parameters["KK"]
         relative_permeability_formula = const_parameters[
@@ -307,8 +307,8 @@ class Polymer:
         dt = const_parameters["FD_grid_constants"]["dt"]
         dt_array = const_parameters["FD_grid_constants"]["dt_matrix"]
 
-        #retrieving fractional flow variable
-        f = varying_parameters['fractional_flow_parameters']['f']
+        # retrieving fractional flow variable
+        f = varying_parameters["fractional_flow_parameters"]["f"]
 
         # Determining 'Cmod'
         x1d = x[0, :]
@@ -320,15 +320,11 @@ class Polymer:
         if not x_sorted:
             x_sort_idx = np.argsort(x1d)
             x1d = x1d[x_sort_idx]
-            C = C[
-                :, x_sort_idx
-            ]  # Sort columns of vec_concentration
+            C = C[:, x_sort_idx]  # Sort columns of vec_concentration
         if not y_sorted:
             y_sort_idx = np.argsort(y1d)
             y1d = y1d[y_sort_idx]
-            C = C[
-                y_sort_idx, :
-            ]  # Sort rows of vec_concentration
+            C = C[y_sort_idx, :]  # Sort rows of vec_concentration
 
         interp = sp.interpolate.RegularGridInterpolator(
             (y1d, x1d),
@@ -367,8 +363,7 @@ class Polymer:
                             if i == m - 1:
                                 DD[i] = Cmod[cnt][i] / dt_array[cnt][i]
                                 BB[j][i] = (
-                                    1 / dt_array[cnt][i]
-                                    - g1 * f[cnt][i] / Qnew[cnt][i]
+                                    1 / dt_array[cnt][i] - g1 * f[cnt][i] / Qnew[cnt][i]
                                 )
                             else:
                                 DD[i] = Cmod[cnt][i] / dt_array[cnt][i]

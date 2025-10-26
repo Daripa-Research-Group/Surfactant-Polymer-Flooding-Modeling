@@ -27,7 +27,9 @@ class Surfactant:
         initial_concentration: float,
         phi: np.ndarray,
         IFT_equation: LambdaType | None = None,
-        derivative_IFT_equation: LambdaType | None = None, #FIXME: can remove once implemented `autodiff` capabilities
+        derivative_IFT_equation: (
+            LambdaType | None
+        ) = None,  # FIXME: can remove once implemented `autodiff` capabilities
         concentration_matrix: np.ndarray | None = None,
     ):
         """
@@ -55,7 +57,7 @@ class Surfactant:
         self.concentration = initial_concentration
         self.concentration_matrix = concentration_matrix
         self.IFT_conc_equ = IFT_equation
-        self.derivative_IFT_conc_equ = derivative_IFT_equation #FIXME: need to adjust when implementing 'autodiff' 
+        self.derivative_IFT_conc_equ = derivative_IFT_equation  # FIXME: need to adjust when implementing 'autodiff'
         self.is_surfactant = True if (initial_concentration > 0) else False
         self.phi = phi
 
@@ -64,17 +66,21 @@ class Surfactant:
         """
         evaluate IFT at a given surfactant concentration_matrix
         """
-        assert self.IFT_conc_equ is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownIFTEquation')
+        assert self.IFT_conc_equ is not None, SimulationCalcInputException(
+            "SimulationCalcInputError:UnknownIFTEquation"
+        )
         return self.IFT_conc_equ(self.concentration_matrix)
 
     @property
-    def eval_dIFT_dGamma(self): #FIXME: Need to adjust when implementing 'autodiff'
+    def eval_dIFT_dGamma(self):  # FIXME: Need to adjust when implementing 'autodiff'
         """
         evaluate the dσ/dΓ at a particular surfactant concentration matrix
-        
+
         FIXME: need to adjust when implementing 'autodiff'
         """
-        assert self.derivative_IFT_conc_equ is not None, SimulationCalcInputException('SimulationCalcInputError:UnknownDerivativeIFTEquation')
+        assert self.derivative_IFT_conc_equ is not None, SimulationCalcInputException(
+            "SimulationCalcInputError:UnknownDerivativeIFTEquation"
+        )
         return self.derivative_IFT_conc_equ(self.concentration_matrix)
 
     def initialize(
@@ -97,12 +103,12 @@ class Surfactant:
 
     def compute_concentration(
         self,
-        grid : Grid,
-        water_sat : np.ndarray,
-        const_parameters : dict,
-        varying_parameters : dict,
-        F : np.ndarray,
-        Gmod : np.ndarray
+        grid: Grid,
+        water_sat: np.ndarray,
+        const_parameters: dict,
+        varying_parameters: dict,
+        F: np.ndarray,
+        Gmod: np.ndarray,
     ):
         # initializing constants
         assert self.concentration_matrix is not None, SimulationCalcInputException(
@@ -120,7 +126,7 @@ class Surfactant:
         omega2 = const_parameters["Pc_constants"]["omega2"]
         Qnew = water_sat
         G = self.concentration_matrix
-        g1 = const_parameters['inlet_total_flow']
+        g1 = const_parameters["inlet_total_flow"]
         g3 = const_parameters["inlet_surfactant_flow"]
         KK = const_parameters["KK"]
         relative_permeability_formula = const_parameters[
@@ -131,10 +137,10 @@ class Surfactant:
         ## Time Step:
         dt = const_parameters["FD_grid_constants"]["dt"]
         dt_array = const_parameters["FD_grid_constants"]["dt_matrix"]
-        
-        pc_g = varying_parameters['capillary_pressure_and_derivatives']['dpc_dg']
-        lambda_a = varying_parameters['mobility_parameters']['lambda_a']
-        lambda_total = varying_parameters['mobility_parameters']['lambda_total']
+
+        pc_g = varying_parameters["capillary_pressure_and_derivatives"]["dpc_dg"]
+        lambda_a = varying_parameters["mobility_parameters"]["lambda_a"]
+        lambda_total = varying_parameters["mobility_parameters"]["lambda_total"]
 
         # intermediate parameters for code:
         idx = 1
