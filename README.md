@@ -24,7 +24,7 @@ This research aims to view the effects of surfactant in EOR while accounting for
  - Analyze and visualize results to gain insights into SP flooding dynamics
 
 ## Requirements
- - ```Python 3.13.1``` (with dependencies listed in ```requirments.txt```)
+ - ```Python 3.13.1``` (with dependencies listed in ```requirements.txt```)
  
 ### Installing Dependencies
 1. cd to the location of the repository within your computer
@@ -37,7 +37,7 @@ This research aims to view the effects of surfactant in EOR while accounting for
 
 ## Acknowledgments
 ### Principal Investigator:
- - [Professor Prabir Daripa](https://www.math.tamu.edu/directory/formalpg.php?user=daripa) - Texas A&M University, Department of Mathematics
+ - [Professor Prabir Daripa](https://artsci.tamu.edu/mathematics/contact/profiles/prabir-daripa.html) - Texas A&M University, Department of Mathematics
  
 ### Previous Works: 
 This research builds upon the following key works: 
