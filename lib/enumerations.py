@@ -34,7 +34,9 @@ class SimulationConstants(Enum):
     Injection_Rate = 200
     Time_Step = 1 / 50
     Grid_Size = 29
-    Source_Flow_Magnitude = 120000 #FIXME: Update in v2.0 to allow for multiple Injection Rates!
+    Source_Flow_Magnitude = (
+        120000  # FIXME: Update in v2.0 to allow for multiple Injection Rates!
+    )
 
     beta1 = 15000
 
@@ -83,7 +85,7 @@ class PolymerList(Enum):
 class SurfactantList(Enum):
     """
     List of Surfactants that can be selected for the simulation runs
-    
+
     FIXME: need to adjust when implementing 'autodiff'
     """
 
