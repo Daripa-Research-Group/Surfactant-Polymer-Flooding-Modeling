@@ -1038,6 +1038,89 @@ class Simulation:
             )
 
         print("Simulation sim_results exported to /sim_results/ folder.")
+        
+    def _compute_MFW_QFS(self, UU):
+        # post processing of finger width 
+        interface = np.zeros((29, 1))
+        mean_UU_save = np.zeros((29, 1))
+        store_UU = 0
+        
+        # find average concentration for each Y level
+        iter_x = 0
+        iter_y = 0
+        iter_counter = 0
+        
+        while iter_y < 29:
+            while iter_x < 29:
+                
+                if UU[iter_y, iter_x] > 0.21 and UU[iter_y, iter_x] < 0.99:
+                    iter_counter += 1
+                    store_UU += UU[iter_y, iter_x]
+                    
+                iter_x += 1
+                
+            mean_UU_save[iter_y] = store_UU / iter_counter
+            iter_counter = 0
+            store_UU = 0
+            iter_y += 1
+            iter_x = 0
+        
+        iter_y = 0
+        iter_x = 0
+        while iter_y < 29:
+            while iter_x < 29:
+                if UU[iter_y, iter_x] < mean_UU_save[iter_y]:
+                    interface[iter_y, 0] = iter_x
+                    break
+                
+                iter_x += 1
+                
+            iter_x = 0
+            iter_y += 1
+        
+        # find location of interface front
+        iter_x = 0
+        iter_y = 0
+        while iter_x < 29:
+            if np.mean(UU[:, iter_x]) < np.mean(mean_UU_save[:, 0]):
+                break
+            iter_x += 1
+        
+        # find presence of saturation along the mixing layer
+        rows = UU.shape[0]
+        cols = UU.shape[1]
+        check_concentration = np.zeros((rows, cols))
+        for ii in range(rows):
+            for jj in range(cols):
+                if UU[ii, jj] < mean_UU_save[0, iter_y]:
+                    check_concentration[ii, jj] = 1
+                else:
+                    check_concentration[ii, jj] = 0
+        
+        iter_x_save = np.zeros((29,1))
+        last = 0
+        counter = 0
+        mean_finger_width = 0
+        total_concentration = 0
+        jj = iter_x - 1
+        for i in range(1):
+            for ii in range(cols):
+                if check_concentration[ii, jj] == 1:
+                    new_last = 1
+                    total_concentration += 1
+                else:
+                    new_last = 0
+                
+                if (new_last == 1 and last == 0) or (new_last == 0 and last == 1):
+                    counter += 1
+                last = new_last
+        
+            old_MFW = mean_finger_width
+            mean_finger_width = 2 * total_concentration / counter
+            mean_finger_width = np.max(mean_finger_width, old_MFW)
+            jj += 1
+            
+        return interface, mean_finger_width, iter_x
 
     # Public Method of Simulation Class
     def run(self):
@@ -1167,6 +1250,9 @@ class Simulation:
 
                 ## STEP 2.5: Solving Transport Equations
                 self._transport_equation_solver(dt)
+
+                ## Step 2.6: Post processing for QFS 
+                interface, MFW, iter_x_save = self._compute_MFW_QFS(self.water.water_saturation)
 
                 break
 
