@@ -1248,10 +1248,9 @@ class Simulation:
                 self._transport_equation_solver(dt)
 
                 ## Step 2.6: Post processing for QFS 
-                interface, MFW_val = self._compute_MFW(self.water.water_saturation)
+                interface, MFW_val, _ = self._compute_MFW(self.water.water_saturation)
                 self.MFW.append(MFW_val)
                 
-                break
 
         except Exception as e:
             print(e)
