@@ -1039,10 +1039,10 @@ class Simulation:
 
         print("Simulation sim_results exported to /sim_results/ folder.")
         
-    def _compute_MFW_QFS(self, UU):
+    def _compute_MFW(self, UU):
         # post processing of finger width 
         interface = np.zeros((29, 1))
-        mean_UU_save = np.zeros((29, 1))
+        mean_UU_save = np.zeros((29, 29))
         store_UU = 0
         
         # find average concentration for each Y level
@@ -1059,7 +1059,7 @@ class Simulation:
                     
                 iter_x += 1
                 
-            mean_UU_save[iter_y] = store_UU / iter_counter
+            mean_UU_save.T.flat[iter_y] = store_UU / iter_counter
             iter_counter = 0
             store_UU = 0
             iter_y += 1
@@ -1069,10 +1069,9 @@ class Simulation:
         iter_x = 0
         while iter_y < 29:
             while iter_x < 29:
-                if UU[iter_y, iter_x] < mean_UU_save[iter_y]:
+                if UU[iter_y, iter_x] < mean_UU_save.T.flat[iter_y]:
                     interface[iter_y, 0] = iter_x
                     break
-                
                 iter_x += 1
                 
             iter_x = 0
@@ -1116,7 +1115,7 @@ class Simulation:
                 last = new_last
         
             old_MFW = mean_finger_width
-            mean_finger_width = 2 * total_concentration / counter
+            mean_finger_width = 2 * total_concentration / (counter + 1)
             mean_finger_width = np.max(mean_finger_width, old_MFW)
             jj += 1
             
@@ -1252,7 +1251,7 @@ class Simulation:
                 self._transport_equation_solver(dt)
 
                 ## Step 2.6: Post processing for QFS 
-                interface, MFW, iter_x_save = self._compute_MFW_QFS(self.water.water_saturation)
+                interface, MFW, iter_x_save = self._compute_MFW(self.water.water_saturation)
 
                 break
 
