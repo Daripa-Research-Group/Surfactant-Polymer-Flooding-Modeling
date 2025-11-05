@@ -188,9 +188,7 @@ class Simulation:
         self.ProdRate, self.CROIP = (
             self._initialize_memmap_properties()
         )  # ProdRate (Production Rate) / CROIP (Cummulative Remaining Oil In Place)
-        self.MFW = (
-            []
-        )  # Mean Finger Width (will be converted into a numpy array when reporting)
+        self.MFW = []
         self.integrated_inlet_flow = 0  # "src_total" in the MATLAB version of the code
 
     # Dependent Property of Simulation Class
@@ -1096,7 +1094,6 @@ class Simulation:
                 else:
                     check_concentration[ii, jj] = 0
         
-        iter_x_save = np.zeros((29,1))
         last = 0
         counter = 0
         mean_finger_width = 0
@@ -1251,8 +1248,9 @@ class Simulation:
                 self._transport_equation_solver(dt)
 
                 ## Step 2.6: Post processing for QFS 
-                interface, MFW, iter_x_save = self._compute_MFW(self.water.water_saturation)
-
+                interface, MFW_val = self._compute_MFW(self.water.water_saturation)
+                self.MFW.append(MFW_val)
+                
                 break
 
         except Exception as e:
