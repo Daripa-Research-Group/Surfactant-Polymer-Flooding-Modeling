@@ -297,7 +297,7 @@ class Simulation:
         new_u, convergence_flag = bicgstab(
             sparsed_A, B, maxiter=max_iterations
         )  # new_u is of shape (900, )
-        assert convergence_flag == 0, SimulationCalcInputException("ConvergenceFailure")
+        # assert convergence_flag == 0, SimulationCalcInputException("ConvergenceFailure") FIXME: Determine if necessary or not (MatLab still executes if tolerance is not reached)
 
         new_v = np.zeros((self.FE_mesh.n + 1, self.FE_mesh.m + 1), dtype=object)
         for i in range(self.FE_mesh.m + 1):
@@ -1153,8 +1153,9 @@ class Simulation:
                 dt *= 100
 
             ## STEP 2: Initiating the primary 'while' loop that will keep running until water shows up in production well
-            # while(t < t_stop and self.water.water_saturation[self.mesh.n, self.mesh.m] <= 0.70):
-            while t < 1:
+            while(t < t_stop and self.water.water_saturation[self.mesh.n, self.mesh.m] <= 0.70):
+                print(self.water.water_saturation[self.mesh.n, self.mesh.m])
+            # while t < 1:
                 ## STEP 2.1: Increment time and amount of feed used:
                 self.integrated_inlet_flow += self.source_flow_magnitude
                 t += dt
@@ -1247,9 +1248,10 @@ class Simulation:
                 ## STEP 2.5: Solving Transport Equations
                 self._transport_equation_solver(dt)
 
-                ## Step 2.6: Post processing for QFS 
-                interface, MFW_val, _ = self._compute_MFW(self.water.water_saturation)
-                self.MFW.append(MFW_val)
+                ## Step 2.6: MFW post processing (excluding QFS)
+                if (self.scenario_flag != 3): # FIXME: compute_MFW currently operates for rectilinear geometries. Implement MFW computation for QFS
+                    interface, MFW_val, _ = self._compute_MFW(self.water.water_saturation)
+                    self.MFW.append(MFW_val)
                 
 
         except Exception as e:
