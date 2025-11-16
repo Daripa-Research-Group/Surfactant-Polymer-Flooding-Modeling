@@ -374,7 +374,7 @@ class Water:
         phi = self.phi
         omega1 = const_parameters["Pc_constants"]["omega1"]
         omega2 = const_parameters["Pc_constants"]["omega2"]
-        Q = self.water_saturation
+        Q = np.copy(self.water_saturation)
         g1 = const_parameters["inlet_total_flow"]
         KK = const_parameters["KK"]
         relative_permeability_formula = const_parameters[

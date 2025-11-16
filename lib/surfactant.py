@@ -125,7 +125,6 @@ class Surfactant:
         omega1 = const_parameters["Pc_constants"]["omega1"]
         omega2 = const_parameters["Pc_constants"]["omega2"]
         Qnew = water_sat
-        G = self.concentration_matrix
         g1 = const_parameters["inlet_total_flow"]
         g3 = const_parameters["inlet_surfactant_flow"]
         KK = const_parameters["KK"]
