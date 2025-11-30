@@ -358,7 +358,7 @@ class Simulation:
         dt = self.mesh.dx / self.source_flow_magnitude
         timestamps = int(np.floor(tf / dt))
         CROIP = np.memmap(
-            "memmaps/ProdRate.dat", dtype="float64", mode="w+", shape=(1, timestamps)
+            "memmaps/CROIP.dat", dtype="float64", mode="w+", shape=(1, timestamps)
         )
         ProdRate = np.memmap(
             "memmaps/ProdRate.dat", dtype="float64", mode="w+", shape=(1, timestamps)
@@ -1142,117 +1142,115 @@ class Simulation:
         ) and (
             self.reservoir_geometry.value == ResevoirGeometry.Quarter_Five_Spot.value
         )
-        # try:
-        ## STEP 1: initializing start time, end time, and time step
-        t = 0
-        t_cal = 0
-        t_stop = 500
-        dt = self.mesh.dx / self.source_flow_magnitude
-        # dt value if running under Quarter Five Spot & Heterogeneous scenario:
-        if bool_Heterogenous_and_Quarter_Five_Spot:
-            dt *= 100
+        try:
+            ## STEP 1: initializing start time, end time, and time step
+            t = 0
+            t_cal = 0
+            t_stop = 500
+            dt = self.mesh.dx / self.source_flow_magnitude
+            # dt value if running under Quarter Five Spot & Heterogeneous scenario:
+            if bool_Heterogenous_and_Quarter_Five_Spot:
+                dt *= 100
 
-        ## STEP 2: Initiating the primary 'while' loop that will keep running until water shows up in production well
-        while(t < t_stop and self.water.water_saturation[self.mesh.n, self.mesh.m] <= 0.70):
-            print(self.water.water_saturation[self.mesh.n, self.mesh.m])
-        # while t < 1:
-            ## STEP 2.1: Increment time and amount of feed used:
-            self.integrated_inlet_flow += self.source_flow_magnitude
-            t += dt
-            ## STEP 2.2: Compute viscosities:
-            if (
-                self.model_type.value == ModelType.No_Shear_Thinning.value
-            ):  # if No Polymer Shear Thinning
-                self.water.compute_viscosity(
-                    grid=self.mesh,
-                    model_type=self.model_type,
-                    polymer=self.polymer,
-                    u=self.u,
-                    v=self.v,
+            ## STEP 2: Initiating the primary 'while' loop that will keep running until water shows up in production well
+            while(t < t_stop and self.water.water_saturation[self.mesh.n, self.mesh.m] <= 0.70):
+                print(self.water.water_saturation[self.mesh.n, self.mesh.m])
+                # while t < 1:
+                ## STEP 2.1: Increment time and amount of feed used:
+                self.integrated_inlet_flow += self.source_flow_magnitude
+                t += dt
+                ## STEP 2.2: Compute viscosities:
+                if (
+                    self.model_type.value == ModelType.No_Shear_Thinning.value
+                ):  # if No Polymer Shear Thinning
+                    self.water.compute_viscosity(
+                        grid=self.mesh,
+                        model_type=self.model_type,
+                        polymer=self.polymer,
+                        u=self.u,
+                        v=self.v,
+                    )
+                    self.polymer.compute_viscosity(
+                        grid=self.mesh,
+                        u=self.u,
+                        v=self.v,
+                        model_type=self.model_type,
+                        aqueous_viscosity=self.water.viscosity_array,
+                    )
+                elif self.model_type.value == ModelType.Shear_Thinning_On.value:
+                    self.polymer.compute_viscosity(
+                        grid=self.mesh,
+                        u=self.u,
+                        v=self.v,
+                        model_type=self.model_type,
+                        aqueous_viscosity=None,
+                    )
+                    self.water.compute_viscosity(
+                        grid=self.mesh,
+                        model_type=self.model_type,
+                        polymer=self.polymer,
+                        u=self.u,
+                        v=self.v,
+                    )
+                ## STEP 2.2: Computing Residual Saturation:
+                assert (
+                    self.surfactant.IFT_conc_equ is not None
+                ), SimulationCalcInputException(
+                    "SimulationCalcInputError:SurfactantIFTEquationUnavailable"
                 )
-                self.polymer.compute_viscosity(
-                    grid=self.mesh,
-                    u=self.u,
-                    v=self.v,
-                    model_type=self.model_type,
-                    aqueous_viscosity=self.water.viscosity_array,
+                interfacial_tension_matrix = self.surfactant.IFT_conc_equ(
+                    self.surfactant.concentration_matrix
                 )
-            elif self.model_type.value == ModelType.Shear_Thinning_On.value:
-                self.polymer.compute_viscosity(
-                    grid=self.mesh,
-                    u=self.u,
-                    v=self.v,
-                    model_type=self.model_type,
-                    aqueous_viscosity=None,
+                [resid_water_saturation, resid_oleic_saturation] = (
+                    self.water.compute_residual_saturations(
+                        sigma=interfacial_tension_matrix, u=self.u, v=self.v
+                    )
                 )
-                self.water.compute_viscosity(
-                    grid=self.mesh,
-                    model_type=self.model_type,
-                    polymer=self.polymer,
-                    u=self.u,
-                    v=self.v,
+                ## STEP 2.3: Compute mobilities:
+                assert (
+                    self.polymer.concentration_matrix is not None
+                ), SimulationCalcInputException(
+                    "SimulationCalcInputError:PolymerConcentrationMatrixUnavailable"
                 )
-            ## STEP 2.2: Computing Residual Saturation:
-            assert (
-                self.surfactant.IFT_conc_equ is not None
-            ), SimulationCalcInputException(
-                "SimulationCalcInputError:SurfactantIFTEquationUnavailable"
-            )
-            interfacial_tension_matrix = self.surfactant.IFT_conc_equ(
-                self.surfactant.concentration_matrix
-            )
-            [resid_water_saturation, resid_oleic_saturation] = (
-                self.water.compute_residual_saturations(
-                    sigma=interfacial_tension_matrix, u=self.u, v=self.v
+                aqueous_mobility = self.water.compute_mobility(
+                    c=self.polymer.concentration_matrix,
+                    sor=float(resid_oleic_saturation),
+                    swr=float(resid_water_saturation),
+                    aqueous=True,
+                    rel_permeability_formula=self.relative_permeability_formula,
                 )
-            )
-            ## STEP 2.3: Compute mobilities:
-            assert (
-                self.polymer.concentration_matrix is not None
-            ), SimulationCalcInputException(
-                "SimulationCalcInputError:PolymerConcentrationMatrixUnavailable"
-            )
-            aqueous_mobility = self.water.compute_mobility(
-                c=self.polymer.concentration_matrix,
-                sor=float(resid_oleic_saturation),
-                swr=float(resid_water_saturation),
-                aqueous=True,
-                rel_permeability_formula=self.relative_permeability_formula,
-            )
-            oleic_mobility = self.water.compute_mobility(
-                c=self.polymer.concentration_matrix,
-                sor=float(resid_oleic_saturation),
-                swr=float(resid_water_saturation),
-                aqueous=False,
-                rel_permeability_formula=self.relative_permeability_formula,
-            )
-            total_mobility = aqueous_mobility + oleic_mobility
-            assert self.KK is not None, SimulationCalcInputException(
-                "SimulationCalcInputError:PermeabilityTensorUnavailable"
-            )
-            beta = self.KK * total_mobility
+                oleic_mobility = self.water.compute_mobility(
+                    c=self.polymer.concentration_matrix,
+                    sor=float(resid_oleic_saturation),
+                    swr=float(resid_water_saturation),
+                    aqueous=False,
+                    rel_permeability_formula=self.relative_permeability_formula,
+                )
+                total_mobility = aqueous_mobility + oleic_mobility
+                assert self.KK is not None, SimulationCalcInputException(
+                    "SimulationCalcInputError:PermeabilityTensorUnavailable"
+                )
+                beta = self.KK * total_mobility
 
-            ## STEP 2.4: Calculating Global Pressure and velocity
-            ### STEP 2.4.1: setting FEM Mesh
-            self.FE_mesh.set_triangulation()
-            self.FE_mesh.set_FE_meshgrid(beta)
-            self.FE_mesh.set_right_hand(self.source_prod_flow)
-            self.FE_mesh.get_A_B_matrices()
-            ### STEP 2.4.2: updating the pressure & velocity matrices
-            u_old = self.u  # storing old pressure matrix
-            v_old = self.v  # storing old velocity matrix
-            self.u, self.v = self._compute_pressure_and_velocity_matrices(
-                self.FE_mesh.sparsed_A, self.FE_mesh.B, beta
-            )
+                ## STEP 2.4: Calculating Global Pressure and velocity
+                ### STEP 2.4.1: setting FEM Mesh
+                self.FE_mesh.set_triangulation()
+                self.FE_mesh.set_FE_meshgrid(beta)
+                self.FE_mesh.set_right_hand(self.source_prod_flow)
+                self.FE_mesh.get_A_B_matrices()
+                ### STEP 2.4.2: updating the pressure & velocity matrices
+                u_old = self.u  # storing old pressure matrix
+                v_old = self.v  # storing old velocity matrix
+                self.u, self.v = self._compute_pressure_and_velocity_matrices(
+                    self.FE_mesh.sparsed_A, self.FE_mesh.B, beta
+                )
 
-            ## STEP 2.5: Solving Transport Equations
-            self._transport_equation_solver(dt)
+                ## STEP 2.5: Solving Transport Equations
+                self._transport_equation_solver(dt)
 
-            ## Step 2.6: MFW post processing (excluding QFS)
-            if (self.scenario_flag != 3): # FIXME: compute_MFW currently operates for rectilinear geometries. Implement MFW computation for QFS
-                interface, MFW_val, _ = self._compute_MFW(self.water.water_saturation)
-                self.MFW.append(MFW_val)
-            
-
-    # except Exception as e:
-    #     print(e)
+                ## Step 2.6: MFW post processing (excluding QFS)
+                if (self.scenario_flag != 3): # FIXME: compute_MFW currently operates for rectilinear geometries. Implement MFW computation for QFS
+                    interface, MFW_val, _ = self._compute_MFW(self.water.water_saturation)
+                    self.MFW.append(MFW_val)
+        except Exception as e:
+            print(e)
