@@ -278,8 +278,8 @@ class Simulation:
         :return: the global pressure matrix (index 0) and velocity matrix (index 1)
         :rtype: list[np.ndarray]
         """
-        u = np.zeros((self.mesh.n + 1, self.mesh.m + 1))
-        v = np.zeros((self.mesh.n + 1, self.mesh.m + 1))
+        u = np.zeros((self.mesh.n + 1, self.mesh.m + 1), dtype=np.complex128)
+        v = np.zeros((self.mesh.n + 1, self.mesh.m + 1), dtype=np.complex128)
 
         return u, v
 
@@ -648,12 +648,12 @@ class Simulation:
             "SimulationCalcInputError:UnknownAqueousViscosityMatrix"
         )
         nca = (
-            np.sqrt(np.matmul(self.u, self.u) + np.matmul(self.v, self.v))
-            * self.water.viscosity_array
-            / self.surfactant.eval_IFT
+            np.sqrt(np.matmul(self.u, self.u) + np.matmul(self.v, self.v), dtype=np.complex128)
+            * self.water.viscosity_array.astype(np.complex128)
+            / self.surfactant.eval_IFT.astype(np.complex128)
         )
         nco = (
-            np.sqrt(np.matmul(self.u, self.u) + np.matmul(self.v, self.v))
+            np.sqrt(np.matmul(self.u, self.u) + np.matmul(self.v, self.v), dtype=np.complex128)
             * SimulationConstants.Oil_Viscosity.value
             / self.surfactant.eval_IFT
         )
@@ -1154,7 +1154,7 @@ class Simulation:
 
             ## STEP 2: Initiating the primary 'while' loop that will keep running until water shows up in production well
             while(t < t_stop and self.water.water_saturation[self.mesh.n, self.mesh.m] <= 0.70):
-                print(self.water.water_saturation[self.mesh.n, self.mesh.m])
+                print(f'{t},{self.water.water_saturation[self.mesh.n, self.mesh.m]}')
                 # while t < 1:
                 ## STEP 2.1: Increment time and amount of feed used:
                 self.integrated_inlet_flow += self.source_flow_magnitude

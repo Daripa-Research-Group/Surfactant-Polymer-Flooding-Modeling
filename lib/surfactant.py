@@ -200,9 +200,9 @@ class Surfactant:
                                 BB[j][i] = (
                                     1 / dt_array[cnt][i]
                                     - ((2 / (dx**2)) + (2 / (dy**2))) * F[cnt][i]
-                                    - ((g1 * lambda_a[cnt][i]) / [lambda_total[cnt][i]])
+                                    - ((g1 * lambda_a[cnt][i]) / (lambda_total[cnt][i]))
                                     / Qnew[cnt][i]
-                                    + ((g3 * lambda_a[cnt][i]) / [lambda_total[cnt][i]])
+                                    + ((g3 * lambda_a[cnt][i]) / (lambda_total[cnt][i]))
                                     / (Qnew[cnt][i] * self.concentration)
                                 )
                                 BB[j][i - 1] = 2 * F[cnt][i] / (dx**2)

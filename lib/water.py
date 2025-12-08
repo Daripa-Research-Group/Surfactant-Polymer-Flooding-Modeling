@@ -235,7 +235,7 @@ class Water:
         Nco0 = 1.44e-4
         Nca0 = 1.44e-4
 
-        vel_mag = np.sqrt(np.matmul(u, u) + np.matmul(v, v))
+        vel_mag = np.sqrt(np.matmul(u, u) + np.matmul(v, v), dtype=np.complex128)
         nca = (vel_mag * self.viscosity_array) / sigma
         nco = (vel_mag * self.miuo) / sigma
 
