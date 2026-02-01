@@ -512,7 +512,7 @@ class Water:
                                     + g1 * (1 - f[cnt][i])
                                     + (
                                         (D_g[cnt][i] + D_g[cnt][i + 1]) / (dx**2)
-                                        + (D_g[cnt + 1][i] + D_g[cnt + 1][i]) / (dx**1)
+                                        + (D_g[cnt + 1][i] + D_g[cnt][i]) / (dx**2)
                                     )
                                     * surfactant.concentration_matrix[cnt][i]
                                     - (D_g[cnt][i] + D_g[cnt][i + 1])
@@ -531,7 +531,7 @@ class Water:
                                     - (D_s[cnt + 1][i] + D_s[cnt][i]) / (dy**2)
                                 )
 
-                                BB[j][i + 1] = (D_s[cnt][i] + D_s[cnt][i + 1]) * (dx**2)
+                                BB[j][i + 1] = (D_s[cnt][i] + D_s[cnt][i + 1]) / (dx**2)
                             elif i == m - 1:  # last/rightmost column
                                 DD[i] = (
                                     Qmod[cnt][i] / dt_array[cnt][i]
@@ -933,7 +933,7 @@ class Water:
 
                                 BB[j][i] = 1 / dt_array[cnt][i] - (
                                     (1 / (2 * dx**2))
-                                    * (D_s[cnt][i] + 2 * D_s[cnt][i] + D_s[cnt][i + 1])
+                                    * (D_s[cnt][i - 1] + 2 * D_s[cnt][i] + D_s[cnt][i + 1])
                                     + (1 / (2 * dy**2))
                                     * (
                                         D_s[cnt - 1][i]
@@ -964,6 +964,9 @@ class Water:
         # bicgstab (Biconjugate Gradient Stabilized) - Iterative algorithm to solve large, sparse, and non-symmetric linear systems of the form Ax = b
 
         Qnew_flat, info = bicgstab(AAA, DDD, rtol=10 ** (-10), maxiter=600)
+        if info != 0:
+            import warnings
+            warnings.warn(f"BiCGSTAB: convergence issue (info={info}) in water saturation solver")
         Qnew = Qnew_flat = Qnew_flat.reshape(m, n)
 
         Qnew[Qnew > 1] = 1
