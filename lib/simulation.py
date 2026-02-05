@@ -295,9 +295,11 @@ class Simulation:
         """
         max_iterations = 1000
         new_u, convergence_flag = bicgstab(
-            sparsed_A, B, maxiter=max_iterations
+            sparsed_A, B, rtol=1e-10, atol=0, maxiter=max_iterations
         )  # new_u is of shape (900, )
-        # assert convergence_flag == 0, SimulationCalcInputException("ConvergenceFailure") FIXME: Determine if necessary or not (MatLab still executes if tolerance is not reached)
+        if convergence_flag != 0:
+            import warnings
+            warnings.warn(f"BiCGSTAB: convergence issue (info={convergence_flag}) in pressure solver")
 
         new_v = np.zeros((self.FE_mesh.n + 1, self.FE_mesh.m + 1), dtype=object)
         for i in range(self.FE_mesh.m + 1):
