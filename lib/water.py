@@ -235,7 +235,7 @@ class Water:
         Nco0 = 1.44e-4
         Nca0 = 1.44e-4
 
-        vel_mag = np.sqrt(np.matmul(u, u) + np.matmul(v, v))
+        vel_mag = np.sqrt(np.matmul(u, u) + np.matmul(v, v), dtype=np.complex128)
         nca = (vel_mag * self.viscosity_array) / sigma
         nco = (vel_mag * self.miuo) / sigma
 
@@ -374,7 +374,7 @@ class Water:
         phi = self.phi
         omega1 = const_parameters["Pc_constants"]["omega1"]
         omega2 = const_parameters["Pc_constants"]["omega2"]
-        Q = self.water_saturation
+        Q = np.copy(self.water_saturation)
         g1 = const_parameters["inlet_total_flow"]
         KK = const_parameters["KK"]
         relative_permeability_formula = const_parameters[
@@ -512,7 +512,7 @@ class Water:
                                     + g1 * (1 - f[cnt][i])
                                     + (
                                         (D_g[cnt][i] + D_g[cnt][i + 1]) / (dx**2)
-                                        + (D_g[cnt + 1][i] + D_g[cnt + 1][i]) / (dx**1)
+                                        + (D_g[cnt + 1][i] + D_g[cnt][i]) / (dx**2)
                                     )
                                     * surfactant.concentration_matrix[cnt][i]
                                     - (D_g[cnt][i] + D_g[cnt][i + 1])
@@ -531,7 +531,7 @@ class Water:
                                     - (D_s[cnt + 1][i] + D_s[cnt][i]) / (dy**2)
                                 )
 
-                                BB[j][i + 1] = (D_s[cnt][i] + D_s[cnt][i + 1]) * (dx**2)
+                                BB[j][i + 1] = (D_s[cnt][i] + D_s[cnt][i + 1]) / (dx**2)
                             elif i == m - 1:  # last/rightmost column
                                 DD[i] = (
                                     Qmod[cnt][i] / dt_array[cnt][i]
@@ -933,7 +933,7 @@ class Water:
 
                                 BB[j][i] = 1 / dt_array[cnt][i] - (
                                     (1 / (2 * dx**2))
-                                    * (D_s[cnt][i] + 2 * D_s[cnt][i] + D_s[cnt][i + 1])
+                                    * (D_s[cnt][i - 1] + 2 * D_s[cnt][i] + D_s[cnt][i + 1])
                                     + (1 / (2 * dy**2))
                                     * (
                                         D_s[cnt - 1][i]
@@ -964,6 +964,9 @@ class Water:
         # bicgstab (Biconjugate Gradient Stabilized) - Iterative algorithm to solve large, sparse, and non-symmetric linear systems of the form Ax = b
 
         Qnew_flat, info = bicgstab(AAA, DDD, rtol=10 ** (-10), maxiter=600)
+        if info != 0:
+            import warnings
+            warnings.warn(f"BiCGSTAB: convergence issue (info={info}) in water saturation solver")
         Qnew = Qnew_flat = Qnew_flat.reshape(m, n)
 
         Qnew[Qnew > 1] = 1

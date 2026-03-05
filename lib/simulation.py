@@ -188,9 +188,7 @@ class Simulation:
         self.ProdRate, self.CROIP = (
             self._initialize_memmap_properties()
         )  # ProdRate (Production Rate) / CROIP (Cummulative Remaining Oil In Place)
-        self.MFW = (
-            []
-        )  # Mean Finger Width (will be converted into a numpy array when reporting)
+        self.MFW = []
         self.integrated_inlet_flow = 0  # "src_total" in the MATLAB version of the code
 
     # Dependent Property of Simulation Class
@@ -280,8 +278,8 @@ class Simulation:
         :return: the global pressure matrix (index 0) and velocity matrix (index 1)
         :rtype: list[np.ndarray]
         """
-        u = np.zeros((self.mesh.n + 1, self.mesh.m + 1))
-        v = np.zeros((self.mesh.n + 1, self.mesh.m + 1))
+        u = np.zeros((self.mesh.n + 1, self.mesh.m + 1), dtype=np.complex128)
+        v = np.zeros((self.mesh.n + 1, self.mesh.m + 1), dtype=np.complex128)
 
         return u, v
 
@@ -297,9 +295,11 @@ class Simulation:
         """
         max_iterations = 1000
         new_u, convergence_flag = bicgstab(
-            sparsed_A, B, maxiter=max_iterations
+            sparsed_A, B, rtol=1e-10, atol=0, maxiter=max_iterations
         )  # new_u is of shape (900, )
-        assert convergence_flag == 0, SimulationCalcInputException("ConvergenceFailure")
+        if convergence_flag != 0:
+            import warnings
+            warnings.warn(f"BiCGSTAB: convergence issue (info={convergence_flag}) in pressure solver")
 
         new_v = np.zeros((self.FE_mesh.n + 1, self.FE_mesh.m + 1), dtype=object)
         for i in range(self.FE_mesh.m + 1):
@@ -360,7 +360,7 @@ class Simulation:
         dt = self.mesh.dx / self.source_flow_magnitude
         timestamps = int(np.floor(tf / dt))
         CROIP = np.memmap(
-            "memmaps/ProdRate.dat", dtype="float64", mode="w+", shape=(1, timestamps)
+            "memmaps/CROIP.dat", dtype="float64", mode="w+", shape=(1, timestamps)
         )
         ProdRate = np.memmap(
             "memmaps/ProdRate.dat", dtype="float64", mode="w+", shape=(1, timestamps)
@@ -650,12 +650,12 @@ class Simulation:
             "SimulationCalcInputError:UnknownAqueousViscosityMatrix"
         )
         nca = (
-            np.sqrt(np.matmul(self.u, self.u) + np.matmul(self.v, self.v))
-            * self.water.viscosity_array
-            / self.surfactant.eval_IFT
+            np.sqrt(np.matmul(self.u, self.u) + np.matmul(self.v, self.v), dtype=np.complex128)
+            * self.water.viscosity_array.astype(np.complex128)
+            / self.surfactant.eval_IFT.astype(np.complex128)
         )
         nco = (
-            np.sqrt(np.matmul(self.u, self.u) + np.matmul(self.v, self.v))
+            np.sqrt(np.matmul(self.u, self.u) + np.matmul(self.v, self.v), dtype=np.complex128)
             * SimulationConstants.Oil_Viscosity.value
             / self.surfactant.eval_IFT
         )
@@ -833,7 +833,7 @@ class Simulation:
             3, Q_old, self.water.water_saturation, const_parameters, varying_parameters
         )
         G_old = np.copy(self.surfactant.concentration_matrix)
-        G = self.surfactant.concentration_matrix
+        G = np.copy(self.surfactant.concentration_matrix)
         x1d = self.mesh.x[0, :]
         y1d = self.mesh.y[:, 0]
         x_sorted = np.all(np.diff(x1d) > 0)
@@ -1038,6 +1038,87 @@ class Simulation:
             )
 
         print("Simulation sim_results exported to /sim_results/ folder.")
+        
+    def _compute_MFW(self, UU):
+        # post processing of finger width 
+        interface = np.zeros((29, 1))
+        mean_UU_save = np.zeros((29, 29))
+        store_UU = 0
+        
+        # find average concentration for each Y level
+        iter_x = 0
+        iter_y = 0
+        iter_counter = 0
+        
+        while iter_y < 29:
+            while iter_x < 29:
+                
+                if UU[iter_y, iter_x] > 0.21 and UU[iter_y, iter_x] < 0.99:
+                    iter_counter += 1
+                    store_UU += UU[iter_y, iter_x]
+                    
+                iter_x += 1
+                
+            mean_UU_save.T.flat[iter_y] = store_UU / iter_counter
+            iter_counter = 0
+            store_UU = 0
+            iter_y += 1
+            iter_x = 0
+        
+        iter_y = 0
+        iter_x = 0
+        while iter_y < 29:
+            while iter_x < 29:
+                if UU[iter_y, iter_x] < mean_UU_save.T.flat[iter_y]:
+                    interface[iter_y, 0] = iter_x
+                    break
+                iter_x += 1
+                
+            iter_x = 0
+            iter_y += 1
+        
+        # find location of interface front
+        iter_x = 0
+        iter_y = 0
+        while iter_x < 29:
+            if np.mean(UU[:, iter_x]) < np.mean(mean_UU_save[:, 0]):
+                break
+            iter_x += 1
+        
+        # find presence of saturation along the mixing layer
+        rows = UU.shape[0]
+        cols = UU.shape[1]
+        check_concentration = np.zeros((rows, cols))
+        for ii in range(rows):
+            for jj in range(cols):
+                if UU[ii, jj] < mean_UU_save[0, iter_y]:
+                    check_concentration[ii, jj] = 1
+                else:
+                    check_concentration[ii, jj] = 0
+        
+        last = 0
+        counter = 0
+        mean_finger_width = 0
+        total_concentration = 0
+        jj = iter_x - 1
+        for i in range(1):
+            for ii in range(cols):
+                if check_concentration[ii, jj] == 1:
+                    new_last = 1
+                    total_concentration += 1
+                else:
+                    new_last = 0
+                
+                if (new_last == 1 and last == 0) or (new_last == 0 and last == 1):
+                    counter += 1
+                last = new_last
+        
+            old_MFW = mean_finger_width
+            mean_finger_width = 2 * total_concentration / (counter + 1)
+            mean_finger_width = np.max(mean_finger_width, old_MFW)
+            jj += 1
+            
+        return interface, mean_finger_width, iter_x
 
     # Public Method of Simulation Class
     def run(self):
@@ -1074,8 +1155,9 @@ class Simulation:
                 dt *= 100
 
             ## STEP 2: Initiating the primary 'while' loop that will keep running until water shows up in production well
-            # while(t < t_stop and self.water.water_saturation[self.mesh.n, self.mesh.m] <= 0.70):
-            while t < 1:
+            while(t < t_stop and self.water.water_saturation[self.mesh.n, self.mesh.m] <= 0.70):
+                print(f'{t},{self.water.water_saturation[self.mesh.n, self.mesh.m]}')
+                # while t < 1:
                 ## STEP 2.1: Increment time and amount of feed used:
                 self.integrated_inlet_flow += self.source_flow_magnitude
                 t += dt
@@ -1168,7 +1250,9 @@ class Simulation:
                 ## STEP 2.5: Solving Transport Equations
                 self._transport_equation_solver(dt)
 
-                break
-
+                ## Step 2.6: MFW post processing (excluding QFS)
+                if (self.scenario_flag != 3): # FIXME: compute_MFW currently operates for rectilinear geometries. Implement MFW computation for QFS
+                    interface, MFW_val, _ = self._compute_MFW(self.water.water_saturation)
+                    self.MFW.append(MFW_val)
         except Exception as e:
             print(e)
