@@ -44,12 +44,13 @@ class Simulation:
     def __init__(self, user_input_dict: dict):
         """
         This method will check the ``user_input_dict`` and initialize the simulation
-
-        :raises UserInputException: If there is a issue with the user inputs in ``user_input_dict``
-        :raises SimulationCalcInputException: If there is an issue with the execution of a calculation during runtime
-
-        :param user_input_dict: dictionary containing the information from the GUI
-        :type user_input_dict: dict
+        
+        Raises:
+            UserInputException: If there is a issue with the user inputs in ``user_input_dict``
+            SimulationCalcInputException: If there is an issue with the execution of a calculation during runtime
+        
+        Args:
+            user_input_dict (dict): dictionary containing the information from the GUI
         """
         ## Performs checks on the user input dictionary passed in:
         try:
