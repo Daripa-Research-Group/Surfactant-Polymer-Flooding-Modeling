@@ -520,7 +520,7 @@ class Water:
                                     * surfactant.concentration_matrix[cnt][i + 1]
                                     - (D_g[cnt][i] + D_g[cnt + 2][i])
                                     / (dy**2)
-                                    * surfactant.concentration_matrix[cnt + 2][i]
+                                    * surfactant.concentration_matrix[cnt + 1][i]
                                 )
 
                                 CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (dy**2)
@@ -557,7 +557,7 @@ class Water:
                                 )
 
                                 CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (dy**2)
-                            else:
+                            else: # FIXME: stopped here!
                                 DD[i] = (
                                     Qmod[cnt][i] / dt_array[cnt][i]
                                     - f_c[cnt][i]
