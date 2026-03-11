@@ -196,12 +196,10 @@ class Simulation:
     _source_prod_flow = None
 
     @property
-    def source_prod_flow(self):
+    def source_prod_flow(self) -> np.ndarray:
         """
-        Return
-        ------
-        :return: returns the matrix with the source & and production well flow rates
-        :rtype: np.ndarray
+        Returns: (np.ndarray)
+            The matrix with the source & and production well flow rates
         """
         # setting permeability state
         if self._source_prod_flow is None:
@@ -238,7 +236,13 @@ class Simulation:
     _scenario_flag = None
 
     @property
-    def scenario_flag(self):
+    def scenario_flag(self) -> int:
+        """
+        Determines the scenario based on the chosen reservoir geometry and permeability
+
+        Returns: (int)
+            Integer value that represents a type of scenario run
+        """
         if self._scenario_flag is None:
             bool_Homogenous_and_Rectilinear = (
                 self.permeability_flag.value == PermeabilityType.Homogenous.value
@@ -274,10 +278,8 @@ class Simulation:
         Initializing global pressure ('u') and velocity matrices ('v')
         Will use the ``n`` and ``m`` properties from ``Grid`` Class for initialization
 
-        Return
-        ------
-        :return: the global pressure matrix (index 0) and velocity matrix (index 1)
-        :rtype: list[np.ndarray]
+        Returns: (tuple[np.ndarray, np.ndarray])
+            The global pressure matrix (index 0) and velocity matrix (index 1)
         """
         u = np.zeros((self.mesh.n + 1, self.mesh.m + 1), dtype=np.complex128)
         v = np.zeros((self.mesh.n + 1, self.mesh.m + 1), dtype=np.complex128)
@@ -290,9 +292,9 @@ class Simulation:
 
         dependent property to calculate the pressure matrix (``u``)
         and velocity matrix (``v``). Will rely on functions in the ``FEMesh`` class.
-
-        :return: list of update pressure matrix and velocity matrix => [u,v]
-        :rtype: list[np.ndarray]
+        
+        Returns: (list[np.ndarray])
+            List of update pressure matrix and velocity matrix => [u,v]
         """
         max_iterations = 1000
         new_u, convergence_flag = bicgstab(
@@ -315,10 +317,12 @@ class Simulation:
 
     def _get_gradient(self, vn):
         """
-        Helper function to determine the gradients with respect to x and y dimensions
+        (private method)
 
-        :return: tuple with px py which are numpy matrices that hold the gradient wrt to x and y dimensions
-        :rtype: tuple[_Array[tuple[int, int], float64], NDArray[float64]]
+        Helper function to determine the gradients with respect to x and y dimensions
+        
+        Returns:(tuple[_Array[tuple[int, int], float64], NDArray[float64]])
+            Tuple with px py which are numpy matrices that hold the gradient wrt to x and y dimensions
         """
         m = self.mesh.m
         n = self.mesh.n
@@ -352,9 +356,9 @@ class Simulation:
 
         Will initialize the ``ProdRate`` and ``CROIP`` properties.
         Using memmaps to allow window's users to run program.
-
-        :return: Initialized ``ProdRate`` and ``CROIP`` properties
-        :rtype: list
+        
+        Returns: (tuple[np.ndarray, np.ndarray])
+            Initialized ``ProdRate`` and ``CROIP`` properties
         """
         os.makedirs("memmaps", exist_ok=True)
         tf = 500
@@ -373,8 +377,8 @@ class Simulation:
         """
         (private method)
 
-        :return: Initialized FD and FE mesh
-        :rtype: Tuple[Grid, FEMesh]
+        Returns:(Tuple[Grid, FEMesh])
+            Initialized FD and FE mesh
         """
         FD_mesh = Grid(self.grid_size, self.grid_size)
 
@@ -388,8 +392,8 @@ class Simulation:
 
         Sets up initial reservoir fields, permeability, and time step.
 
-        :return: initialized properties of simulation. Required in ``__init__`` function
-        :rtype: None
+        Returns: (None)
+            Initialized properties of simulation. Required in ``__init__`` function
         """
         self.phi = self._compute_phi()
 
@@ -408,8 +412,9 @@ class Simulation:
         """
         (private method)
 
-        Compute level set function phi at each grid point.
-        Equivalent to MATLAB get_phi_test function.
+        Returns: (np.ndarray)
+            Computes and returns the level set function phi at each grid point. 
+            (Equivalent to MATLAB get_phi_test function.)
         """
         m = self.mesh.m
         n = self.mesh.n
@@ -429,10 +434,15 @@ class Simulation:
         """
         (private method)
 
-        Compute the initial position of the water front.
-        Equivalent to MATLAB z_func_test.
+        Args:
+            x (np.ndarry): x-dimension coordinates 
 
-        Takes array user_input_dict x, y.
+            y (np.ndarray): y-dimension coordinate points
+        
+        Returns: 
+            Compute and returns the initial position of the water front.
+            (Equivalent to MATLAB z_func_test.)
+
         """
         init_front_hs = 0.1
         bool_Homogenous_and_Rectilinear = (
@@ -463,9 +473,10 @@ class Simulation:
     def _compute_permeability(self):
         """
         (private method)
-
-        Compute permeability matrix KK based on the flag.
-        Equivalent to MATLAB KKdef function.
+        
+        Returns:
+            Compute and returns the permeability matrix KK based on the ``scenario_flag``.
+            (Equivalent to MATLAB KKdef function.)
         """
         bool_Homogenous_and_Rectilinear = (
             self.permeability_flag.value == PermeabilityType.Homogenous.value
@@ -551,7 +562,8 @@ class Simulation:
             ds - derivative with respect to water saturation
             dc - derivative with respect to polymer concentration
 
-        :return: tuple[Water, Polymer, Surfactant]
+        Returns: (tuple[np.ndarray, np.ndarray, np.ndarray])
+            tuple[Water, Polymer, Surfactant]
         """
         # Initialize constant parameters
         const_parameters = {}
@@ -936,6 +948,17 @@ class Simulation:
         Compute redefined characteristic coordinates (xmod, ymod) according to Neumann boundary conditions.
 
         will be a helper function to the ``self._transport_equation_solver()`` method.
+
+        Args:
+            flag (int):
+
+            old_water_saturation_matrix (np.ndarray):
+
+            new_water_saturation_matrix (np.ndarray):
+
+            const_parameters (dict):
+
+            varying_parameters (dict)
         """
         assert self.water.water_saturation is not None, SimulationCalcInputException(
             "SimulationCalcInputError:UnknownWaterSaturationMatrix"
