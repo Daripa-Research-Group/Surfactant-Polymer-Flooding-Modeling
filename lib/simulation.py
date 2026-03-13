@@ -950,15 +950,18 @@ class Simulation:
         will be a helper function to the ``self._transport_equation_solver()`` method.
 
         Args:
-            flag (int):
+            flag (int): scenario flag for the simulation the user wants to run
 
-            old_water_saturation_matrix (np.ndarray):
+            old_water_saturation_matrix (np.ndarray): water saturation matrix from previous iteration
 
-            new_water_saturation_matrix (np.ndarray):
+            new_water_saturation_matrix (np.ndarray): water saturation from current iteration
 
-            const_parameters (dict):
+            const_parameters (dict): constant parameters to help with calculations
 
-            varying_parameters (dict)
+            varying_parameters (dict): parameters that vary but assist with calculations for water saturation, polymer concentration, and surfactant concentration
+
+        Returns: (tuple[np.ndarray, np.ndarray])
+            This method returns ``xmod`` and ``ymod``, which are the modified characteristic coordinates according to the Neumann boundary conditions
         """
         assert self.water.water_saturation is not None, SimulationCalcInputException(
             "SimulationCalcInputError:UnknownWaterSaturationMatrix"
@@ -1064,6 +1067,16 @@ class Simulation:
         print("Simulation sim_results exported to /sim_results/ folder.")
         
     def _compute_MFW(self, UU):
+        """
+        (private function)
+
+        Args:
+            UU (np.ndarray): water saturation matrix
+
+        Returns: (np.array)
+            list of values which are the mean finger width during each iteration.
+            Note: Only will run under the Rectilinear Homogenous and Rectilinear Heterogeneous simulation scenarios
+        """
         # post processing of finger width 
         interface = np.zeros((29, 1))
         mean_UU_save = np.zeros((29, 29))
@@ -1148,11 +1161,9 @@ class Simulation:
     def run(self):
         """
         Executes simulation loop.
-
-        :raises SimulationCalcInputException: if relevant inputs for calculation not provided or not initialized
-
-        :return: Dictionary with relevant results for plotting and data analysis
-        :rtype: dict
+        
+        Raises:
+            SimulationCalcInputException: if relevant inputs for calculation not provided or not initialized
         """
         assert self.water.water_saturation is not None, SimulationCalcInputException(
             "SimulationCalcInputError:WaterSaturationMatrixUnavailable"
