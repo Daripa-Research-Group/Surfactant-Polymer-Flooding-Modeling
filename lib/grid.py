@@ -1,3 +1,13 @@
+"""
+This python script contains the class definition for running simulations
+
+This Python code has been derived from the MATLAB Surfactant-Polymer Flooding Simulation 
+developed by Sourav Dutta and Rohit Mishra.
+
+@author: Bhargav Akula Ramesh Kumar and Carlos Acosta Caripo
+
+"""
+
 import numpy as np
 from scipy.sparse import coo_matrix
 from matplotlib.tri import Triangulation
@@ -79,14 +89,16 @@ class FEMesh(Grid):
         self.sparsed_A = None
 
     def set_triangulation(self):
-        #  Setting up triangulations for the FEM grid
-        #  U = cell array with each element = array of vertices of Upper Triangle of
-        #  the rectangular cell
-        #  L = cell array with each element = array of vertices of Lower Triangle of
-        #  the rectangular cell
-        #  At every point (i,j), U{i,j} & L{i,j} are cells with coordinates of vertices
-        #  of the two triangles obtained by bisecting the rectangle starting at
-        #  (i,j). The bisection line goes from NW to SE.
+        """
+            Setting up triangulations for the FEM grid
+            U = cell array with each element = array of vertices of Upper Triangle of
+            the rectangular cell
+            L = cell array with each element = array of vertices of Lower Triangle of
+            the rectangular cell
+            At every point (i,j), U{i,j} & L{i,j} are cells with coordinates of vertices
+            of the two triangles obtained by bisecting the rectangle starting at
+            (i,j). The bisection line goes from NW to SE.
+        """
         self.U = np.empty((self.m, self.n), dtype=object)
         self.L = np.empty((self.m, self.n), dtype=object)
 
