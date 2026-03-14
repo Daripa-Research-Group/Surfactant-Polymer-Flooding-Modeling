@@ -35,36 +35,27 @@ class Polymer:
     ):
         """
         Initializes a instance of the polymer class
+        
+        Args:
+            name (enum 'PolymerList'): Name of the polymer
 
-        :param name: Name of the polymer
-        :type name: enum 'PolymerList'
+            e_coeff (list[float]): The coefficients used to determine epsilon for the empirical power law expression used to determine the viscosity of the aqueous phase
 
-        :param e_coeff: The coefficients used to determine epsilon for the empirical power law expression used to determine the viscosity of the aqueous phase
-        :type e_coeff: list<int>
+            n_coeff (list[float]):  The coefficients used to determine epsilon for the empirical power law expression used to determine the viscosity of the aqueous phase
 
-        :param n_coeff:  The coefficients used to determine epsilon for the empirical power law expression used to determine the viscosity of the aqueous phase
-        :type n_coeff: list<int>
+            rho (float): Density of polymer
 
-        :param rho: Density of polymer
-        :type rho: float
+            concentration_scalar (float): Scalar quantity of concentration. When initializing, this param will equal the initial polymer concentration.
 
-        :param concentration_scalar: Scalar quantity of concentration. When initializing, this param will equal the initial polymer concentration.
-        :type concentration_scalar: float
+            phi (np.ndarray): arrray used to initialize the concentration matrix (represents porosity of the resevoir)
 
-        :param phi: arrray used to initialize the concentration matrix (represents porosity of the resevoir)
-        :type: np.ndarray
+            viscosity_scalar (float, None): scalar quantity of the polymer viscosity
 
-        :param viscosity_scalar: scalar quantity of the polymer viscosity
-        :type viscosity_scalar: float, None
+            viscosity_matrix (np.ndarray, None): viscosity matrix of the polymer
 
-        :param viscosity_matrix: viscosity matrix of the polymer
-        :type viscosity_matrix: np.ndarray, None
+            concentration_matrix (np.ndarray, None): matrix representation of polymer concentration within resevoir
 
-        :param concentration_matrix: matrix representation of polymer concentration within resevoir
-        :type concentration_matrix: np.ndarray, None
-
-        :param shear_rate: Matrix that will hold the shear rate (the change in velocity normal to the direction of flow)
-        :type shear_rate: np.ndarray, None
+            shear_rate (np.ndarray, None): Matrix that will hold the shear rate (the change in velocity normal to the direction of flow)
         """
 
         # PolymerList object
@@ -95,12 +86,12 @@ class Polymer:
     def initialize(self, grid_shape: tuple):
         """
         Will initialize the viscosity, shear_rate, and concentration matrices
-
-        :param grid_shape: contain the shape of the grid
-        :type grid_shape: tuple
-
-        :return: Initalized Polymer Object
-        :rtype: Polymer
+        
+        Args:
+            grid_shape (tuple): contain the shape of the grid
+        
+        Returns: (Polymer)
+            Initalized Polymer Object
         """
         n = grid_shape[0]
         m = grid_shape[1]
@@ -138,24 +129,20 @@ class Polymer:
         """
         Compute polymer viscosity.
         This function is derived from 'compvis()' in the original MATLAB code (in file compvis.m).
+        
+        Args:
+            grid (Tuple[NDArray[Any], ...]): The FEM grid used for simulation calculations (x and y variables from the MATLAB code)
 
-        :param grid: The FEM grid used for simulation calculations (x and y variables from the MATLAB code)
-        :type grid: tuple[NDArray[Any], ...]
+            u (np.ndarray): Matrix related to the global pressure
 
-        :param u: Matrix related to the global pressure
-        :type u: np.ndarray
+            v (np.ndarray): Matrix related to the velocity matrix
 
-        :param v: Matrix related to the velocity matrix
-        :type v: np.ndarray
+            model_type (enum 'ModelType'): Will state whether the model will include polymer shear thinning or not
 
-        :param model_type: Will state whether the model will include polymer shear thinning or not
-        :type model_type: enum 'ModelType'
-
-        :param aqueous_viscosity: Aqueous viscosity matrix (will come from the 'Water' class). Only needed when shear thinning OFF
-        :type aqueous_viscosity: np.ndarray, None
-
-        :return: the viscosity_matrix (index 0) & shear_rate matrix (index 1) for the polymer within the grid
-        :rtype: list
+            aqueous_viscosity (np.ndarray, None): Aqueous viscosity matrix (will come from the ``Water`` class). Only needed when shear thinning OFF
+        
+        Returns: (list)
+            the viscosity_matrix (index 0) & shear_rate matrix (index 1) for the polymer within the grid
         """
         # x and y components from meshgrid
         x = grid.x
@@ -278,6 +265,33 @@ class Polymer:
         const_parameters: dict,
         varying_parameters: dict,
     ):
+        """
+        Computes the polymer concentration
+
+        Raises:
+            SimulationCalcInputException: Not all required parameters were provided
+
+        Args:
+            grid (Grid): the FDMesh
+
+            water_sat (np.ndarray): the water saturation matrix
+
+            u (np.ndarray): Matrix related to the global pressure
+
+            v (np.ndarray): Matrix related to the velocity matrix
+
+            xmod (np.ndarray): x-dim characteristic coordinates based on Neumann boundary conditions
+
+            ymod (np.ndarray): y-dim characteristic coordinates based on Neumann boundary conditions
+
+            const_parameters (dict): constant parameters to help with calculations
+
+            varying_parameters (dict): parameters that vary but assist with calculations for water saturation, polymer concentration, and surfactant concentration
+        
+        Returns: (dict)
+            The varying parameters that were changed in this method
+
+        """
         # initializing variables:
         # Assert statements to ensure that all parameters are property initialized:
         assert self.concentration_matrix is not None, SimulationCalcInputException(
@@ -395,7 +409,17 @@ class Polymer:
         """
         Calculates Divergence
 
-        :return: Div F = (δfx/δx) + (δfy/δy)
+        Args:
+            Fx (np.ndarray): Function #1
+            
+            Fy (np.ndarray): Function #2
+
+            dx (float): change in the x-dimension
+
+            dy (float): change in the y-dimension
+
+        Raises: (np.ndarray)
+            Div F = (δfx/δx) + (δfy/δy)
         """
         dFx_dx = np.gradient(Fx, dx, axis=1)
         dFy_dy = np.gradient(Fy, dy, axis=0)
