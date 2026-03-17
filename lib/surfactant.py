@@ -34,24 +34,19 @@ class Surfactant:
     ):
         """
         Creates instance of Surfactant class
+        
+        Args:
+            name (enum 'SurfactantList'): Name of the surfactant
 
-        :param name: Name of the surfactant
-        :type name: enum 'SurfactantList'
+            concentration (float): Initial concentration of surfactant (scalar quantity)
 
-        :param concentration: Initial concentration in wppm of surfactant (scalar quantity)
-        :type concentration: float
+            phi (np.ndarray): arrray used to initialize the concentration matrix (represents porosity of the resevoir)
 
-        :param phi: arrray used to initialize the concentration matrix (represents porosity of the resevoir)
-        :type: np.ndarray
+            IFT_conc_equ (lambda, None): expression that relates surfactant concentration to interfacial tension b/t oil and water
 
-        :param IFT_conc_equ: expression that relates surfactant concentration to interfacial tension b/t oil and water
-        :type IFT_conc_equ: lambda, None
+            derivative_IFT_conc_equ (lambda, None): Deriviative of the equation relating IFT to surfactant concentration
 
-        :param derivative_IFT_conc_equ: Deriviative of the equation relating IFT to surfactant concentration
-        :type derivative_IFT_conc_equ: lambda, None
-
-        :param concentration_matrix: vector representation of surfactant concentration in resevoir
-        :type concentration_matrix: np.array, None
+            concentration_matrix (np.ndarray, None): vector representation of surfactant concentration in resevoir
         """
         self.name = name
         self.concentration = initial_concentration
@@ -75,8 +70,6 @@ class Surfactant:
     def eval_dIFT_dGamma(self):  # FIXME: Need to adjust when implementing 'autodiff'
         """
         evaluate the dσ/dΓ at a particular surfactant concentration matrix
-
-        FIXME: need to adjust when implementing 'autodiff'
         """
         assert self.derivative_IFT_conc_equ is not None, SimulationCalcInputException(
             "SimulationCalcInputError:UnknownDerivativeIFTEquation"
@@ -88,9 +81,9 @@ class Surfactant:
     ):
         """
         This function will initialize the surfactant object
-
-        :return: Surfactant object
-        :rtype: Surfactant
+        
+        Returns: (Surfactant)
+            Surfactant object
         """
         if self.concentration_matrix is None:
             if self.phi is None:
@@ -110,6 +103,28 @@ class Surfactant:
         F: np.ndarray,
         Gmod: np.ndarray,
     ):
+        """
+        Computing the surfactant concentration matrix
+
+        Raises:
+            SimulationCalcInputException: Not all required inputs were provided
+
+        Args:
+            grid (Grid): FD mesh
+
+            water_sat (np.ndarray): water saturation matrix
+
+            const_parameters (dict): dictionary object with constant parameters used in calculation
+
+            varying_parameters (dict): dictionary object with varying parameters used in calculation
+
+            F (np.ndarray): intermediate matrix used in calcs
+
+            Gmod (np.ndarray): bilinear interpolant for sur conc on redefined coordinates
+
+        Returns: (dict)
+            Returns the ``varying_parameters`` dict
+        """
         # initializing constants
         assert self.concentration_matrix is not None, SimulationCalcInputException(
             "SimuationInputException: polymer concentration matrix not initialized. Please try again"
