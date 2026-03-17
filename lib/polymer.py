@@ -10,9 +10,9 @@ Sourav Dutta and Rohit Mishra.
 import numpy as np
 import scipy as sp
 from scipy.sparse.linalg import bicgstab
-from enumerations import ModelType, PolymerList, SimulationConstants
-from Exceptions import SimulationCalcInputException
-from grid import Grid
+from .enumerations import ModelType, PolymerList, SimulationConstants
+from .Exceptions import SimulationCalcInputException
+from .grid import Grid
 
 
 class Polymer:
@@ -37,6 +37,7 @@ class Polymer:
         Initializes a instance of the polymer class
         
         Args:
+        -----
             name (enum 'PolymerList'): Name of the polymer
 
             e_coeff (list[float]): The coefficients used to determine epsilon for the empirical power law expression used to determine the viscosity of the aqueous phase
@@ -88,9 +89,11 @@ class Polymer:
         Will initialize the viscosity, shear_rate, and concentration matrices
         
         Args:
+        -----
             grid_shape (tuple): contain the shape of the grid
         
         Returns: (Polymer)
+        -----------------
             Initalized Polymer Object
         """
         n = grid_shape[0]
@@ -131,6 +134,7 @@ class Polymer:
         This function is derived from 'compvis()' in the original MATLAB code (in file compvis.m).
         
         Args:
+        -----
             grid (Tuple[NDArray[Any], ...]): The FEM grid used for simulation calculations (x and y variables from the MATLAB code)
 
             u (np.ndarray): Matrix related to the global pressure
@@ -142,6 +146,7 @@ class Polymer:
             aqueous_viscosity (np.ndarray, None): Aqueous viscosity matrix (will come from the ``Water`` class). Only needed when shear thinning OFF
         
         Returns: (list)
+        ---------------
             the viscosity_matrix (index 0) & shear_rate matrix (index 1) for the polymer within the grid
         """
         # x and y components from meshgrid
@@ -269,9 +274,11 @@ class Polymer:
         Computes the polymer concentration
 
         Raises:
+        -------
             SimulationCalcInputException: Not all required parameters were provided
 
         Args:
+        -----
             grid (Grid): the FDMesh
 
             water_sat (np.ndarray): the water saturation matrix
@@ -289,6 +296,7 @@ class Polymer:
             varying_parameters (dict): parameters that vary but assist with calculations for water saturation, polymer concentration, and surfactant concentration
         
         Returns: (dict)
+        ---------------
             The varying parameters that were changed in this method
 
         """
@@ -410,6 +418,7 @@ class Polymer:
         Calculates Divergence
 
         Args:
+        -----
             Fx (np.ndarray): Function #1
             
             Fy (np.ndarray): Function #2
@@ -419,6 +428,7 @@ class Polymer:
             dy (float): change in the y-dimension
 
         Raises: (np.ndarray)
+        --------------------
             Div F = (δfx/δx) + (δfy/δy)
         """
         dFx_dx = np.gradient(Fx, dx, axis=1)

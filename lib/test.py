@@ -7,8 +7,8 @@ Use this python script when implementing new features
 import os
 
 import numpy as np
-from grid import Grid
-from enumerations import (
+from .grid import Grid
+from .enumerations import (
     ModelType,
     PolymerList,
     SurfactantList,
@@ -16,8 +16,8 @@ from enumerations import (
     ResevoirGeometry,
     SimulationConstants,
 )
-from Exceptions import SimulationCalcInputException, UserInputException
-import simulation
+from .Exceptions import SimulationCalcInputException, UserInputException
+import .simulation
 
 MODEL = {
     "No_Shear_Thinning": 1,

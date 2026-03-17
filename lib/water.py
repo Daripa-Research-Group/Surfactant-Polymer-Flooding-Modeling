@@ -16,11 +16,11 @@ from scipy.interpolate import RegularGridInterpolator
 from scipy.sparse.linalg import bicgstab
 
 ##INTERNAL IMPORTS
-from enumerations import ModelType, RelativePermeabilityFormula, SimulationConstants
-from Exceptions import SimulationCalcInputException
-from grid import Grid
-from polymer import Polymer
-from surfactant import Surfactant
+from .enumerations import ModelType, RelativePermeabilityFormula, SimulationConstants
+from .Exceptions import SimulationCalcInputException
+from .grid import Grid
+from .polymer import Polymer
+from .surfactant import Surfactant
 
 
 class Water:

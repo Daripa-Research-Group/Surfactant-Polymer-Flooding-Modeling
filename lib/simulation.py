@@ -10,10 +10,8 @@ developed by Sourav Dutta and Rohit Mishra.
 
 import os
 
-import numpy as np
-import scipy as sp
-from grid import Grid, FEMesh
-from enumerations import (
+from .grid import Grid, FEMesh
+from .enumerations import (
     ModelType,
     PolymerList,
     RelativePermeabilityFormula,
@@ -22,10 +20,12 @@ from enumerations import (
     ResevoirGeometry,
     SimulationConstants,
 )
-from Exceptions import SimulationCalcInputException, UserInputException
-from polymer import Polymer
-from surfactant import Surfactant
-from water import Water
+from .Exceptions import SimulationCalcInputException, UserInputException
+from .polymer import Polymer
+from .surfactant import Surfactant
+import numpy as np
+import scipy as sp
+from .water import Water
 from scipy.io import loadmat
 from scipy.sparse.linalg import bicgstab
 from scipy.linalg import fractional_matrix_power
@@ -46,10 +46,12 @@ class Simulation:
         This method will check the ``user_input_dict`` and initialize the simulation
         
         Raises:
+        ------
             UserInputException: If there is a issue with the user inputs in ``user_input_dict``
             SimulationCalcInputException: If there is an issue with the execution of a calculation during runtime
         
         Args:
+        -----
             user_input_dict (dict): dictionary containing the information from the GUI
         """
         ## Performs checks on the user input dictionary passed in:
@@ -199,6 +201,7 @@ class Simulation:
     def source_prod_flow(self) -> np.ndarray:
         """
         Returns: (np.ndarray)
+        ---------------------
             The matrix with the source & and production well flow rates
         """
         # setting permeability state
@@ -241,6 +244,7 @@ class Simulation:
         Determines the scenario based on the chosen reservoir geometry and permeability
 
         Returns: (int)
+        --------------
             Integer value that represents a type of scenario run
         """
         if self._scenario_flag is None:
@@ -279,6 +283,7 @@ class Simulation:
         Will use the ``n`` and ``m`` properties from ``Grid`` Class for initialization
 
         Returns: (tuple[np.ndarray, np.ndarray])
+        ----------------------------------------
             The global pressure matrix (index 0) and velocity matrix (index 1)
         """
         u = np.zeros((self.mesh.n + 1, self.mesh.m + 1), dtype=np.complex128)
@@ -294,6 +299,7 @@ class Simulation:
         and velocity matrix (``v``). Will rely on functions in the ``FEMesh`` class.
         
         Returns: (list[np.ndarray])
+        ---------------------------
             List of update pressure matrix and velocity matrix => [u,v]
         """
         max_iterations = 1000
@@ -321,7 +327,8 @@ class Simulation:
 
         Helper function to determine the gradients with respect to x and y dimensions
         
-        Returns:(tuple[_Array[tuple[int, int], float64], NDArray[float64]])
+        Returns: (tuple[_Array[tuple[int, int], float64], NDArray[float64]])
+        --------------------------------------------------------------------
             Tuple with px py which are numpy matrices that hold the gradient wrt to x and y dimensions
         """
         m = self.mesh.m
@@ -358,6 +365,7 @@ class Simulation:
         Using memmaps to allow window's users to run program.
         
         Returns: (tuple[np.ndarray, np.ndarray])
+        ----------------------------------------
             Initialized ``ProdRate`` and ``CROIP`` properties
         """
         os.makedirs("memmaps", exist_ok=True)
@@ -377,7 +385,8 @@ class Simulation:
         """
         (private method)
 
-        Returns:(Tuple[Grid, FEMesh])
+        Returns: (Tuple[Grid, FEMesh])
+        -----------------------------
             Initialized FD and FE mesh
         """
         FD_mesh = Grid(self.grid_size, self.grid_size)
@@ -393,6 +402,7 @@ class Simulation:
         Sets up initial reservoir fields, permeability, and time step.
 
         Returns: (None)
+        ---------------
             Initialized properties of simulation. Required in ``__init__`` function
         """
         self.phi = self._compute_phi()
@@ -413,6 +423,7 @@ class Simulation:
         (private method)
 
         Returns: (np.ndarray)
+        ---------------------
             Computes and returns the level set function phi at each grid point. 
             (Equivalent to MATLAB get_phi_test function.)
         """
@@ -435,11 +446,13 @@ class Simulation:
         (private method)
 
         Args:
+        -----
             x (np.ndarry): x-dimension coordinates 
 
             y (np.ndarray): y-dimension coordinate points
         
         Returns: 
+        --------
             Compute and returns the initial position of the water front.
             (Equivalent to MATLAB z_func_test.)
 
@@ -475,6 +488,7 @@ class Simulation:
         (private method)
         
         Returns:
+        -------
             Compute and returns the permeability matrix KK based on the ``scenario_flag``.
             (Equivalent to MATLAB KKdef function.)
         """
@@ -508,26 +522,6 @@ class Simulation:
                 )
                 + 1
             )
-        # elif flag == 3:
-        #     # Impermeable block at center
-        #     KK = 3000 * np.ones((m + 1, m + 1))
-        #     center = m // 2
-        #     delta = m // 8
-        #     KK[
-        #         center - delta : center + delta + 1,
-        #         center - delta : center + delta + 1,
-        #     ] = 3
-        # elif flag == 4:
-        #     # Impermeable blocks off-center
-        #     KK = 3000 * np.ones((m + 1, m + 1))
-        #     KK[
-        #         (3*m)//4 - m//12 : (3*m)//4 + m//12 + 1,
-        #         (2*m)//3 - m//12 : (2*m)//3 + m//12 + 1
-        #     ] = 3
-        #     KK[
-        #         m//3 - m//10 : m//3 + m//10 + 1,
-        #         m//3 - m//10 : m//3 + m//10 + 1
-        #     ] = 3
         elif bool_Heterogenous_and_Quarter_Five_Spot:
             # Load Upper Ness formation (SPE10)
             mat_data = loadmat(
@@ -538,14 +532,6 @@ class Simulation:
                     "SimulationInputException: KK matrix not found in KK30Ness.mat file."
                 )
             KK = mat_data["KK"]
-        # elif flag == 6:
-        #     # Load Tarbert formation (SPE10)
-        #     mat_data = loadmat('/Resources/KK30Tabert.mat')
-        #     if 'KK' not in mat_data:
-        #         raise SimulationCalcInputException('SimulationInputException: KK matrix not found in KK30Tabert.mat file.')
-        #     KK = mat_data['KK']
-        # else:
-        #     raise SimulationCalcInputException("SimulationInputException: Unknown permeability flag.")
         return KK
 
     def _transport_equation_solver(self, dt):
@@ -563,6 +549,7 @@ class Simulation:
             dc - derivative with respect to polymer concentration
 
         Returns: (tuple[np.ndarray, np.ndarray, np.ndarray])
+        ----------------------------------------------------
             tuple[Water, Polymer, Surfactant]
         """
         # Initialize constant parameters
@@ -950,6 +937,7 @@ class Simulation:
         will be a helper function to the ``self._transport_equation_solver()`` method.
 
         Args:
+        ------
             flag (int): scenario flag for the simulation the user wants to run
 
             old_water_saturation_matrix (np.ndarray): water saturation matrix from previous iteration
@@ -961,6 +949,7 @@ class Simulation:
             varying_parameters (dict): parameters that vary but assist with calculations for water saturation, polymer concentration, and surfactant concentration
 
         Returns: (tuple[np.ndarray, np.ndarray])
+        ---------------------------------------
             This method returns ``xmod`` and ``ymod``, which are the modified characteristic coordinates according to the Neumann boundary conditions
         """
         assert self.water.water_saturation is not None, SimulationCalcInputException(
@@ -1071,9 +1060,11 @@ class Simulation:
         (private function)
 
         Args:
+        -----
             UU (np.ndarray): water saturation matrix
 
         Returns: (np.array)
+        -------
             list of values which are the mean finger width during each iteration.
             Note: Only will run under the Rectilinear Homogenous and Rectilinear Heterogeneous simulation scenarios
         """
@@ -1163,7 +1154,8 @@ class Simulation:
         Executes simulation loop.
         
         Raises:
-            SimulationCalcInputException: if relevant inputs for calculation not provided or not initialized
+        ------
+            SimulationCalcInputException: If there is an issue with the execution of a calculation during runtime
         """
         assert self.water.water_saturation is not None, SimulationCalcInputException(
             "SimulationCalcInputError:WaterSaturationMatrixUnavailable"

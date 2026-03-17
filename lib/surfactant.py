@@ -8,12 +8,12 @@ Sourav Dutta and Rohit Mishra.
 """
 
 from types import LambdaType
-from enumerations import SimulationConstants, SurfactantList
-from grid import Grid
-from Exceptions import SimulationCalcInputException
 import numpy as np
 import scipy as sp
 from scipy.sparse.linalg import bicgstab
+from .enumerations import SimulationConstants, SurfactantList
+from .grid import Grid
+from .Exceptions import SimulationCalcInputException
 
 
 class Surfactant:
