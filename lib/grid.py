@@ -42,19 +42,31 @@ class Grid:
 
     @property
     def get_spacing(self):
+        """
+        Provides dx and dy
+        """
         return self.dx, self.dy
 
     @property
     def get_meshgrid(self):
+        """
+        Generates the x and y coordinates for the FD Mesh
+        """
         self.x, self.y = self.set_FD_meshgrid()
         return self.x, self.y
 
     @property
     def dx(self):
+        """
+        Computes ``dx``
+        """
         return (self.right - self.left) / self.m
 
     @property
     def dy(self):
+        """
+        Computes ``dy`` 
+        """
         return (self.top - self.bottom) / self.n
 
     def set_FD_meshgrid(self):
@@ -79,6 +91,13 @@ class Grid:
 
 class FEMesh(Grid):
     def __init__(self, m: int, n: int):
+        """
+        Constructor for the ``FEMesh`` class (subclass of the ``Grid`` class)
+
+        Args:
+            m (int): num columns
+            n (int): num rows
+        """
         super().__init__(m, n)
         self.U = None
         self.L = None
@@ -127,12 +146,12 @@ class FEMesh(Grid):
         Calculate the area of a polygon using the Shoelace formula.
         The vertices are defined by the x and y coordinates.
 
-        Parameters:
-        x (list or array): x-coordinates of the polygon vertices
-        y (list or array): y-coordinates of the polygon vertices
+        Args:
+            x (list or array): x-coordinates of the polygon vertices
+            y (list or array): y-coordinates of the polygon vertices
 
-        Returns:
-        float: Area of the polygon
+        Returns: (float)
+            Area of the polygon
         """
         return 0.5 * abs(
             sum(x[i] * y[i + 1] - y[i] * x[i + 1] for i in range(-1, len(x) - 1))
@@ -159,14 +178,22 @@ class FEMesh(Grid):
         """
         Evaluates beta at the vertices of the element triangle
 
-        Input:
-        % T is a structure array with fields x & y where
-        %   T.x contains x coordinates of vertices of an element triangle
-        %   T.y contains y coordinates of vertices of an element triangle
-        % beta is the average of the value at the vertices of the
-        %   coefficient $$\beta = K(x) \lambda(s,c,\Gamma)$$
+        Information from MATLAB:
+            % T is a structure array with fields x & y where
+            %   T.x contains x coordinates of vertices of an element triangle
+            %   T.y contains y coordinates of vertices of an element triangle
+            % beta is the average of the value at the vertices of the
+            %   coefficient $$\beta = K(x) \lambda(s,c,\Gamma)$$
 
-        Analogous to the weak.m function in the MATLAB code
+            Analogous to the weak.m function in the MATLAB code
+
+        Args:
+            T: T is a structure array with fields x & y where
+            beta: beta is the average of the value at the vertices of the coefficient $$\beta = K(x) \lambda(s,c,\Gamma)$$
+            V: FIXME: Need to add parameter definition here
+
+        Returns:
+            FIXME: need to add definition here
         """
         beta_1 = self._beta_func(T["x"][0], T["y"][0], beta)
         beta_2 = self._beta_func(T["x"][1], T["y"][1], beta)
@@ -336,6 +363,9 @@ class FEMesh(Grid):
                 self.grid_size[j, l] = grid
 
     def set_right_hand(self, source_prod_matrix):
+        """
+        Sets the right hand side of the equation being solved to update the global pressure and velocity matrices
+        """
         self.right_hand = np.zeros(((self.m + 1) * (self.n + 1), 1))
 
         for j in range(self.m + 1):
