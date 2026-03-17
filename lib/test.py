@@ -17,7 +17,7 @@ from .enumerations import (
     SimulationConstants,
 )
 from .Exceptions import SimulationCalcInputException, UserInputException
-import .simulation
+import simulation
 
 MODEL = {
     "No_Shear_Thinning": 1,
