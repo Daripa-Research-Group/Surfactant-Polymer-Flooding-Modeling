@@ -10,9 +10,7 @@ Sourav Dutta and Rohit Mishra.
 ##EXTERNAL IMPORTS
 import numpy as np
 import scipy as sp
-from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
 from scipy.linalg import fractional_matrix_power
-from scipy.interpolate import RegularGridInterpolator
 from scipy.sparse.linalg import bicgstab
 
 ##INTERNAL IMPORTS
@@ -39,19 +37,6 @@ class Water:
     ):
         """
         Constructor for the ``Water`` class
-        
-        Args:
-             init_water_saturation (float): initial water saturation
-
-             init_aqueous_saturation (float): initial aqueous phase saturation
-
-             init_oleic_saturation (float): initial oil phase saturation
-
-             miuw (float): water viscosity
-
-             miuo (float): oil viscosity
-
-             phi (np.ndarray): porosity matrix
         """
         self.init_water_saturation = init_water_saturation
         self.init_aqueous_saturation = init_aqueous_saturation
@@ -62,16 +47,117 @@ class Water:
         self.viscosity_array = None  # aqueous viscosity matrix
         self.phi = phi
 
+    _init_water_saturation = None
+    @property
+    def init_water_saturation(self):
+        """
+        init_water_saturation (float): initial residual water saturation
+        """
+        return self._init_water_saturation
+    @init_water_saturation.setter
+    def init_water_saturation(self, value):
+        self._init_water_saturation = value
+
+    _init_aqueous_saturation = None
+    @property
+    def init_aqueous_saturation(self):
+        """
+        init_aqueous_saturation (float): initial residual aqueous phase saturation below critical capillary number (when σ = 0)
+        """
+        return self._init_aqueous_saturation
+    @init_aqueous_saturation.setter
+    def init_aqueous_saturation(self, value):
+        self._init_aqueous_saturation = value
+
+    _init_oleic_saturation = None
+    @property
+    def init_oleic_saturation(self):
+        """
+        init_oleic_saturation (float): initial residual oil phase saturation below the critical capillary number (when σ = 0)
+        """
+        return self._init_oleic_saturation
+    @init_oleic_saturation.setter
+    def init_oleic_saturation(self, value):
+        self._init_oleic_saturation = value
+
+    _miuw = None
+    @property
+    def miuw(self):
+        """
+        miuw (float): water viscosity
+        """
+        return self._miuw
+    @miuw.setter
+    def miuw(self, value):
+        self._miuw = value 
+
+    _miuo = None
+    @property
+    def miuo(self):
+        """
+        miuo (float): oil viscosity
+        """
+        return self._miuo
+    @miuo.setter
+    def miuo(self, value):
+        self._miuo = value 
+
+    _phi = None
+    @property
+    def phi(self):
+        """
+        phi (np.ndarray): porosity matrix
+        """
+        return self._phi
+    @phi.setter
+    def phi(self, value):
+        self._phi = value
+
+    _water_saturation = None
+    @property
+    def water_saturation(self):
+        """
+        water_saturation (np.ndarray): The water saturation matrix being updated using the transport equations
+        """
+        return self._water_saturation
+    @water_saturation.setter
+    def water_saturation(self, value):
+        self._water_saturation = value
+
+    _viscosity_array = None
+    @property
+    def viscosity_array(self):
+        """
+        viscosity_array (np.ndarray): The water viscosity matrix
+        """
+        return self._viscosity_array
+    @viscosity_array.setter
+    def viscosity_array(self, value):
+        self._viscosity_array = value
+
+
     def initialize(self, grid_shape: tuple):
         """
-        Initializing 'Water' Object properties
+        Initializing 'Water' object properties
+
+        Raises:
+        -------
+            SimuationInputException: Either Intial water saturation and/or porosity matrix not provided for initializing Water object
 
         Args:
+        -----
             grid_shape (tuple): the n and m parameters from the 'Grid' class
         
         Returns: (Water)
-            Updated ``Water`` object
+        ---------------
+            Initializes the Water object
         """
+        assert self.init_water_saturation is not None, SimulationCalcInputException(
+            "SimuationInputException: Initial water saturation not initialized. Please try again"
+        )
+        assert self.phi is not None, SimulationCalcInputException(
+            "SimuationInputException: porosity matrix not initialized. Please try again"
+        )
         # getting values for n and m from grid:
         n, m = grid_shape
 
@@ -100,9 +186,11 @@ class Water:
         Compute aqueous viscosity.
 
         Raises:
+        -------
             SimulationCalcInputException: Not all required parameters provided
         
         Args:
+        -----
             grid (Grid): Grid object for deterrmining matrix size
 
             model_type (enum 'ModelType'): Type of model we are running (Polymer shear thinning ON or OFF)
@@ -114,6 +202,7 @@ class Water:
             v (np.ndarray, None): velocity matrix. Only needed when shear thinning ON.
         
         Returns: (np.ndarray)
+        --------------------
             Updated aqueous viscosity matrix
         """
 
@@ -197,8 +286,10 @@ class Water:
         self, sigma: np.ndarray, u: np.ndarray, v: np.ndarray
     ):
         """
-        Compute swr, sor based on capillary numbers (came from compres.m MATLAB file)
+        Compute sar, sor based on capillary numbers (came from compres.m MATLAB file)
+
         Args:
+        -----
             sigma (np.ndarray): interfacial tension (IFT)
 
             u (np.ndarray): global pressure matrix.
@@ -206,9 +297,10 @@ class Water:
             v (np.ndarray): velocity matrix.
         
         Returns: (list)
+        ---------------
             residual saturation for oil (index 1) and water (index 0) phases
         """
-        swr0 = self.init_aqueous_saturation
+        sar0 = self.init_aqueous_saturation
         sor0 = self.init_oleic_saturation
 
         Nco0 = 1.44e-4
@@ -222,15 +314,15 @@ class Water:
         Nco = np.linalg.norm(nco)
 
         sor = sor0 * (Nco0 / Nco) ** 0.5213 if Nco >= Nco0 else sor0
-        swr = swr0 * (Nca0 / Nca) ** 0.1534 if Nca >= Nca0 else swr0
+        sar = sar0 * (Nca0 / Nca) ** 0.1534 if Nca >= Nca0 else sar0
 
-        return [swr, sor]  # [residual water saturation, residual oil saturation]
+        return [sar, sor]  # [residual aqueous saturation, residual oil saturation]
 
     def compute_mobility(
         self,
         c: np.ndarray,
         sor: float,
-        swr: float,
+        sar: float,
         aqueous: bool,
         rel_permeability_formula: RelativePermeabilityFormula,
         modified_water_saturation: np.ndarray | None = None,
@@ -239,14 +331,16 @@ class Water:
         Computing mobility (made using the compmob.m MATLAB file)
         
         Raise:
+        ------
             SimulationCalcInputException: Not all required arguments are not provided
 
         Args:
+        -----
             c (np.ndarray): polymer concentration matrix
 
             sor (float): residual saturation oil phase
 
-            swr (float): residual saturation water phase
+            sar (float): residual saturation water phase
 
             aqueous (bool): boolean for whether we are solving for aqoeous or oleic mobility
 
@@ -255,6 +349,7 @@ class Water:
             surfactant_conc (float): scalar quantity of the initial surfactant concentration
         
         Returns: (np.ndarray)
+        ---------------------
             aqueous or oleic mobility (depending on the 'aqueous' parameter)
         """
         assert self.water_saturation is not None, SimulationCalcInputException(
@@ -282,9 +377,9 @@ class Water:
             krw0 = nsw0**3.5
             kro0 = ((1 - nso0) ** 2) * (1 - nso0**1.5)
         else:
-            nsw = (s - swr) / (1 - swr)
-            nso = (s - swr) / (1 - swr - sor)
-            krw0 = nsw * (2.5 * swr * (nsw**2 - 1) + 1)
+            nsw = (s - sar) / (1 - sar)
+            nso = (s - sar) / (1 - sar - sor)
+            krw0 = nsw * (2.5 * sar * (nsw**2 - 1) + 1)
             kro0 = (1 - nso) * (1 - 5 * sor * nso)
 
         return krw0 / miua if aqueous else kro0 / self.miuo
@@ -306,9 +401,11 @@ class Water:
         is for calculating the water saturation)
         
         Raises:
+        -------
             SimulationCalcInputException: If water saturation matrix is None
 
         Args:
+        -----
             grid (Grid): the 'Grid' object
 
             surfactant (Surfactant): The surfactant object
@@ -327,8 +424,9 @@ class Water:
 
             varying_parameters (dict): parameters whose values can change
         
-        Returns: ([np.ndarray, list])
-            updated ``water_saturation`` matrix and ``varying_parameters`` dict
+        Returns: (np.ndarray, dict)
+        -----------------------------
+            Updates the ``water_saturation`` matrix and ``varying_parameters`` dict
         """
         # Assert statements to ensure that all parameters are property initialized:
         assert self.water_saturation is not None, SimulationCalcInputException(
@@ -379,10 +477,10 @@ class Water:
         query_points = np.stack([ymod.ravel(), xmod.ravel()], axis=-1)
         Qmod = interp_func(query_points).reshape(xmod.shape)
 
-        swr = varying_parameters["swr"]
+        sar = varying_parameters["sar"]
         sor = varying_parameters["sor"]
-        nsw = (Qmod - swr) / (1 - swr)
-        nso = (Qmod - swr) / (1 - swr - sor)
+        nsw = (Qmod - sar) / (1 - sar)
+        nso = (Qmod - sar) / (1 - sar - sor)
         varying_parameters["nsw"] = nsw
         varying_parameters["nso"] = nso
 
@@ -393,7 +491,7 @@ class Water:
         lambda_a = self.compute_mobility(
             c=polymer.concentration_matrix,
             sor=float(sor),
-            swr=float(swr),
+            sar=float(sar),
             aqueous=True,
             rel_permeability_formula=relative_permeability_formula,
             modified_water_saturation=Qmod,
@@ -401,7 +499,7 @@ class Water:
         lambda_o = self.compute_mobility(
             c=polymer.concentration_matrix,
             sor=float(sor),
-            swr=float(swr),
+            sar=float(sar),
             aqueous=False,
             rel_permeability_formula=relative_permeability_formula,
             modified_water_saturation=Qmod,
