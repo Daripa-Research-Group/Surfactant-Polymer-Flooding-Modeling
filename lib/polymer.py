@@ -35,28 +35,6 @@ class Polymer:
     ):
         """
         Initializes a instance of the polymer class
-        
-        Args:
-        -----
-            name (enum 'PolymerList'): Name of the polymer
-
-            e_coeff (list[float]): The coefficients used to determine epsilon for the empirical power law expression used to determine the viscosity of the aqueous phase
-
-            n_coeff (list[float]):  The coefficients used to determine epsilon for the empirical power law expression used to determine the viscosity of the aqueous phase
-
-            rho (float): Density of polymer
-
-            concentration_scalar (float): Scalar quantity of concentration. When initializing, this param will equal the initial polymer concentration.
-
-            phi (np.ndarray): arrray used to initialize the concentration matrix (represents porosity of the resevoir)
-
-            viscosity_scalar (float, None): scalar quantity of the polymer viscosity
-
-            viscosity_matrix (np.ndarray, None): viscosity matrix of the polymer
-
-            concentration_matrix (np.ndarray, None): matrix representation of polymer concentration within resevoir
-
-            shear_rate (np.ndarray, None): Matrix that will hold the shear rate (the change in velocity normal to the direction of flow)
         """
 
         # PolymerList object
@@ -83,6 +61,130 @@ class Polymer:
 
         # util param for initialization
         self.phi = phi  # Will need to be created in the simulation class
+ 
+    _name = None
+    @property
+    def name(self):
+        """
+        name (enum 'PolymerList'): Name of the polymer
+        """
+        return self._name
+    @name.setter
+    def name(self, value):
+        self._name = value
+
+    _concetration_scalar = None
+    @property
+    def concetration_scalar(self):
+        """
+        concentration_scalar (float): Scalar quantity of concentration. When initializing, this param will equal the initial polymer concentration.
+        """
+        return self._concetration_scalar
+    @concetration_scalar.setter
+    def concetration_scalar(self, value):
+        self._concetration_scalar = value
+
+    _init_concentration_matrix = None
+    @property
+    def init_concentration_matrix(self):
+        """
+        Initial matrix (at time t = 0) representation of polymer concentration within resevoir
+        """
+        return self._init_concentration_matrix
+    @init_concentration_matrix.setter
+    def init_concentration_matrix(self, value):
+        self._init_concentration_matrix = value
+
+    _concentration_matrix = None
+    @property
+    def concentration_matrix(self):
+        """
+        concentration_matrix (np.ndarray, None): matrix representation of polymer concentration within resevoir over time
+        """
+        return self._concentration_matrix
+    @concentration_matrix.setter
+    def concentration_matrix(self, value):
+        self._concentration_matrix = value
+
+    _viscosity_matrix = None
+    @property
+    def viscosity_matrix(self):
+        """
+        viscosity_matrix (np.ndarray, None): viscosity matrix of the polymer
+        """
+        return self._viscosity_matrix
+    @viscosity_matrix.setter
+    def viscosity_matrix(self, value):
+        self._viscosity_matrix = value
+
+    _viscosity_scalar = None
+    @property
+    def viscosity_scalar(self):
+        """
+        viscosity_scalar (float, None): scalar quantity of the polymer viscosity
+        """
+        return self._viscosity_scalar
+    @viscosity_scalar.setter
+    def viscosity_scalar(self, value):
+        self._viscosity_scalar = value
+
+    _e_coeff = None
+    @property
+    def e_coeff(self):
+        """
+        e_coeff (list[float]): The coefficients used to determine epsilon for the empirical power law expression used to determine the viscosity of the aqueous phase
+        """
+        return self._e_coeff
+    @e_coeff.setter
+    def e_coeff(self, value):
+        self._e_coeff = value
+
+    _n_coeff = None
+    @property
+    def n_coeff(self):
+        """
+        n_coeff (list[float]):  The coefficients used to determine epsilon for the empirical power law expression used to determine the viscosity of the aqueous phase
+        """
+        return self._n_coeff
+    @n_coeff.setter
+    def n_coeff(self, value):
+        self._n_coeff = value
+
+    _rho = None
+    @property
+    def rho(self):
+        """
+        rho (float): Density of polymer
+        """
+        return self._rho
+    @rho.setter
+    def rho(self, value):
+        self._rho = value
+
+    _phi = None
+    @property
+    def phi(self):
+        """
+        phi (np.ndarray): arrray used to initialize the concentration matrix (represents porosity of the resevoir)
+        """
+        return self._phi
+    @phi.setter
+    def phi(self, value):
+        self._phi = value
+
+    _shear_rate = None
+    @property
+    def shear_rate(self):
+        """
+        shear_rate (np.ndarray, None): Matrix that will hold the shear rate (the change in velocity normal to the direction of flow)
+        """
+        return self._shear_rate
+    @shear_rate.setter
+    def shear_rate(self, value):
+        self._shear_rate = value
+
+
+
 
     def initialize(self, grid_shape: tuple):
         """

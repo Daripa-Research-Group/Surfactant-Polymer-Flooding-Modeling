@@ -16,6 +16,8 @@ from matplotlib.tri import Triangulation
 class Grid:
     """
     Encapsulates mesh generation, triangulation, FEM matrix assembly, and source vector setup.
+
+    FIXME: Need to refactor this class to make it more understandable
     """
 
     def __init__(

@@ -2,16 +2,23 @@ class OutOfRangeError(Exception):
     """Exception raised for errors in the input if it is out of range."""
 
     def __init__(self, value, message="Value is out of the allowed range."):
-        self.value = value
-        self.message = message
+        """
+        Args:
+        -----
+            value (float): value that the user provided in GUI
+            message (str): Error message
+        """
+        self._value = value
+        self._message = message
         super().__init__(self.message)
 
     def __str__(self):
         """
-        :return: Returns the error message
-        :rtype: str
+        Returns: (str)
+        --------------
+            Returns the error message
         """
-        return f"{self.value} -> {self.message}"
+        return f"{self._value} -> {self._message}"
 
 
 class SimulationCalcInputException(Exception):
@@ -22,18 +29,22 @@ class SimulationCalcInputException(Exception):
     def __init__(self, message):
         """
         constructor exception object
-
-        :param message: takes in the error message
-        :type message: str
+        
+        Args:
+        -----
+            message (str): takes in the error message
         """
-        self.message = message
+        self._message = message
 
     def __str__(self):
         """
-        :return: Returns the error message
-        :rtype: str
+        Returns: (str)
+        --------------
+            Returns the error message
         """
-        return self.message
+        return self._message
+
+
 
 
 class UserInputException(Exception):
@@ -45,19 +56,19 @@ class UserInputException(Exception):
         """
         Initialize the exception with a message and optional input dictionary.
 
-        :param message: Description of the validation error.
-        :type message: str
-
-        :param inputs: Dictionary of user inputs (optional).
-        :type inputs: dict, None
+        Args:
+        -----
+            message (str): Description of the validation error.
+            inputs (dict, None): Dictionary of user inputs (optional).
         """
         super().__init__(message)
-        self.message = message
-        self.user_inputs = inputs or {}
+        self._message = message
+        self._user_inputs = inputs or {}
 
     def __str__(self):
         """
-        :return: Returns the error message
-        :rtype: str
+        Returns: (str)
+        --------------
+            Returns the error message
         """
-        return f"UserInputException: {self.message}"
+        return f"UserInputException: {self._message}"
