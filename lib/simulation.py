@@ -194,15 +194,207 @@ class Simulation:
         self.MFW = []
         self.integrated_inlet_flow = 0  # "src_total" in the MATLAB version of the code
 
-    # Dependent Property of Simulation Class
-    _source_prod_flow = None
-
+    # Property of Simulation Class
+    _grid_size = None
     @property
-    def source_prod_flow(self) -> np.ndarray:
+    def grid_size(self):
         """
-        Returns: (np.ndarray)
-        ---------------------
-            The matrix with the source & and production well flow rates
+        grid_size (float): the dimensions of the square grid
+        """
+        return self._grid_size
+    @grid_size.setter
+    def grid_size(self, value):
+        self._grid_size = value
+
+    _source_flow_magnitude = None
+    @property
+    def source_flow_magnitude(self):
+        """
+        source_flow_magnitude (float): flow rate at injection site
+        """
+        return self._source_flow_magnitude
+    @source_flow_magnitude.setter
+    def source_flow_magnitude(self, value):
+        self._source_flow_magnitude = value
+
+    _permeability_flag = None
+    @property
+    def permeability_flag(self):
+        """
+        permeability_flag (enum 'PermeabilityType'): sets the permeability field based on enum ``PermeabilityType``
+        """
+        return self._permeability_flag
+    @permeability_flag.setter
+    def permeability_flag(self, value):
+        self._permeability_flag = value
+
+    _reservoir_geometry = None
+    @property
+    def reservoir_geometry(self):
+        """
+        reservoir_geometry (enum 'ResevoirGeometry'): sets the reservoir geometry based on the enum ``ResevoirGeometry``
+        """
+        return self._reservoir_geometry
+    @reservoir_geometry.setter
+    def reservoir_geometry(self, value):
+        self._reservoir_geometry = value
+
+    _model_type = None
+    @property
+    def model_type(self):
+        """
+        model_type (enum 'ModelType'): sets the type of simulation being run based on the enum ``ModelType``
+        """
+        return self._model_type
+    @model_type.setter
+    def model_type(self, value):
+        self._model_type = value
+
+    _relative_permeability_formula = None
+    @property
+    def relative_permeability_formula(self):
+        """
+        relative_permeability_formula (enum 'RelativePermeabilityFormula'): sets the type of permeability formula being used in the simulation, based on the enum ``RelativePermeabilityFormula``
+        """
+        return self._relative_permeability_formula
+    @relative_permeability_formula.setter
+    def relative_permeability_formula(self, value):
+        self._relative_permeability_formula = value
+
+    _phi = None
+    @property
+    def phi(self):
+        """
+        phi (np.ndarray): porosity matrix
+        """
+        return self._phi
+    @phi.setter
+    def phi(self, value):
+        self._phi = value
+
+    _KK = None
+    @property
+    def KK(self):
+       """
+       KK (np.ndarray): the permeability matrix
+       """
+       return self._KK
+    @KK.setter
+    def KK(self, value):
+       self._KK = value
+
+    _time_step = None
+    @property
+    def time_step(self):
+        """
+        time_step (float): The Δt
+        """
+        return self._time_step
+    @time_step.setter
+    def time_step(self, value):
+        self._time_step = value
+
+    _polymer = None
+    @property
+    def polymer(self):
+        """
+        polymer (Polymer): Holds the ``Polymer`` object
+        """
+        return self._polymer
+    @polymer.setter
+    def polymer(self, value):
+        self._polymer = value
+
+    _surfactant = None
+    @property
+    def surfactant(self):
+        """
+        surfactant (Surfactant): Holds the ``Surfactant`` object
+        """
+        return self._surfactant
+    @surfactant.setter
+    def surfactant(self, value):
+        self._surfactant = value
+
+    _water = None
+    @property
+    def water(self):
+        """
+        water (Water): Holds the ``Water`` object
+        """
+        return self._water
+    @water.setter
+    def water(self, value):
+        self._water = value
+
+    _COC = None
+    @property
+    def COC(self):
+        """
+        COC (np.ndarray): An array that holds the cummulative oil captured
+        """
+        return self._COC
+    @COC.setter
+    def COC(self, value):
+        self._COC = value
+
+    _miuaTcal = None
+    @property
+    def miuaTcal(self):
+        """
+        miuTcal (np.ndarray): An array that caputres the change in the total aqueous viscosity over time
+        """
+        return self._miuaTcal
+    @miuaTcal.setter
+    def miuaTcal(self, value):
+        self._miuaTcal = value
+
+    _lambdaTcal = None
+    @property
+    def lambdaTcal(self):
+        """
+        lambdaTcal (np.ndarray): Array that holds the change in the total mobility (λ_T = λ_a + λ_o)
+        """
+        return self._lambdaTcal
+    @lambdaTcal.setter
+    def lambdaTcal(self, value):
+        self._lambdaTcal = value
+
+    _MFW = None
+    @property
+    def MFW(self):
+        """
+        MFW (np.ndarray): Array that holds change in the MFW (mean finger width)
+        """
+        return self._MFW
+    @MFW.setter
+    def MFW(self, value):
+        self._MFW = value
+
+    _integrated_inlet_flow = None
+    @property
+    def integrated_inlet_flow(self):
+        """
+        integrated_inlet_flow (float): Basically the integrating the source flow rate over time
+        """
+        return self._integrated_inlet_flow
+    @integrated_inlet_flow.setter
+    def integrated_inlet_flow(self, value):
+        self._integrated_inlet_flow = value
+
+    
+
+
+
+
+    
+
+
+    _source_prod_flow = None
+    @property
+    def source_prod_flow(self):
+        """
+        source_prod_flow (np.ndarray): The matrix with the source & and production well flow rates
         """
         # setting permeability state
         if self._source_prod_flow is None:
@@ -237,15 +429,11 @@ class Simulation:
         return self._source_prod_flow
 
     _scenario_flag = None
-
     @property
-    def scenario_flag(self) -> int:
+    def scenario_flag(self):
         """
-        Determines the scenario based on the chosen reservoir geometry and permeability
-
-        Returns: (int)
-        --------------
-            Integer value that represents a type of scenario run
+        Determines the scenario based on the chosen reservoir geometry and permeability.
+        Returns the integer value that represents a type of scenario run
         """
         if self._scenario_flag is None:
             bool_Homogenous_and_Rectilinear = (
