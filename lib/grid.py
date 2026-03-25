@@ -36,11 +36,96 @@ class Grid:
         self.bottom = bottom
         self.top = top
 
-        ## FIXME: properties here need to be adjusted based on changes to the corresponding methods
-        self.tri = None
         self.A = None
         self.B = None
-        self.RHS = None
+
+    _m = None
+    @property
+    def m(self):
+        """
+        The number of columns
+        """
+        return self._m
+    @m.setter
+    def m(self, value):
+        self._m = value
+    
+    _n = None
+    @property
+    def n(self):
+        """
+        The number of rows
+        """
+        return self._n
+    @n.setter
+    def n(self, value):
+        self._n = value
+
+    _left = None
+    @property
+    def left(self):
+        """
+        left most value on grid. Used to compute ``dx``. Has a default value of 0
+        """
+        return self._left
+    @left.setter
+    def left(self, value):
+        self._left = value
+
+    _right = None
+    @property
+    def right(self):
+        """
+        right most value on grid. Used to compute ``dx``. Has a default value of 1.
+        """
+        return self._right
+    @right.setter
+    def right(self, value):
+        self._right = value
+
+    _top = None
+    @property
+    def top(self):
+        """
+        Top most value on grid. Used to compute ``dy``. Has a default value of 1.
+        """
+        return self._top
+    @top.setter
+    def top(self, value):
+        self._top = value
+
+    _bottom = None
+    @property
+    def bottom(self):
+        """
+        Bottom most value on grid. Used to compute ``dy``. Has a default value of 0.
+        """
+        return self._bottom
+    @bottom.setter
+    def bottom(self, value):
+        self._bottom = value
+
+    _A = None
+    @property
+    def A(self):
+        """
+        A matrix for solving Ax = b
+        """
+        return self._A
+    @A.setter
+    def A(self, value):
+        self._A = value
+    
+    _B = None
+    @property
+    def B(self):
+        """
+        b matrix for solving Ax = b
+        """
+        return self._B
+    @B.setter
+    def B(self, value):
+        self._B = value
 
     @property
     def get_spacing(self):
@@ -109,13 +194,68 @@ class FEMesh(Grid):
         self.B = None
         self.sparsed_A = None
 
+    _sparsed_A = None
+    @property
+    def sparsed_A(self):
+        """
+        sparsed matrix version of matrix ``A``
+        """
+        return self._sparsed_A
+    @sparsed_A.setter
+    def sparsed_A(self, value):
+        self._sparsed_A = value
+
+    _grid_size = None
+    @property
+    def grid_size(self):
+        """
+        row size of square grid (# rows = # cols)
+        """
+        return self._grid_size
+    @grid_size.setter
+    def grid_size(self, value):
+        self._grid_size = value
+
+    _right_hand = None
+    @property
+    def right_hand(self):
+        """
+        Matrix representation of the rhs of the global pressure and velocity equations that will subsequently be used
+        to solve for the global pressure and velocity matrices.
+        """
+        return self._right_hand
+    @right_hand.setter
+    def right_hand(self, value):
+        self._right_hand = value
+
+    _U = None
+    @property
+    def U(self):
+        """
+        U = cell array with each element = array of vertices of Upper Triangle of
+        the rectangular cell
+        """
+        return self._U
+    @U.setter
+    def U(self, value):
+        self._U = value
+
+    _L = None
+    @property
+    def L(self):
+        """
+        L = cell array with each element = array of vertices of Lower Triangle of
+        the rectangular cell
+        """
+        return self._L
+    @L.setter
+    def L(self, value):
+        self._L = value
+
     def set_triangulation(self):
         """
             Setting up triangulations for the FEM grid
-            U = cell array with each element = array of vertices of Upper Triangle of
-            the rectangular cell
-            L = cell array with each element = array of vertices of Lower Triangle of
-            the rectangular cell
+            
             At every point (i,j), U{i,j} & L{i,j} are cells with coordinates of vertices
             of the two triangles obtained by bisecting the rectangle starting at
             (i,j). The bisection line goes from NW to SE.
