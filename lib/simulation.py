@@ -382,14 +382,6 @@ class Simulation:
     def integrated_inlet_flow(self, value):
         self._integrated_inlet_flow = value
 
-    
-
-
-
-
-    
-
-
     _source_prod_flow = None
     @property
     def source_prod_flow(self):

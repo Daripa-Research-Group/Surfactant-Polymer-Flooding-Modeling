@@ -286,7 +286,7 @@ class Water:
         self, sigma: np.ndarray, u: np.ndarray, v: np.ndarray
     ):
         """
-        Compute sar, sor based on capillary numbers (came from compres.m MATLAB file)
+        Compute swr, sor based on capillary numbers (came from compres.m MATLAB file)
 
         Args:
         -----
@@ -300,7 +300,7 @@ class Water:
         ---------------
             residual saturation for oil (index 1) and water (index 0) phases
         """
-        sar0 = self.init_aqueous_saturation
+        swr0 = self.init_aqueous_saturation
         sor0 = self.init_oleic_saturation
 
         Nco0 = 1.44e-4
@@ -314,9 +314,9 @@ class Water:
         Nco = np.linalg.norm(nco)
 
         sor = sor0 * (Nco0 / Nco) ** 0.5213 if Nco >= Nco0 else sor0
-        sar = sar0 * (Nca0 / Nca) ** 0.1534 if Nca >= Nca0 else sar0
+        swr = swr0 * (Nca0 / Nca) ** 0.1534 if Nca >= Nca0 else swr0
 
-        return [sar, sor]  # [residual aqueous saturation, residual oil saturation]
+        return [swr, sor]  # [residual aqueous saturation, residual oil saturation]
 
     def compute_mobility(
         self,
