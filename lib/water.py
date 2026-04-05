@@ -322,7 +322,7 @@ class Water:
         self,
         c: np.ndarray,
         sor: float,
-        sar: float,
+        swr: float,
         aqueous: bool,
         rel_permeability_formula: RelativePermeabilityFormula,
         modified_water_saturation: np.ndarray | None = None,
@@ -340,7 +340,7 @@ class Water:
 
             sor (float): residual saturation oil phase
 
-            sar (float): residual saturation water phase
+            swr (float): residual saturation water phase
 
             aqueous (bool): boolean for whether we are solving for aqoeous or oleic mobility
 
@@ -377,9 +377,9 @@ class Water:
             krw0 = nsw0**3.5
             kro0 = ((1 - nso0) ** 2) * (1 - nso0**1.5)
         else:
-            nsw = (s - sar) / (1 - sar)
-            nso = (s - sar) / (1 - sar - sor)
-            krw0 = nsw * (2.5 * sar * (nsw**2 - 1) + 1)
+            nsw = (s - swr) / (1 - swr)
+            nso = (s - swr) / (1 - swr - sor)
+            krw0 = nsw * (2.5 * swr * (nsw**2 - 1) + 1)
             kro0 = (1 - nso) * (1 - 5 * sor * nso)
 
         return krw0 / miua if aqueous else kro0 / self.miuo
@@ -477,10 +477,10 @@ class Water:
         query_points = np.stack([ymod.ravel(), xmod.ravel()], axis=-1)
         Qmod = interp_func(query_points).reshape(xmod.shape)
 
-        sar = varying_parameters["sar"]
+        swr = varying_parameters["swr"]
         sor = varying_parameters["sor"]
-        nsw = (Qmod - sar) / (1 - sar)
-        nso = (Qmod - sar) / (1 - sar - sor)
+        nsw = (Qmod - swr) / (1 - swr)
+        nso = (Qmod - swr) / (1 - swr - sor)
         varying_parameters["nsw"] = nsw
         varying_parameters["nso"] = nso
 
@@ -491,7 +491,7 @@ class Water:
         lambda_a = self.compute_mobility(
             c=polymer.concentration_matrix,
             sor=float(sor),
-            sar=float(sar),
+            swr=float(swr),
             aqueous=True,
             rel_permeability_formula=relative_permeability_formula,
             modified_water_saturation=Qmod,
@@ -499,7 +499,7 @@ class Water:
         lambda_o = self.compute_mobility(
             c=polymer.concentration_matrix,
             sor=float(sor),
-            sar=float(sar),
+            swr=float(swr),
             aqueous=False,
             rel_permeability_formula=relative_permeability_formula,
             modified_water_saturation=Qmod,
