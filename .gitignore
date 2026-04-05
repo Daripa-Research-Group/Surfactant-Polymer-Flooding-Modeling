@@ -4,3 +4,5 @@ results/*.xlsx
 __pycache__/
 *.egg-info
 memmaps
+.venv
+venv
