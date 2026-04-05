@@ -580,7 +580,7 @@ class Water:
                                     + g1 * (1 - f[cnt][i])
                                     + (
                                         (D_g[cnt][i] + D_g[cnt][i + 1]) / (dx**2)
-                                        + (D_g[cnt + 1][i] + D_g[cnt][i]) / (dy**2)
+                                        + (D_g[cnt + 1][i] + D_g[cnt][i]) / (dx**2)
                                     )
                                     * surfactant.concentration_matrix[cnt][i]
                                     - (D_g[cnt][i] + D_g[cnt][i + 1])
@@ -595,7 +595,7 @@ class Water:
 
                                 BB[j][i] = (
                                     1 / dt_array[cnt][i]
-                                    - (D_s[cnt][i] + D_s[cnt][i + 1]) / (dx**2)
+                                    - (D_s[cnt+1][i] + D_s[cnt][i + 1]) / (dx**2)
                                     - (D_s[cnt + 1][i] + D_s[cnt][i]) / (dy**2)
                                 )
 
@@ -730,7 +730,7 @@ class Water:
                                     * surfactant.concentration_matrix[cnt - 1][i]
                                 )
 
-                                BB[j][i - 1] = (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
+                                BB[j][i - 1] = (D_s[cnt][i] + D_s[cnt][i - 1]) / (dy**2)
 
                                 BB[j][i] = (
                                     1 / dt_array[cnt][i]
@@ -1037,7 +1037,7 @@ class Water:
             warnings.warn(f"BiCGSTAB: convergence issue (info={info}) in water saturation solver")
         Qnew = Qnew_flat = Qnew_flat.reshape(m, n)
 
-        Qnew[Qnew < 0] = 0
+        Qnew[Qnew > 1] = 1
 
         self.water_saturation = Qnew
 
