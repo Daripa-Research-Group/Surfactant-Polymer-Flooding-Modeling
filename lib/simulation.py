@@ -387,6 +387,8 @@ class Simulation:
     def source_prod_flow(self):
         """
         source_prod_flow (np.ndarray): The matrix with the source & and production well flow rates
+
+        assuming that the source flow = production well flow (flow magnitudes are the same!)
         """
         # setting permeability state
         if self._source_prod_flow is None:
@@ -728,9 +730,12 @@ class Simulation:
             ds - derivative with respect to water saturation
             dc - derivative with respect to polymer concentration
 
-        Returns: (tuple[np.ndarray, np.ndarray, np.ndarray])
+        Returns: (tuple[float, float, float])
         ----------------------------------------------------
-            tuple[Water, Polymer, Surfactant]
+            tuple[ocut, wcut, ROIP]
+            ocut - volume of oil in the production well
+            wcut - volume of water in the production well
+            ROIP - residual oil in place (as a volume fraction)
         """
         # Initialize constant parameters
         const_parameters = {}
@@ -1098,8 +1103,11 @@ class Simulation:
             Gmod=Gmod,
         )
 
-        # Returning updated Water, Polymer, and Surfactant objects
-        return self.water, self.polymer, self.surfactant
+        # calculate the Oil capture, water captured, and residual oil in place
+        ocut = lambda_o[n, m] * self.source_flow_magnitude / lambda_total[n,m]
+        wcut = lambda_a[n, m] * self.source_flow_magnitude / lambda_total[n,m]
+        ROIP = 100*(np.sum(np.sum(1 - self.water.water_saturation)))/sum(np.ones((n*m,1)))
+        return ocut, wcut, ROIP
 
     def _characteristic_coordinates(
         self,
@@ -1223,15 +1231,18 @@ class Simulation:
 
         os.makedirs("sim_results", exist_ok=True)
 
-        np.savetxt("sim_results/COC.csv", self.COC, delimiter=",")
-        if hasattr(self, "lambdaTcal"):
-            np.savetxt(
-                "sim_results/lambdaTcal.csv", np.array(self.lambdaTcal), delimiter=","
-            )
-        if hasattr(self, "miuaTcal"):
-            np.savetxt(
-                "sim_results/miuaTcal.csv", np.array(self.miuaTcal), delimiter=","
-            )
+        np.savetxt(f"sim_results/COC_scenario_{self.scenario_flag}.csv", self.COC, delimiter=",")
+        np.savetxt(f"sim_results/MFW_scenario_{self.scenario_flag}.csv", self.MFW, delimiter=",")
+        np.savetxt(f"sim_results/CROIP_scenario_{self.scenario_flag}.csv", self.CROIP, delimiter=",")
+        np.savetxt(f"sim_results/ProdRate_scenario_{self.scenario_flag}.csv", self.ProdRate, delimiter=",")
+        # if hasattr(self, "lambdaTcal"):
+        #     np.savetxt(
+        #         "sim_results/lambdaTcal.csv", np.array(self.lambdaTcal), delimiter=","
+        #     )
+        # if hasattr(self, "miuaTcal"):
+        #     np.savetxt(
+        #         "sim_results/miuaTcal.csv", np.array(self.miuaTcal), delimiter=","
+        #     )
 
         print("Simulation sim_results exported to /sim_results/ folder.")
         
@@ -1455,11 +1466,26 @@ class Simulation:
                 )
 
                 ## STEP 2.5: Solving Transport Equations
-                self._transport_equation_solver(dt)
+                ocut, wcut, ROIP = self._transport_equation_solver(dt)
 
                 ## Step 2.6: MFW post processing (excluding QFS)
                 if (self.scenario_flag != 3): # FIXME: compute_MFW currently operates for rectilinear geometries. Implement MFW computation for QFS
                     interface, MFW_val, _ = self._compute_MFW(self.water.water_saturation)
                     self.MFW.append(MFW_val)
+
+                ## STEP 2.7: Updating the cummulative oil captured, Production rate, and the residual oil in place 
+                # arrays for exporting to CSV files
+                if (t_cal == 0):
+                    self.COC[t_cal] = ocut
+                else:
+                    self.COC[t_cal] = self.COC[t_cal - 1] + ocut
+
+                self.ProdRate[t_cal] = ocut/dt
+                self.CROIP[t_cal] = ROIP
+
+                t_cal += 1
+
+            self._export_results()
+
         except Exception as e:
             print(e)
