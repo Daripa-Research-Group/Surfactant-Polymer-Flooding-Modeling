@@ -1475,17 +1475,17 @@ class Simulation:
 
                 ## STEP 2.7: Updating the cummulative oil captured, Production rate, and the residual oil in place 
                 # arrays for exporting to CSV files
-            #     if (t_cal == 0):
-            #         self.COC[0,t_cal] = ocut
-            #     else:
-            #         self.COC[0,t_cal] = self.COC[0,t_cal - 1] + ocut
-            #
-            #     self.ProdRate[0,t_cal] = ocut/dt
-            #     self.CROIP[0,t_cal] = ROIP
-            #
-            #     t_cal += 1
-            #
-            # self._export_results()
+                if (t_cal == 0):
+                    self.COC[0,t_cal] = ocut
+                else:
+                    self.COC[0,t_cal] = self.COC[0,t_cal - 1] + ocut
+
+                self.ProdRate[0,t_cal] = ocut/dt
+                self.CROIP[0,t_cal] = ROIP
+
+                t_cal += 1
+
+            self._export_results()
 
         except Exception as e:
             print(e)
