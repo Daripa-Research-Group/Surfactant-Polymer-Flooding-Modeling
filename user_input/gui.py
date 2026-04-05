@@ -105,7 +105,7 @@ class UserInputGUI:
 
         # Permeability dropdown
         permeability_options = {
-            "Homogeneous": 1,
+            # "Homogeneous": 1,
             "Heterogeneous": 2,
         }
         permeability_var = tk.StringVar(value=list(permeability_options.keys())[0])

@@ -62,22 +62,37 @@ class PolymerList(Enum):
 
     @property
     def Id(self):
+        """
+        Id (int): Index for Polymer
+        """
         return self.value[0]
 
     @property
     def Density(self):  # kg/m^3
+        """
+        Density (float): density of the Polymer
+        """
         return self.value[1]
 
     @property
     def n_coeff(self):  # dimensionless
+        """
+        n_coeff (list[float]): 'n' coeffient for the empirical power law equation
+        """
         return self.value[2]
 
     @property
     def e_coeff(self):  # dimensionless
+        """
+        e_coeff (list[float]): 'ε' coeffient for the empirical power law equation
+        """
         return self.value[3]
 
     @classmethod
     def get_by_value(cls, value):
+        """
+        retrieves Polymer from enumeration based on value
+        """
         member = next((member for member in cls if member.value[0] == value), None)
         return member
 
@@ -98,18 +113,30 @@ class SurfactantList(Enum):
 
     @property
     def Id(self):
+        """
+        Id (int): Index for Polymer
+        """
         return self.value[0]
 
     @property
     def IFT_equation(self):
+        """
+        IFT_equation (lambda): the relationship between surfactant concentration and interfacial tension
+        """
         return self.value[1]
 
     @property
     def derivative_IFT_equation(self):
+        """
+        derivative_IFT_equation (lambda): the derivative of the IFT_equation
+        """
         return self.value[2]
 
     @classmethod
     def get_by_value(cls, value):
+        """
+        retrieves Surfactant from enumeration based on value
+        """
         member = next((member for member in cls if member.value[0] == value), None)
         return member
 

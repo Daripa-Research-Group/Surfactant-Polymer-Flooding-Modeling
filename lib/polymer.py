@@ -35,36 +35,6 @@ class Polymer:
     ):
         """
         Initializes a instance of the polymer class
-
-        :param name: Name of the polymer
-        :type name: enum 'PolymerList'
-
-        :param e_coeff: The coefficients used to determine epsilon for the empirical power law expression used to determine the viscosity of the aqueous phase
-        :type e_coeff: list<int>
-
-        :param n_coeff:  The coefficients used to determine epsilon for the empirical power law expression used to determine the viscosity of the aqueous phase
-        :type n_coeff: list<int>
-
-        :param rho: Density of polymer
-        :type rho: float
-
-        :param concentration_scalar: Scalar quantity of concentration. When initializing, this param will equal the initial polymer concentration.
-        :type concentration_scalar: float
-
-        :param phi: arrray used to initialize the concentration matrix (represents porosity of the resevoir)
-        :type: np.ndarray
-
-        :param viscosity_scalar: scalar quantity of the polymer viscosity
-        :type viscosity_scalar: float, None
-
-        :param viscosity_matrix: viscosity matrix of the polymer
-        :type viscosity_matrix: np.ndarray, None
-
-        :param concentration_matrix: matrix representation of polymer concentration within resevoir
-        :type concentration_matrix: np.ndarray, None
-
-        :param shear_rate: Matrix that will hold the shear rate (the change in velocity normal to the direction of flow)
-        :type shear_rate: np.ndarray, None
         """
 
         # PolymerList object
@@ -91,16 +61,142 @@ class Polymer:
 
         # util param for initialization
         self.phi = phi  # Will need to be created in the simulation class
+ 
+    _name = None
+    @property
+    def name(self):
+        """
+        name (enum 'PolymerList'): Name of the polymer
+        """
+        return self._name
+    @name.setter
+    def name(self, value):
+        self._name = value
+
+    _concetration_scalar = None
+    @property
+    def concetration_scalar(self):
+        """
+        concentration_scalar (float): Scalar quantity of concentration. When initializing, this param will equal the initial polymer concentration.
+        """
+        return self._concetration_scalar
+    @concetration_scalar.setter
+    def concetration_scalar(self, value):
+        self._concetration_scalar = value
+
+    _init_concentration_matrix = None
+    @property
+    def init_concentration_matrix(self):
+        """
+        Initial matrix (at time t = 0) representation of polymer concentration within resevoir
+        """
+        return self._init_concentration_matrix
+    @init_concentration_matrix.setter
+    def init_concentration_matrix(self, value):
+        self._init_concentration_matrix = value
+
+    _concentration_matrix = None
+    @property
+    def concentration_matrix(self):
+        """
+        concentration_matrix (np.ndarray, None): matrix representation of polymer concentration within resevoir over time
+        """
+        return self._concentration_matrix
+    @concentration_matrix.setter
+    def concentration_matrix(self, value):
+        self._concentration_matrix = value
+
+    _viscosity_matrix = None
+    @property
+    def viscosity_matrix(self):
+        """
+        viscosity_matrix (np.ndarray, None): viscosity matrix of the polymer
+        """
+        return self._viscosity_matrix
+    @viscosity_matrix.setter
+    def viscosity_matrix(self, value):
+        self._viscosity_matrix = value
+
+    _viscosity_scalar = None
+    @property
+    def viscosity_scalar(self):
+        """
+        viscosity_scalar (float, None): scalar quantity of the polymer viscosity
+        """
+        return self._viscosity_scalar
+    @viscosity_scalar.setter
+    def viscosity_scalar(self, value):
+        self._viscosity_scalar = value
+
+    _e_coeff = None
+    @property
+    def e_coeff(self):
+        """
+        e_coeff (list[float]): The coefficients used to determine epsilon for the empirical power law expression used to determine the viscosity of the aqueous phase
+        """
+        return self._e_coeff
+    @e_coeff.setter
+    def e_coeff(self, value):
+        self._e_coeff = value
+
+    _n_coeff = None
+    @property
+    def n_coeff(self):
+        """
+        n_coeff (list[float]):  The coefficients used to determine epsilon for the empirical power law expression used to determine the viscosity of the aqueous phase
+        """
+        return self._n_coeff
+    @n_coeff.setter
+    def n_coeff(self, value):
+        self._n_coeff = value
+
+    _rho = None
+    @property
+    def rho(self):
+        """
+        rho (float): Density of polymer
+        """
+        return self._rho
+    @rho.setter
+    def rho(self, value):
+        self._rho = value
+
+    _phi = None
+    @property
+    def phi(self):
+        """
+        phi (np.ndarray): arrray used to initialize the concentration matrix (represents porosity of the resevoir)
+        """
+        return self._phi
+    @phi.setter
+    def phi(self, value):
+        self._phi = value
+
+    _shear_rate = None
+    @property
+    def shear_rate(self):
+        """
+        shear_rate (np.ndarray, None): Matrix that will hold the shear rate (the change in velocity normal to the direction of flow)
+        """
+        return self._shear_rate
+    @shear_rate.setter
+    def shear_rate(self, value):
+        self._shear_rate = value
+
+
+
 
     def initialize(self, grid_shape: tuple):
         """
         Will initialize the viscosity, shear_rate, and concentration matrices
-
-        :param grid_shape: contain the shape of the grid
-        :type grid_shape: tuple
-
-        :return: Initalized Polymer Object
-        :rtype: Polymer
+        
+        Args:
+        -----
+            grid_shape (tuple): contain the shape of the grid
+        
+        Returns: (Polymer)
+        -----------------
+            Initalized Polymer Object
         """
         n = grid_shape[0]
         m = grid_shape[1]
@@ -138,24 +234,22 @@ class Polymer:
         """
         Compute polymer viscosity.
         This function is derived from 'compvis()' in the original MATLAB code (in file compvis.m).
+        
+        Args:
+        -----
+            grid (Tuple[NDArray[Any], ...]): The FEM grid used for simulation calculations (x and y variables from the MATLAB code)
 
-        :param grid: The FEM grid used for simulation calculations (x and y variables from the MATLAB code)
-        :type grid: tuple[NDArray[Any], ...]
+            u (np.ndarray): Matrix related to the global pressure
 
-        :param u: Matrix related to the global pressure
-        :type u: np.ndarray
+            v (np.ndarray): Matrix related to the velocity matrix
 
-        :param v: Matrix related to the velocity matrix
-        :type v: np.ndarray
+            model_type (enum 'ModelType'): Will state whether the model will include polymer shear thinning or not
 
-        :param model_type: Will state whether the model will include polymer shear thinning or not
-        :type model_type: enum 'ModelType'
-
-        :param aqueous_viscosity: Aqueous viscosity matrix (will come from the 'Water' class). Only needed when shear thinning OFF
-        :type aqueous_viscosity: np.ndarray, None
-
-        :return: the viscosity_matrix (index 0) & shear_rate matrix (index 1) for the polymer within the grid
-        :rtype: list
+            aqueous_viscosity (np.ndarray, None): Aqueous viscosity matrix (will come from the ``Water`` class). Only needed when shear thinning OFF
+        
+        Returns: (list)
+        ---------------
+            the viscosity_matrix (index 0) & shear_rate matrix (index 1) for the polymer within the grid
         """
         # x and y components from meshgrid
         x = grid.x
@@ -278,6 +372,36 @@ class Polymer:
         const_parameters: dict,
         varying_parameters: dict,
     ):
+        """
+        Computes the polymer concentration
+
+        Raises:
+        -------
+            SimulationCalcInputException: Not all required parameters were provided
+
+        Args:
+        -----
+            grid (Grid): the FDMesh
+
+            water_sat (np.ndarray): the water saturation matrix
+
+            u (np.ndarray): Matrix related to the global pressure
+
+            v (np.ndarray): Matrix related to the velocity matrix
+
+            xmod (np.ndarray): x-dim characteristic coordinates based on Neumann boundary conditions
+
+            ymod (np.ndarray): y-dim characteristic coordinates based on Neumann boundary conditions
+
+            const_parameters (dict): constant parameters to help with calculations
+
+            varying_parameters (dict): parameters that vary but assist with calculations for water saturation, polymer concentration, and surfactant concentration
+        
+        Returns: (dict)
+        ---------------
+            The varying parameters that were changed in this method
+
+        """
         # initializing variables:
         # Assert statements to ensure that all parameters are property initialized:
         assert self.concentration_matrix is not None, SimulationCalcInputException(
@@ -395,7 +519,19 @@ class Polymer:
         """
         Calculates Divergence
 
-        :return: Div F = (δfx/δx) + (δfy/δy)
+        Args:
+        -----
+            Fx (np.ndarray): Function #1
+            
+            Fy (np.ndarray): Function #2
+
+            dx (float): change in the x-dimension
+
+            dy (float): change in the y-dimension
+
+        Raises: (np.ndarray)
+        --------------------
+            Div F = (δfx/δx) + (δfy/δy)
         """
         dFx_dx = np.gradient(Fx, dx, axis=1)
         dFy_dy = np.gradient(Fy, dy, axis=0)

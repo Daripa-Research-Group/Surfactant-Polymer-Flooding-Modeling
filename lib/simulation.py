@@ -10,8 +10,6 @@ developed by Sourav Dutta and Rohit Mishra.
 
 import os
 
-import numpy as np
-import scipy as sp
 from grid import Grid, FEMesh
 from enumerations import (
     ModelType,
@@ -25,6 +23,8 @@ from enumerations import (
 from Exceptions import SimulationCalcInputException, UserInputException
 from polymer import Polymer
 from surfactant import Surfactant
+import numpy as np
+import scipy as sp
 from water import Water
 from scipy.io import loadmat
 from scipy.sparse.linalg import bicgstab
@@ -44,12 +44,15 @@ class Simulation:
     def __init__(self, user_input_dict: dict):
         """
         This method will check the ``user_input_dict`` and initialize the simulation
-
-        :raises UserInputException: If there is a issue with the user inputs in ``user_input_dict``
-        :raises SimulationCalcInputException: If there is an issue with the execution of a calculation during runtime
-
-        :param user_input_dict: dictionary containing the information from the GUI
-        :type user_input_dict: dict
+        
+        Raises:
+        ------
+            UserInputException: If there is a issue with the user inputs in ``user_input_dict``
+            SimulationCalcInputException: If there is an issue with the execution of a calculation during runtime
+        
+        Args:
+        -----
+            user_input_dict (dict): dictionary containing the information from the GUI
         """
         ## Performs checks on the user input dictionary passed in:
         try:
@@ -191,16 +194,201 @@ class Simulation:
         self.MFW = []
         self.integrated_inlet_flow = 0  # "src_total" in the MATLAB version of the code
 
-    # Dependent Property of Simulation Class
-    _source_prod_flow = None
+    # Property of Simulation Class
+    _grid_size = None
+    @property
+    def grid_size(self):
+        """
+        grid_size (float): the dimensions of the square grid
+        """
+        return self._grid_size
+    @grid_size.setter
+    def grid_size(self, value):
+        self._grid_size = value
 
+    _source_flow_magnitude = None
+    @property
+    def source_flow_magnitude(self):
+        """
+        source_flow_magnitude (float): flow rate at injection site
+        """
+        return self._source_flow_magnitude
+    @source_flow_magnitude.setter
+    def source_flow_magnitude(self, value):
+        self._source_flow_magnitude = value
+
+    _permeability_flag = None
+    @property
+    def permeability_flag(self):
+        """
+        permeability_flag (enum 'PermeabilityType'): sets the permeability field based on enum ``PermeabilityType``
+        """
+        return self._permeability_flag
+    @permeability_flag.setter
+    def permeability_flag(self, value):
+        self._permeability_flag = value
+
+    _reservoir_geometry = None
+    @property
+    def reservoir_geometry(self):
+        """
+        reservoir_geometry (enum 'ResevoirGeometry'): sets the reservoir geometry based on the enum ``ResevoirGeometry``
+        """
+        return self._reservoir_geometry
+    @reservoir_geometry.setter
+    def reservoir_geometry(self, value):
+        self._reservoir_geometry = value
+
+    _model_type = None
+    @property
+    def model_type(self):
+        """
+        model_type (enum 'ModelType'): sets the type of simulation being run based on the enum ``ModelType``
+        """
+        return self._model_type
+    @model_type.setter
+    def model_type(self, value):
+        self._model_type = value
+
+    _relative_permeability_formula = None
+    @property
+    def relative_permeability_formula(self):
+        """
+        relative_permeability_formula (enum 'RelativePermeabilityFormula'): sets the type of permeability formula being used in the simulation, based on the enum ``RelativePermeabilityFormula``
+        """
+        return self._relative_permeability_formula
+    @relative_permeability_formula.setter
+    def relative_permeability_formula(self, value):
+        self._relative_permeability_formula = value
+
+    _phi = None
+    @property
+    def phi(self):
+        """
+        phi (np.ndarray): porosity matrix
+        """
+        return self._phi
+    @phi.setter
+    def phi(self, value):
+        self._phi = value
+
+    _KK = None
+    @property
+    def KK(self):
+       """
+       KK (np.ndarray): the permeability matrix
+       """
+       return self._KK
+    @KK.setter
+    def KK(self, value):
+       self._KK = value
+
+    _time_step = None
+    @property
+    def time_step(self):
+        """
+        time_step (float): The Δt
+        """
+        return self._time_step
+    @time_step.setter
+    def time_step(self, value):
+        self._time_step = value
+
+    _polymer = None
+    @property
+    def polymer(self):
+        """
+        polymer (Polymer): Holds the ``Polymer`` object
+        """
+        return self._polymer
+    @polymer.setter
+    def polymer(self, value):
+        self._polymer = value
+
+    _surfactant = None
+    @property
+    def surfactant(self):
+        """
+        surfactant (Surfactant): Holds the ``Surfactant`` object
+        """
+        return self._surfactant
+    @surfactant.setter
+    def surfactant(self, value):
+        self._surfactant = value
+
+    _water = None
+    @property
+    def water(self):
+        """
+        water (Water): Holds the ``Water`` object
+        """
+        return self._water
+    @water.setter
+    def water(self, value):
+        self._water = value
+
+    _COC = None
+    @property
+    def COC(self):
+        """
+        COC (np.ndarray): An array that holds the cummulative oil captured
+        """
+        return self._COC
+    @COC.setter
+    def COC(self, value):
+        self._COC = value
+
+    _miuaTcal = None
+    @property
+    def miuaTcal(self):
+        """
+        miuTcal (np.ndarray): An array that caputres the change in the total aqueous viscosity over time
+        """
+        return self._miuaTcal
+    @miuaTcal.setter
+    def miuaTcal(self, value):
+        self._miuaTcal = value
+
+    _lambdaTcal = None
+    @property
+    def lambdaTcal(self):
+        """
+        lambdaTcal (np.ndarray): Array that holds the change in the total mobility (λ_T = λ_a + λ_o)
+        """
+        return self._lambdaTcal
+    @lambdaTcal.setter
+    def lambdaTcal(self, value):
+        self._lambdaTcal = value
+
+    _MFW = None
+    @property
+    def MFW(self):
+        """
+        MFW (np.ndarray): Array that holds change in the MFW (mean finger width)
+        """
+        return self._MFW
+    @MFW.setter
+    def MFW(self, value):
+        self._MFW = value
+
+    _integrated_inlet_flow = None
+    @property
+    def integrated_inlet_flow(self):
+        """
+        integrated_inlet_flow (float): Basically the integrating the source flow rate over time
+        """
+        return self._integrated_inlet_flow
+    @integrated_inlet_flow.setter
+    def integrated_inlet_flow(self, value):
+        self._integrated_inlet_flow = value
+
+    _source_prod_flow = None
     @property
     def source_prod_flow(self):
         """
-        Return
-        ------
-        :return: returns the matrix with the source & and production well flow rates
-        :rtype: np.ndarray
+        source_prod_flow (np.ndarray): The matrix with the source & and production well flow rates
+
+        assuming that the source flow = production well flow (flow magnitudes are the same!)
         """
         # setting permeability state
         if self._source_prod_flow is None:
@@ -235,9 +423,12 @@ class Simulation:
         return self._source_prod_flow
 
     _scenario_flag = None
-
     @property
     def scenario_flag(self):
+        """
+        Determines the scenario based on the chosen reservoir geometry and permeability.
+        Returns the integer value that represents a type of scenario run
+        """
         if self._scenario_flag is None:
             bool_Homogenous_and_Rectilinear = (
                 self.permeability_flag.value == PermeabilityType.Homogenous.value
@@ -273,10 +464,9 @@ class Simulation:
         Initializing global pressure ('u') and velocity matrices ('v')
         Will use the ``n`` and ``m`` properties from ``Grid`` Class for initialization
 
-        Return
-        ------
-        :return: the global pressure matrix (index 0) and velocity matrix (index 1)
-        :rtype: list[np.ndarray]
+        Returns: (tuple[np.ndarray, np.ndarray])
+        ----------------------------------------
+            The global pressure matrix (index 0) and velocity matrix (index 1)
         """
         u = np.zeros((self.mesh.n + 1, self.mesh.m + 1), dtype=np.complex128)
         v = np.zeros((self.mesh.n + 1, self.mesh.m + 1), dtype=np.complex128)
@@ -289,9 +479,10 @@ class Simulation:
 
         dependent property to calculate the pressure matrix (``u``)
         and velocity matrix (``v``). Will rely on functions in the ``FEMesh`` class.
-
-        :return: list of update pressure matrix and velocity matrix => [u,v]
-        :rtype: list[np.ndarray]
+        
+        Returns: (list[np.ndarray])
+        ---------------------------
+            List of update pressure matrix and velocity matrix => [u,v]
         """
         max_iterations = 1000
         new_u, convergence_flag = bicgstab(
@@ -314,10 +505,13 @@ class Simulation:
 
     def _get_gradient(self, vn):
         """
-        Helper function to determine the gradients with respect to x and y dimensions
+        (private method)
 
-        :return: tuple with px py which are numpy matrices that hold the gradient wrt to x and y dimensions
-        :rtype: tuple[_Array[tuple[int, int], float64], NDArray[float64]]
+        Helper function to determine the gradients with respect to x and y dimensions
+        
+        Returns: (tuple[_Array[tuple[int, int], float64], NDArray[float64]])
+        --------------------------------------------------------------------
+            Tuple with px py which are numpy matrices that hold the gradient wrt to x and y dimensions
         """
         m = self.mesh.m
         n = self.mesh.n
@@ -351,9 +545,10 @@ class Simulation:
 
         Will initialize the ``ProdRate`` and ``CROIP`` properties.
         Using memmaps to allow window's users to run program.
-
-        :return: Initialized ``ProdRate`` and ``CROIP`` properties
-        :rtype: list
+        
+        Returns: (tuple[np.ndarray, np.ndarray])
+        ----------------------------------------
+            Initialized ``ProdRate`` and ``CROIP`` properties
         """
         os.makedirs("memmaps", exist_ok=True)
         tf = 500
@@ -372,8 +567,9 @@ class Simulation:
         """
         (private method)
 
-        :return: Initialized FD and FE mesh
-        :rtype: Tuple[Grid, FEMesh]
+        Returns: (Tuple[Grid, FEMesh])
+        -----------------------------
+            Initialized FD and FE mesh
         """
         FD_mesh = Grid(self.grid_size, self.grid_size)
 
@@ -387,8 +583,9 @@ class Simulation:
 
         Sets up initial reservoir fields, permeability, and time step.
 
-        :return: initialized properties of simulation. Required in ``__init__`` function
-        :rtype: None
+        Returns: (None)
+        ---------------
+            Initialized properties of simulation. Required in ``__init__`` function
         """
         self.phi = self._compute_phi()
 
@@ -407,8 +604,10 @@ class Simulation:
         """
         (private method)
 
-        Compute level set function phi at each grid point.
-        Equivalent to MATLAB get_phi_test function.
+        Returns: (np.ndarray)
+        ---------------------
+            Computes and returns the level set function phi at each grid point. 
+            (Equivalent to MATLAB get_phi_test function.)
         """
         m = self.mesh.m
         n = self.mesh.n
@@ -428,10 +627,17 @@ class Simulation:
         """
         (private method)
 
-        Compute the initial position of the water front.
-        Equivalent to MATLAB z_func_test.
+        Args:
+        -----
+            x (np.ndarry): x-dimension coordinates 
 
-        Takes array user_input_dict x, y.
+            y (np.ndarray): y-dimension coordinate points
+        
+        Returns: 
+        --------
+            Compute and returns the initial position of the water front.
+            (Equivalent to MATLAB z_func_test.)
+
         """
         init_front_hs = 0.1
         bool_Homogenous_and_Rectilinear = (
@@ -462,9 +668,11 @@ class Simulation:
     def _compute_permeability(self):
         """
         (private method)
-
-        Compute permeability matrix KK based on the flag.
-        Equivalent to MATLAB KKdef function.
+        
+        Returns:
+        -------
+            Compute and returns the permeability matrix KK based on the ``scenario_flag``.
+            (Equivalent to MATLAB KKdef function.)
         """
         bool_Homogenous_and_Rectilinear = (
             self.permeability_flag.value == PermeabilityType.Homogenous.value
@@ -496,26 +704,6 @@ class Simulation:
                 )
                 + 1
             )
-        # elif flag == 3:
-        #     # Impermeable block at center
-        #     KK = 3000 * np.ones((m + 1, m + 1))
-        #     center = m // 2
-        #     delta = m // 8
-        #     KK[
-        #         center - delta : center + delta + 1,
-        #         center - delta : center + delta + 1,
-        #     ] = 3
-        # elif flag == 4:
-        #     # Impermeable blocks off-center
-        #     KK = 3000 * np.ones((m + 1, m + 1))
-        #     KK[
-        #         (3*m)//4 - m//12 : (3*m)//4 + m//12 + 1,
-        #         (2*m)//3 - m//12 : (2*m)//3 + m//12 + 1
-        #     ] = 3
-        #     KK[
-        #         m//3 - m//10 : m//3 + m//10 + 1,
-        #         m//3 - m//10 : m//3 + m//10 + 1
-        #     ] = 3
         elif bool_Heterogenous_and_Quarter_Five_Spot:
             # Load Upper Ness formation (SPE10)
             mat_data = loadmat(
@@ -526,14 +714,6 @@ class Simulation:
                     "SimulationInputException: KK matrix not found in KK30Ness.mat file."
                 )
             KK = mat_data["KK"]
-        # elif flag == 6:
-        #     # Load Tarbert formation (SPE10)
-        #     mat_data = loadmat('/Resources/KK30Tabert.mat')
-        #     if 'KK' not in mat_data:
-        #         raise SimulationCalcInputException('SimulationInputException: KK matrix not found in KK30Tabert.mat file.')
-        #     KK = mat_data['KK']
-        # else:
-        #     raise SimulationCalcInputException("SimulationInputException: Unknown permeability flag.")
         return KK
 
     def _transport_equation_solver(self, dt):
@@ -550,7 +730,12 @@ class Simulation:
             ds - derivative with respect to water saturation
             dc - derivative with respect to polymer concentration
 
-        :return: tuple[Water, Polymer, Surfactant]
+        Returns: (tuple[float, float, float])
+        ----------------------------------------------------
+            tuple[ocut, wcut, ROIP]
+            ocut - volume of oil in the production well
+            wcut - volume of water in the production well
+            ROIP - residual oil in place (as a volume fraction)
         """
         # Initialize constant parameters
         const_parameters = {}
@@ -918,8 +1103,11 @@ class Simulation:
             Gmod=Gmod,
         )
 
-        # Returning updated Water, Polymer, and Surfactant objects
-        return self.water, self.polymer, self.surfactant
+        # calculate the Oil capture, water captured, and residual oil in place
+        ocut = lambda_o[n-1, m-1] * self.source_flow_magnitude / lambda_total[n-1,m-1]
+        wcut = lambda_a[n-1, m-1] * self.source_flow_magnitude / lambda_total[n-1,m-1]
+        ROIP = 100*(np.sum(np.sum(1 - self.water.water_saturation)))/np.sum(np.ones((n*m,1)))
+        return ocut, wcut, ROIP
 
     def _characteristic_coordinates(
         self,
@@ -935,6 +1123,22 @@ class Simulation:
         Compute redefined characteristic coordinates (xmod, ymod) according to Neumann boundary conditions.
 
         will be a helper function to the ``self._transport_equation_solver()`` method.
+
+        Args:
+        ------
+            flag (int): scenario flag for the simulation the user wants to run
+
+            old_water_saturation_matrix (np.ndarray): water saturation matrix from previous iteration
+
+            new_water_saturation_matrix (np.ndarray): water saturation from current iteration
+
+            const_parameters (dict): constant parameters to help with calculations
+
+            varying_parameters (dict): parameters that vary but assist with calculations for water saturation, polymer concentration, and surfactant concentration
+
+        Returns: (tuple[np.ndarray, np.ndarray])
+        ---------------------------------------
+            This method returns ``xmod`` and ``ymod``, which are the modified characteristic coordinates according to the Neumann boundary conditions
         """
         assert self.water.water_saturation is not None, SimulationCalcInputException(
             "SimulationCalcInputError:UnknownWaterSaturationMatrix"
@@ -1027,19 +1231,34 @@ class Simulation:
 
         os.makedirs("sim_results", exist_ok=True)
 
-        np.savetxt("sim_results/COC.csv", self.COC, delimiter=",")
-        if hasattr(self, "lambdaTcal"):
-            np.savetxt(
-                "sim_results/lambdaTcal.csv", np.array(self.lambdaTcal), delimiter=","
-            )
-        if hasattr(self, "miuaTcal"):
-            np.savetxt(
-                "sim_results/miuaTcal.csv", np.array(self.miuaTcal), delimiter=","
-            )
+        np.savetxt(f"sim_results/COC_scenario_{self.scenario_flag}.csv", self.COC, delimiter=",")
+        np.savetxt(f"sim_results/MFW_scenario_{self.scenario_flag}.csv", self.MFW, delimiter=",")
+        np.savetxt(f"sim_results/CROIP_scenario_{self.scenario_flag}.csv", self.CROIP, delimiter=",")
+        np.savetxt(f"sim_results/ProdRate_scenario_{self.scenario_flag}.csv", self.ProdRate, delimiter=",")
+        # if hasattr(self, "lambdaTcal"):
+        #     np.savetxt(
+        #         "sim_results/lambdaTcal.csv", np.array(self.lambdaTcal), delimiter=","
+        #     )
+        # if hasattr(self, "miuaTcal"):
+        #     np.savetxt(
+        #         "sim_results/miuaTcal.csv", np.array(self.miuaTcal), delimiter=","
+        #     )
 
         print("Simulation sim_results exported to /sim_results/ folder.")
         
     def _compute_MFW(self, UU):
+        """
+        (private function)
+
+        Args:
+        -----
+            UU (np.ndarray): water saturation matrix
+
+        Returns: (np.array)
+        -------
+            list of values which are the mean finger width during each iteration.
+            Note: Only will run under the Rectilinear Homogenous and Rectilinear Heterogeneous simulation scenarios
+        """
         # post processing of finger width 
         interface = np.zeros((29, 1))
         mean_UU_save = np.zeros((29, 29))
@@ -1124,11 +1343,10 @@ class Simulation:
     def run(self):
         """
         Executes simulation loop.
-
-        :raises SimulationCalcInputException: if relevant inputs for calculation not provided or not initialized
-
-        :return: Dictionary with relevant results for plotting and data analysis
-        :rtype: dict
+        
+        Raises:
+        ------
+            SimulationCalcInputException: If there is an issue with the execution of a calculation during runtime
         """
         assert self.water.water_saturation is not None, SimulationCalcInputException(
             "SimulationCalcInputError:WaterSaturationMatrixUnavailable"
@@ -1248,11 +1466,26 @@ class Simulation:
                 )
 
                 ## STEP 2.5: Solving Transport Equations
-                self._transport_equation_solver(dt)
-
+                ocut, wcut, ROIP = self._transport_equation_solver(dt)
+                # self._transport_equation_solver(dt)
                 ## Step 2.6: MFW post processing (excluding QFS)
                 if (self.scenario_flag != 3): # FIXME: compute_MFW currently operates for rectilinear geometries. Implement MFW computation for QFS
                     interface, MFW_val, _ = self._compute_MFW(self.water.water_saturation)
                     self.MFW.append(MFW_val)
+
+                ## STEP 2.7: Updating the cummulative oil captured, Production rate, and the residual oil in place 
+                # arrays for exporting to CSV files
+                if (t_cal == 0):
+                    self.COC[0,t_cal] = ocut
+                else:
+                    self.COC[0,t_cal] = self.COC[0,t_cal - 1] + ocut
+
+                self.ProdRate[0,t_cal] = ocut/dt
+                self.CROIP[0,t_cal] = ROIP
+
+                t_cal += 1
+
+            self._export_results()
+
         except Exception as e:
             print(e)

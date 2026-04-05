@@ -1,3 +1,13 @@
+"""
+This python script contains the class definition for running simulations
+
+This Python code has been derived from the MATLAB Surfactant-Polymer Flooding Simulation 
+developed by Sourav Dutta and Rohit Mishra.
+
+@author: Bhargav Akula Ramesh Kumar and Carlos Acosta Caripo
+
+"""
+
 import numpy as np
 from scipy.sparse import coo_matrix
 from matplotlib.tri import Triangulation
@@ -6,6 +16,8 @@ from matplotlib.tri import Triangulation
 class Grid:
     """
     Encapsulates mesh generation, triangulation, FEM matrix assembly, and source vector setup.
+
+    FIXME: Need to refactor this class to make it more understandable
     """
 
     def __init__(
@@ -24,27 +36,124 @@ class Grid:
         self.bottom = bottom
         self.top = top
 
-        ## FIXME: properties here need to be adjusted based on changes to the corresponding methods
-        self.tri = None
         self.A = None
         self.B = None
-        self.RHS = None
+
+    _m = None
+    @property
+    def m(self):
+        """
+        The number of columns
+        """
+        return self._m
+    @m.setter
+    def m(self, value):
+        self._m = value
+    
+    _n = None
+    @property
+    def n(self):
+        """
+        The number of rows
+        """
+        return self._n
+    @n.setter
+    def n(self, value):
+        self._n = value
+
+    _left = None
+    @property
+    def left(self):
+        """
+        left most value on grid. Used to compute ``dx``. Has a default value of 0
+        """
+        return self._left
+    @left.setter
+    def left(self, value):
+        self._left = value
+
+    _right = None
+    @property
+    def right(self):
+        """
+        right most value on grid. Used to compute ``dx``. Has a default value of 1.
+        """
+        return self._right
+    @right.setter
+    def right(self, value):
+        self._right = value
+
+    _top = None
+    @property
+    def top(self):
+        """
+        Top most value on grid. Used to compute ``dy``. Has a default value of 1.
+        """
+        return self._top
+    @top.setter
+    def top(self, value):
+        self._top = value
+
+    _bottom = None
+    @property
+    def bottom(self):
+        """
+        Bottom most value on grid. Used to compute ``dy``. Has a default value of 0.
+        """
+        return self._bottom
+    @bottom.setter
+    def bottom(self, value):
+        self._bottom = value
+
+    _A = None
+    @property
+    def A(self):
+        """
+        A matrix for solving Ax = b
+        """
+        return self._A
+    @A.setter
+    def A(self, value):
+        self._A = value
+    
+    _B = None
+    @property
+    def B(self):
+        """
+        b matrix for solving Ax = b
+        """
+        return self._B
+    @B.setter
+    def B(self, value):
+        self._B = value
 
     @property
     def get_spacing(self):
+        """
+        Provides dx and dy
+        """
         return self.dx, self.dy
 
     @property
     def get_meshgrid(self):
+        """
+        Generates the x and y coordinates for the FD Mesh
+        """
         self.x, self.y = self.set_FD_meshgrid()
         return self.x, self.y
 
     @property
     def dx(self):
+        """
+        Computes ``dx``
+        """
         return (self.right - self.left) / self.m
 
     @property
     def dy(self):
+        """
+        Computes ``dy`` 
+        """
         return (self.top - self.bottom) / self.n
 
     def set_FD_meshgrid(self):
@@ -69,6 +178,13 @@ class Grid:
 
 class FEMesh(Grid):
     def __init__(self, m: int, n: int):
+        """
+        Constructor for the ``FEMesh`` class (subclass of the ``Grid`` class)
+
+        Args:
+            m (int): num columns
+            n (int): num rows
+        """
         super().__init__(m, n)
         self.U = None
         self.L = None
@@ -78,15 +194,72 @@ class FEMesh(Grid):
         self.B = None
         self.sparsed_A = None
 
+    _sparsed_A = None
+    @property
+    def sparsed_A(self):
+        """
+        sparsed matrix version of matrix ``A``
+        """
+        return self._sparsed_A
+    @sparsed_A.setter
+    def sparsed_A(self, value):
+        self._sparsed_A = value
+
+    _grid_size = None
+    @property
+    def grid_size(self):
+        """
+        row size of square grid (# rows = # cols)
+        """
+        return self._grid_size
+    @grid_size.setter
+    def grid_size(self, value):
+        self._grid_size = value
+
+    _right_hand = None
+    @property
+    def right_hand(self):
+        """
+        Matrix representation of the rhs of the global pressure and velocity equations that will subsequently be used
+        to solve for the global pressure and velocity matrices.
+        """
+        return self._right_hand
+    @right_hand.setter
+    def right_hand(self, value):
+        self._right_hand = value
+
+    _U = None
+    @property
+    def U(self):
+        """
+        U = cell array with each element = array of vertices of Upper Triangle of
+        the rectangular cell
+        """
+        return self._U
+    @U.setter
+    def U(self, value):
+        self._U = value
+
+    _L = None
+    @property
+    def L(self):
+        """
+        L = cell array with each element = array of vertices of Lower Triangle of
+        the rectangular cell
+        """
+        return self._L
+    @L.setter
+    def L(self, value):
+        self._L = value
+
     def set_triangulation(self):
-        #  Setting up triangulations for the FEM grid
-        #  U = cell array with each element = array of vertices of Upper Triangle of
-        #  the rectangular cell
-        #  L = cell array with each element = array of vertices of Lower Triangle of
-        #  the rectangular cell
-        #  At every point (i,j), U{i,j} & L{i,j} are cells with coordinates of vertices
-        #  of the two triangles obtained by bisecting the rectangle starting at
-        #  (i,j). The bisection line goes from NW to SE.
+        """
+            Setting up triangulations for the FEM grid
+            
+            At every point (i,j), U{i,j} & L{i,j} are cells with coordinates of vertices
+            of the two triangles obtained by bisecting the rectangle starting at
+            (i,j). The bisection line goes from NW to SE.
+        """
         self.U = np.empty((self.m, self.n), dtype=object)
         self.L = np.empty((self.m, self.n), dtype=object)
 
@@ -115,12 +288,12 @@ class FEMesh(Grid):
         Calculate the area of a polygon using the Shoelace formula.
         The vertices are defined by the x and y coordinates.
 
-        Parameters:
-        x (list or array): x-coordinates of the polygon vertices
-        y (list or array): y-coordinates of the polygon vertices
+        Args:
+            x (list or array): x-coordinates of the polygon vertices
+            y (list or array): y-coordinates of the polygon vertices
 
-        Returns:
-        float: Area of the polygon
+        Returns: (float)
+            Area of the polygon
         """
         return 0.5 * abs(
             sum(x[i] * y[i + 1] - y[i] * x[i + 1] for i in range(-1, len(x) - 1))
@@ -147,14 +320,22 @@ class FEMesh(Grid):
         """
         Evaluates beta at the vertices of the element triangle
 
-        Input:
-        % T is a structure array with fields x & y where
-        %   T.x contains x coordinates of vertices of an element triangle
-        %   T.y contains y coordinates of vertices of an element triangle
-        % beta is the average of the value at the vertices of the
-        %   coefficient $$\beta = K(x) \lambda(s,c,\Gamma)$$
+        Information from MATLAB:
+            % T is a structure array with fields x & y where
+            %   T.x contains x coordinates of vertices of an element triangle
+            %   T.y contains y coordinates of vertices of an element triangle
+            % beta is the average of the value at the vertices of the
+            %   coefficient $$\beta = K(x) \lambda(s,c,\Gamma)$$
 
-        Analogous to the weak.m function in the MATLAB code
+            Analogous to the weak.m function in the MATLAB code
+
+        Args:
+            T: T is a structure array with fields x & y where
+            beta: beta is the average of the value at the vertices of the coefficient $$\beta = K(x) \lambda(s,c,\Gamma)$$
+            V: FIXME: Need to add parameter definition here
+
+        Returns:
+            FIXME: need to add definition here
         """
         beta_1 = self._beta_func(T["x"][0], T["y"][0], beta)
         beta_2 = self._beta_func(T["x"][1], T["y"][1], beta)
@@ -324,6 +505,9 @@ class FEMesh(Grid):
                 self.grid_size[j, l] = grid
 
     def set_right_hand(self, source_prod_matrix):
+        """
+        Sets the right hand side of the equation being solved to update the global pressure and velocity matrices
+        """
         self.right_hand = np.zeros(((self.m + 1) * (self.n + 1), 1))
 
         for j in range(self.m + 1):

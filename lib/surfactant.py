@@ -8,12 +8,11 @@ Sourav Dutta and Rohit Mishra.
 """
 
 from types import LambdaType
-from enumerations import SimulationConstants, SurfactantList
+import numpy as np
+from scipy.sparse.linalg import bicgstab
+from enumerations import SurfactantList
 from grid import Grid
 from Exceptions import SimulationCalcInputException
-import numpy as np
-import scipy as sp
-from scipy.sparse.linalg import bicgstab
 
 
 class Surfactant:
@@ -34,24 +33,6 @@ class Surfactant:
     ):
         """
         Creates instance of Surfactant class
-
-        :param name: Name of the surfactant
-        :type name: enum 'SurfactantList'
-
-        :param concentration: Initial concentration in wppm of surfactant (scalar quantity)
-        :type concentration: float
-
-        :param phi: arrray used to initialize the concentration matrix (represents porosity of the resevoir)
-        :type: np.ndarray
-
-        :param IFT_conc_equ: expression that relates surfactant concentration to interfacial tension b/t oil and water
-        :type IFT_conc_equ: lambda, None
-
-        :param derivative_IFT_conc_equ: Deriviative of the equation relating IFT to surfactant concentration
-        :type derivative_IFT_conc_equ: lambda, None
-
-        :param concentration_matrix: vector representation of surfactant concentration in resevoir
-        :type concentration_matrix: np.array, None
         """
         self.name = name
         self.concentration = initial_concentration
@@ -61,6 +42,7 @@ class Surfactant:
         self.is_surfactant = True if (initial_concentration > 0) else False
         self.phi = phi
 
+    #CLASS PROPERTIES
     @property
     def eval_IFT(self):
         """
@@ -75,22 +57,97 @@ class Surfactant:
     def eval_dIFT_dGamma(self):  # FIXME: Need to adjust when implementing 'autodiff'
         """
         evaluate the dσ/dΓ at a particular surfactant concentration matrix
-
-        FIXME: need to adjust when implementing 'autodiff'
         """
         assert self.derivative_IFT_conc_equ is not None, SimulationCalcInputException(
             "SimulationCalcInputError:UnknownDerivativeIFTEquation"
         )
         return self.derivative_IFT_conc_equ(self.concentration_matrix)
 
+    _name = None
+    @property
+    def name(self):
+        """
+        name (enum 'SurfactantList'): Name of the surfactant
+        """
+        return self._name
+    @name.setter
+    def name(self, value):
+        self._name = value
+    
+    _concentration = None
+    @property
+    def concentration(self):
+        """
+        concentration (float): Initial concentration of surfactant (scalar quantity)
+        """
+        return self._concentration
+    @concentration.setter
+    def concentration(self, value):
+        self._concentration = value
+
+    _concentration_matrix = None
+    @property
+    def concentration_matrix(self):
+        """
+        concentration_matrix (np.ndarray, None): vector representation of surfactant concentration in resevoir
+        """
+        return self._concentration_matrix
+    @concentration_matrix.setter
+    def concentration_matrix(self, value):
+        self._concentration_matrix = value
+
+    _IFT_conc_equ = None
+    @property
+    def IFT_conc_equ(self):
+        """
+        IFT_conc_equ (lambda, None): expression that relates surfactant concentration to interfacial tension b/t oil and water
+        """
+        return self._IFT_conc_equ
+    @IFT_conc_equ.setter
+    def IFT_conc_equ(self, value):
+        self._IFT_conc_equ = value
+
+    _derivative_IFT_conc_equ = None
+    @property
+    def derivative_IFT_conc_equ(self):
+        """
+        derivative_IFT_conc_equ (lambda, None): Deriviative of the equation relating IFT to surfactant concentration
+        """
+        return self._derivative_IFT_conc_equ
+    @derivative_IFT_conc_equ.setter
+    def derivative_IFT_conc_equ(self, value):
+        self._derivative_IFT_conc_equ = value
+
+    _is_surfactant = None
+    @property
+    def is_surfactant(self):
+        """
+        flag for whether or not surfactant is in the simulation
+        """
+        return self._is_surfactant
+    @is_surfactant.setter
+    def is_surfactant(self, value):
+        self._is_surfactant = value
+
+    _phi = None
+    @property
+    def phi(self):
+        """
+        phi (np.ndarray): arrray used to initialize the concentration matrix (represents porosity of the resevoir)
+        """
+        return self._phi
+    @phi.setter
+    def phi(self, value):
+        self._phi = value
+
     def initialize(
         self,
     ):
         """
         This function will initialize the surfactant object
-
-        :return: Surfactant object
-        :rtype: Surfactant
+        
+        Returns: (Surfactant)
+            Surfactant object
         """
         if self.concentration_matrix is None:
             if self.phi is None:
@@ -110,6 +167,28 @@ class Surfactant:
         F: np.ndarray,
         Gmod: np.ndarray,
     ):
+        """
+        Computing the surfactant concentration matrix
+
+        Raises:
+            SimulationCalcInputException: Not all required inputs were provided
+
+        Args:
+            grid (Grid): FD mesh
+
+            water_sat (np.ndarray): water saturation matrix
+
+            const_parameters (dict): dictionary object with constant parameters used in calculation
+
+            varying_parameters (dict): dictionary object with varying parameters used in calculation
+
+            F (np.ndarray): intermediate matrix used in calcs
+
+            Gmod (np.ndarray): bilinear interpolant for sur conc on redefined coordinates
+
+        Returns: (dict)
+            Returns the ``varying_parameters`` dict
+        """
         # initializing constants
         assert self.concentration_matrix is not None, SimulationCalcInputException(
             "SimuationInputException: polymer concentration matrix not initialized. Please try again"

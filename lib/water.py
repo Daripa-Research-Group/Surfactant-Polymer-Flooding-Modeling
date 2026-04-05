@@ -10,9 +10,7 @@ Sourav Dutta and Rohit Mishra.
 ##EXTERNAL IMPORTS
 import numpy as np
 import scipy as sp
-from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
 from scipy.linalg import fractional_matrix_power
-from scipy.interpolate import RegularGridInterpolator
 from scipy.sparse.linalg import bicgstab
 
 ##INTERNAL IMPORTS
@@ -38,25 +36,7 @@ class Water:
         phi: np.ndarray,
     ):
         """
-        Constructor for the 'Water' class
-
-        :param init_water_saturation: initial water saturation
-        :type init_water_saturation: float
-
-        :param init_aqueous_saturation: initial aqueous phase saturation
-        :type init_aqueous_saturation: float
-
-        :param init_oleic_saturation: initial oil phase saturation
-        :type init_oleic_saturation: float
-
-        :param miuw: water viscosity
-        :type miuw: float
-
-        :param miuo: oil viscosity
-        :type miuo: float
-
-        :param phi: porosity matrix
-        :type phi: np.ndarray
+        Constructor for the ``Water`` class
         """
         self.init_water_saturation = init_water_saturation
         self.init_aqueous_saturation = init_aqueous_saturation
@@ -67,16 +47,117 @@ class Water:
         self.viscosity_array = None  # aqueous viscosity matrix
         self.phi = phi
 
+    _init_water_saturation = None
+    @property
+    def init_water_saturation(self):
+        """
+        init_water_saturation (float): initial residual water saturation
+        """
+        return self._init_water_saturation
+    @init_water_saturation.setter
+    def init_water_saturation(self, value):
+        self._init_water_saturation = value
+
+    _init_aqueous_saturation = None
+    @property
+    def init_aqueous_saturation(self):
+        """
+        init_aqueous_saturation (float): initial residual aqueous phase saturation below critical capillary number (when σ = 0)
+        """
+        return self._init_aqueous_saturation
+    @init_aqueous_saturation.setter
+    def init_aqueous_saturation(self, value):
+        self._init_aqueous_saturation = value
+
+    _init_oleic_saturation = None
+    @property
+    def init_oleic_saturation(self):
+        """
+        init_oleic_saturation (float): initial residual oil phase saturation below the critical capillary number (when σ = 0)
+        """
+        return self._init_oleic_saturation
+    @init_oleic_saturation.setter
+    def init_oleic_saturation(self, value):
+        self._init_oleic_saturation = value
+
+    _miuw = None
+    @property
+    def miuw(self):
+        """
+        miuw (float): water viscosity
+        """
+        return self._miuw
+    @miuw.setter
+    def miuw(self, value):
+        self._miuw = value 
+
+    _miuo = None
+    @property
+    def miuo(self):
+        """
+        miuo (float): oil viscosity
+        """
+        return self._miuo
+    @miuo.setter
+    def miuo(self, value):
+        self._miuo = value 
+
+    _phi = None
+    @property
+    def phi(self):
+        """
+        phi (np.ndarray): porosity matrix
+        """
+        return self._phi
+    @phi.setter
+    def phi(self, value):
+        self._phi = value
+
+    _water_saturation = None
+    @property
+    def water_saturation(self):
+        """
+        water_saturation (np.ndarray): The water saturation matrix being updated using the transport equations
+        """
+        return self._water_saturation
+    @water_saturation.setter
+    def water_saturation(self, value):
+        self._water_saturation = value
+
+    _viscosity_array = None
+    @property
+    def viscosity_array(self):
+        """
+        viscosity_array (np.ndarray): The water viscosity matrix
+        """
+        return self._viscosity_array
+    @viscosity_array.setter
+    def viscosity_array(self, value):
+        self._viscosity_array = value
+
+
     def initialize(self, grid_shape: tuple):
         """
-        Initializing 'Water' Object properties
+        Initializing 'Water' object properties
 
-        :param grid_shape: the n and m parameters from the 'Grid' class
-        :type grid_shape: tuple
+        Raises:
+        -------
+            SimuationInputException: Either Intial water saturation and/or porosity matrix not provided for initializing Water object
 
-        :return: Updated 'Water' object
-        :rtype: Water
+        Args:
+        -----
+            grid_shape (tuple): the n and m parameters from the 'Grid' class
+        
+        Returns: (Water)
+        ---------------
+            Initializes the Water object
         """
+        assert self.init_water_saturation is not None, SimulationCalcInputException(
+            "SimuationInputException: Initial water saturation not initialized. Please try again"
+        )
+        assert self.phi is not None, SimulationCalcInputException(
+            "SimuationInputException: porosity matrix not initialized. Please try again"
+        )
         # getting values for n and m from grid:
         n, m = grid_shape
 
@@ -104,24 +185,27 @@ class Water:
         """
         Compute aqueous viscosity.
 
-        :param grid: Grid object for deterrmining matrix size
-        :type grid: Grid
+        Raises:
+        -------
+            SimulationCalcInputException: Not all required parameters provided
+        
+        Args:
+        -----
+            grid (Grid): Grid object for deterrmining matrix size
 
-        :param model_type: Type of model we are running (Polymer shear thinning ON or OFF)
-        :type model_type: enum 'ModelType'
+            model_type (enum 'ModelType'): Type of model we are running (Polymer shear thinning ON or OFF)
 
-        :param polymer: holds the information about the polymer in the sim
-        :type polymer: Polymer
+            polymer (Polymer): holds the information about the polymer in the sim
 
-        :param u: global pressure matrix. Only needed when shear thinning ON.
-        :type u: np.ndarray, None
+            u (np.ndarray, None): global pressure matrix. Only needed when shear thinning ON.
 
-        :param v: velocity matrix. Only needed when shear thinning ON.
-        :type v: np.ndarray, None
-
-        :return: updated aqueous viscosity matrix
-        :rtype: np.ndarray
+            v (np.ndarray, None): velocity matrix. Only needed when shear thinning ON.
+        
+        Returns: (np.ndarray)
+        --------------------
+            Updated aqueous viscosity matrix
         """
+
         assert self.viscosity_array is not None, SimulationCalcInputException(
             "SimuationInputException: aqueous viscosity matrix not initialized. Please try again"
         )
@@ -169,19 +253,6 @@ class Water:
             w2 = rho_water * (1 - polymer.concentration_matrix)
             wppm = (w1 / (w1 + w2)) * (10**6)
 
-            # determining ε and n for power law equation:
-            # epsilon_val = polymer.e_coeff[0]*(wppm**polymer.e_coeff[1])
-            # n_val = min(polymer.n_coeff[0]*(wppm**polymer.n_coeff[1]),1)
-
-            # epsilon_val = np.zeros((np.size(polymer.concentration_matrix, 0), np.size(polymer.concentration_matrix, 1)))
-            # n_val = np.zeros((np.size(polymer.concentration_matrix, 0), np.size(polymer.concentration_matrix, 1)))
-            # print(f'type epsilon_0: {np.shape(epsilon_val)}')
-            # print(f'type n_0: {np.shape(n_val)}')
-            # for r in range(np.size(polymer.concentration_matrix, 0)):
-            #     for c in range(np.size(polymer.concentration_matrix, 1)):
-            #         # print(f'i: {r} | j: {c}')
-            #         epsilon_val[r,c] = polymer.e_coeff[0] * wppm[r,c] ** polymer.e_coeff[1]
-            #         n_val[r,c] = min(polymer.n_coeff[0] * wppm[r,c] ** polymer.n_coeff[1], 1)
             eps = 1e-12
             wppm_safe = np.maximum(wppm, eps)
 
@@ -217,17 +288,17 @@ class Water:
         """
         Compute swr, sor based on capillary numbers (came from compres.m MATLAB file)
 
-        :param sigma: interfacial tension (IFT)
-        :type sigma: np.ndarray
+        Args:
+        -----
+            sigma (np.ndarray): interfacial tension (IFT)
 
-        :param u: global pressure matrix.
-        :type u: np.ndarray
+            u (np.ndarray): global pressure matrix.
 
-        :param v: velocity matrix.
-        :type v: np.ndarray
-
-        :return residual saturation for oil (index 1) and water (index 0) phases
-        :rtype: list
+            v (np.ndarray): velocity matrix.
+        
+        Returns: (list)
+        ---------------
+            residual saturation for oil (index 1) and water (index 0) phases
         """
         swr0 = self.init_aqueous_saturation
         sor0 = self.init_oleic_saturation
@@ -245,7 +316,7 @@ class Water:
         sor = sor0 * (Nco0 / Nco) ** 0.5213 if Nco >= Nco0 else sor0
         swr = swr0 * (Nca0 / Nca) ** 0.1534 if Nca >= Nca0 else swr0
 
-        return [swr, sor]  # [residual water saturation, residual oil saturation]
+        return [swr, sor]  # [residual aqueous saturation, residual oil saturation]
 
     def compute_mobility(
         self,
@@ -258,27 +329,28 @@ class Water:
     ):
         """
         Computing mobility (made using the compmob.m MATLAB file)
+        
+        Raise:
+        ------
+            SimulationCalcInputException: Not all required arguments are not provided
 
-        :param c: polymer concentration matrix
-        :type c: np.ndarray
+        Args:
+        -----
+            c (np.ndarray): polymer concentration matrix
 
-        :param sor: residual saturation oil phase
-        :type sor: float
+            sor (float): residual saturation oil phase
 
-        :param swr: residual saturation water phase
-        :type swr: float
+            swr (float): residual saturation water phase
 
-        :param aqueous: boolean for whether we are solving for aqoeous or oleic mobility
-        :type aqueous: bool
+            aqueous (bool): boolean for whether we are solving for aqoeous or oleic mobility
 
-        :param rel_permeability_formula: Select the type of relative Permeability formula from the ``RelativePermeabilityFormula`` Enum
-        :type has_surfactant: enum ``RelativePermeabilityFormula``
+            rel_permeability_formula (enum 'RelativePermeabilityFormula'): Select the type of relative Permeability formula from the ``RelativePermeabilityFormula`` Enum
 
-        :param surfactant_conc: scalar quantity of the initial surfactant concentration
-        :type surfactant_conc: float
-
-        :return: aqueous or oleic mobility (depending on the 'aqueous' parameter)
-        :rtype: np.ndarray
+            surfactant_conc (float): scalar quantity of the initial surfactant concentration
+        
+        Returns: (np.ndarray)
+        ---------------------
+            aqueous or oleic mobility (depending on the 'aqueous' parameter)
         """
         assert self.water_saturation is not None, SimulationCalcInputException(
             "SimuationInputException: water saturation matrix not initialized. Please try again"
@@ -327,38 +399,34 @@ class Water:
         """
         Solving saturation equation (comes from part of the nmmoc_surf_mod_neumann.m file that
         is for calculating the water saturation)
+        
+        Raises:
+        -------
+            SimulationCalcInputException: If water saturation matrix is None
 
-        :raises SimulationCalcInputException: If water saturation matrix is None
+        Args:
+        -----
+            grid (Grid): the 'Grid' object
 
-        :param grid: the 'Grid' object
-        :type grid: Grid
+            surfactant (Surfactant): The surfactant object
 
-        :param surfactant: The surfactant object
-        :type surfactant: Surfactant
+            polymer (Polymer): The polymer object
 
-        :param polymer: The polymer object
-        :type polymer: Polymer
+            u (np.ndarray): global pressure matrix
 
-        :param u: global pressure matrix
-        :type u: np.ndarray
+            v (np.ndarray): velocity matrix
 
-        :param v: velocity matrix
-        :type v: np.ndarray
+            xmod (np.ndarray): x-dimension coordinate points for formulating the 'Qmod' matrix
 
-        :param xmod: x-dimension coordinate points for formulating the 'Qmod' matrix
-        :type xmod: np.ndarray
+            ymod (np.ndarray): y-dimension coordinate points for formulating the 'Qmod' matrix
 
-        :param ymod: y-dimension coordinate points for formulating the 'Qmod' matrix
-        :type ymod: np.ndarray
+            const_parameters (dict): constant parameters used in the method
 
-        :param const_parameters: constant parameters used in the method
-        :type const_parameters: dict
-
-        :param varying_parameters: parameters whose values can change
-        :type varying_parameters: dict
-
-        :return: updated ``water_saturation`` matrix and ``varying_parameters`` dict
-        :rtype: [np.ndarray, list]
+            varying_parameters (dict): parameters whose values can change
+        
+        Returns: (np.ndarray, dict)
+        -----------------------------
+            Updates the ``water_saturation`` matrix and ``varying_parameters`` dict
         """
         # Assert statements to ensure that all parameters are property initialized:
         assert self.water_saturation is not None, SimulationCalcInputException(
@@ -512,7 +580,7 @@ class Water:
                                     + g1 * (1 - f[cnt][i])
                                     + (
                                         (D_g[cnt][i] + D_g[cnt][i + 1]) / (dx**2)
-                                        + (D_g[cnt + 1][i] + D_g[cnt][i]) / (dx**2)
+                                        + (D_g[cnt + 1][i] + D_g[cnt][i]) / (dy**2)
                                     )
                                     * surfactant.concentration_matrix[cnt][i]
                                     - (D_g[cnt][i] + D_g[cnt][i + 1])
@@ -520,14 +588,14 @@ class Water:
                                     * surfactant.concentration_matrix[cnt][i + 1]
                                     - (D_g[cnt][i] + D_g[cnt + 2][i])
                                     / (dy**2)
-                                    * surfactant.concentration_matrix[cnt + 2][i]
+                                    * surfactant.concentration_matrix[cnt + 1][i]
                                 )
 
                                 CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (dy**2)
 
                                 BB[j][i] = (
                                     1 / dt_array[cnt][i]
-                                    - (D_s[cnt + 1][i] + D_s[cnt][i + 1]) / (dx**2)
+                                    - (D_s[cnt][i] + D_s[cnt][i + 1]) / (dx**2)
                                     - (D_s[cnt + 1][i] + D_s[cnt][i]) / (dy**2)
                                 )
 
@@ -550,14 +618,14 @@ class Water:
 
                                 BB[j][i - 1] = (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
 
-                                BB[i][i] = (
+                                BB[j][i] = (
                                     1 / dt_array[cnt][i]
                                     - (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
                                     - (D_s[cnt + 1][i] + D_s[cnt][i]) / (dy**2)
                                 )
 
                                 CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (dy**2)
-                            else:
+                            else: # FIXME: stopped here!
                                 DD[i] = (
                                     Qmod[cnt][i] / dt_array[cnt][i]
                                     - f_c[cnt][i]
@@ -662,7 +730,7 @@ class Water:
                                     * surfactant.concentration_matrix[cnt - 1][i]
                                 )
 
-                                BB[j][i - 1] = (D_s[cnt][i] + D_s[cnt][i - 1]) / (dy**2)
+                                BB[j][i - 1] = (D_s[cnt][i] + D_s[cnt][i - 1]) / (dx**2)
 
                                 BB[j][i] = (
                                     1 / dt_array[cnt][i]
@@ -789,7 +857,7 @@ class Water:
                                     )
                                     / (2 * dy**2)
                                 )
-                                BB[j][i + 1] = (D_s[cnt][i + 1] + D_s[cnt][i]) / (dx**2)
+                                BB[j][i + 1] = (D_s[cnt][i] + D_s[cnt][i + 1]) / (dx**2)
 
                                 CC[j][i] = (D_s[cnt][i] + D_s[cnt + 1][i]) / (2 * dy**2)
                             elif i == m - 1:
@@ -969,7 +1037,7 @@ class Water:
             warnings.warn(f"BiCGSTAB: convergence issue (info={info}) in water saturation solver")
         Qnew = Qnew_flat = Qnew_flat.reshape(m, n)
 
-        Qnew[Qnew > 1] = 1
+        Qnew[Qnew < 0] = 0
 
         self.water_saturation = Qnew
 
