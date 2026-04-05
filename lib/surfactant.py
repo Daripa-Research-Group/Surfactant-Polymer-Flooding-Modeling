@@ -10,9 +10,9 @@ Sourav Dutta and Rohit Mishra.
 from types import LambdaType
 import numpy as np
 from scipy.sparse.linalg import bicgstab
-from .enumerations import  SurfactantList
-from .grid import Grid
-from .Exceptions import SimulationCalcInputException
+from enumerations import SurfactantList
+from grid import Grid
+from Exceptions import SimulationCalcInputException
 
 
 class Surfactant:

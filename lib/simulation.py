@@ -10,8 +10,8 @@ developed by Sourav Dutta and Rohit Mishra.
 
 import os
 
-from .grid import Grid, FEMesh
-from .enumerations import (
+from grid import Grid, FEMesh
+from enumerations import (
     ModelType,
     PolymerList,
     RelativePermeabilityFormula,
@@ -20,12 +20,12 @@ from .enumerations import (
     ResevoirGeometry,
     SimulationConstants,
 )
-from .Exceptions import SimulationCalcInputException, UserInputException
-from .polymer import Polymer
-from .surfactant import Surfactant
+from Exceptions import SimulationCalcInputException, UserInputException
+from polymer import Polymer
+from surfactant import Surfactant
 import numpy as np
 import scipy as sp
-from .water import Water
+from water import Water
 from scipy.io import loadmat
 from scipy.sparse.linalg import bicgstab
 from scipy.linalg import fractional_matrix_power
@@ -1104,9 +1104,9 @@ class Simulation:
         )
 
         # calculate the Oil capture, water captured, and residual oil in place
-        ocut = lambda_o[n, m] * self.source_flow_magnitude / lambda_total[n,m]
-        wcut = lambda_a[n, m] * self.source_flow_magnitude / lambda_total[n,m]
-        ROIP = 100*(np.sum(np.sum(1 - self.water.water_saturation)))/sum(np.ones((n*m,1)))
+        ocut = lambda_o[n-1, m-1] * self.source_flow_magnitude / lambda_total[n-1,m-1]
+        wcut = lambda_a[n-1, m-1] * self.source_flow_magnitude / lambda_total[n-1,m-1]
+        ROIP = 100*(np.sum(np.sum(1 - self.water.water_saturation)))/np.sum(np.ones((n*m,1)))
         return ocut, wcut, ROIP
 
     def _characteristic_coordinates(
@@ -1467,7 +1467,7 @@ class Simulation:
 
                 ## STEP 2.5: Solving Transport Equations
                 ocut, wcut, ROIP = self._transport_equation_solver(dt)
-
+                # self._transport_equation_solver(dt)
                 ## Step 2.6: MFW post processing (excluding QFS)
                 if (self.scenario_flag != 3): # FIXME: compute_MFW currently operates for rectilinear geometries. Implement MFW computation for QFS
                     interface, MFW_val, _ = self._compute_MFW(self.water.water_saturation)
@@ -1476,12 +1476,12 @@ class Simulation:
                 ## STEP 2.7: Updating the cummulative oil captured, Production rate, and the residual oil in place 
                 # arrays for exporting to CSV files
                 if (t_cal == 0):
-                    self.COC[t_cal] = ocut
+                    self.COC[0,t_cal] = ocut
                 else:
-                    self.COC[t_cal] = self.COC[t_cal - 1] + ocut
+                    self.COC[0,t_cal] = self.COC[0,t_cal - 1] + ocut
 
-                self.ProdRate[t_cal] = ocut/dt
-                self.CROIP[t_cal] = ROIP
+                self.ProdRate[0,t_cal] = ocut/dt
+                self.CROIP[0,t_cal] = ROIP
 
                 t_cal += 1
 

@@ -10,9 +10,9 @@ Sourav Dutta and Rohit Mishra.
 import numpy as np
 import scipy as sp
 from scipy.sparse.linalg import bicgstab
-from .enumerations import ModelType, PolymerList, SimulationConstants
-from .Exceptions import SimulationCalcInputException
-from .grid import Grid
+from enumerations import ModelType, PolymerList, SimulationConstants
+from Exceptions import SimulationCalcInputException
+from grid import Grid
 
 
 class Polymer:
