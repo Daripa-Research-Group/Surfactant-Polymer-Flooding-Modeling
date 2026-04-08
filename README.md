@@ -24,7 +24,7 @@ This research aims to view the effects of surfactant in EOR while accounting for
  - Analyze and visualize results to gain insights into SP flooding dynamics
 
 ## Requirements
- - ```Python 3.13.1``` (with dependencies listed in ```requirements.txt```)
+ - ```Python 3.14.3``` (with dependencies listed in ```requirements.txt```)
  
 ### Installing Dependencies
 1. cd to the location of the repository within your computer
