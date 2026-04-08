@@ -50,7 +50,7 @@ SURFACTANT = {
 user_dict = {
     "simulation_id": 1,
     "model_type": MODEL["No_Shear_Thinning"],
-    "reservoir_geometry": GEOMETRY["Rectilinear"],
+    "reservoir_geometry": GEOMETRY["Quarter Five Spot"],
     "permeability": PERMEABILITY["Heterogeneous"],
     "polymer_type": POLYMER["Xanthane"],
     "polymer_concentration": 0.001,

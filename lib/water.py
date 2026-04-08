@@ -579,7 +579,7 @@ class Water:
                                     (Qmod[cnt][i] / dt_array[cnt][i])
                                     + g1 * (1 - f[cnt][i])
                                     + (
-                                        (D_g[cnt][i] + D_g[cnt][i + 1]) / (dx**2)
+                                        (D_g[cnt][i] + D_g[cnt+1][i + 1]) / (dx**1)
                                         + (D_g[cnt + 1][i] + D_g[cnt][i]) / (dx**2)
                                     )
                                     * surfactant.concentration_matrix[cnt][i]
@@ -599,7 +599,7 @@ class Water:
                                     - (D_s[cnt + 1][i] + D_s[cnt][i]) / (dy**2)
                                 )
 
-                                BB[j][i + 1] = (D_s[cnt][i] + D_s[cnt][i + 1]) / (dx**2)
+                                BB[j][i + 1] = (D_s[cnt][i] + D_s[cnt][i + 1]) * (dx**2)
                             elif i == m - 1:  # last/rightmost column
                                 DD[i] = (
                                     Qmod[cnt][i] / dt_array[cnt][i]
@@ -1001,7 +1001,7 @@ class Water:
 
                                 BB[j][i] = 1 / dt_array[cnt][i] - (
                                     (1 / (2 * dx**2))
-                                    * (D_s[cnt][i - 1] + 2 * D_s[cnt][i] + D_s[cnt][i + 1])
+                                    * (D_s[cnt][i] + 2 * D_s[cnt][i] + D_s[cnt][i + 1])
                                     + (1 / (2 * dy**2))
                                     * (
                                         D_s[cnt - 1][i]
