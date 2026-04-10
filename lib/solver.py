@@ -13,7 +13,14 @@ class TransportEquationSolver(simulation.Simulation):
     """
     Will hold all the relevant functions and parameters necessary for solving the transport equations
     """
-    pass
+    def __init__(
+            self,
+
+    ):
+        """
+        constructor for ``TransportEquationSolver``
+        """
+        
 
 class EllipticEquationSolver(simulation.Simulation):
     """
