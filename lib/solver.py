@@ -15,15 +15,12 @@ class TransportEquationSolver():
     """
     def __init__(
             self,
-            simulation_scenario,
-            water_saturation,
-            surfactant_concentration,
-            polymer_concentration,
-            aqueous_mobility,
-            aqueous_viscosity,
-            oleic_mobility,
-            oleic_viscosity,
-            
+            water,
+            surfactant,
+            polymer,
+            pressure,
+            velocity,
+            source_flow_magnitude
     ):
         """
         constructor for ``TransportEquationSolver``
@@ -33,15 +30,54 @@ class TransportEquationSolver():
     def execute(self):
         pass
 
-    def saturation_matrix_preprocessing(self):
+    def _initialize(self):
+        """
+        initialize relevant matrices needed for computation
+        """
         pass
 
-    def surfactant_concentration_matrix_preprocessing(self):
+    def _main_loop_computation(self):
+        """
+        primary loop that will run for computations
+        """
         pass
 
-    def polymer_concentration_matrix_preprocessing(self):
+    def _saturation_matrix_preprocessing(self):
+        """
+        will conduct any preprocessing prior to computing the saturation matrix
+        """
         pass
-        
+
+    def _surfactant_concentration_matrix_preprocessing(self):
+        """
+        will conduct any preprocessing prior to computing the surfactant concentration matrix
+        """
+        pass
+
+    def _polymer_concentration_matrix_preprocessing(self):
+        """
+        will conduct any preprocessing prior to computing the polymer concentration matrix
+        """
+        pass
+
+    def _bottom_grid_calculations(self):
+        """
+        will conduct calculations related to the bottom of the grid
+        """
+        pass
+
+    def _top_grid_calculations(self):
+        """
+        will conduct calculatons related to the top of the grid
+        """
+        pass
+
+    def _interior_grid_calculations(self):
+        """
+        will conduct calculations related to the interior of the grid
+        """
+        pass
+
 
 # class EllipticEquationSolver():
 #     """
