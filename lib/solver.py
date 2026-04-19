@@ -60,6 +60,10 @@ class TransportEquationSolver():
     @property
     def water_saturation(self):
         return self._water.water_saturation
+    ## Aqueous Viscosity
+    @property
+    def aqueous_viscosity(self):
+        return self._water.viscosity_array
     ## Surfactant concentration matrix
     @property
     def surfactant_concentration(self):
@@ -125,7 +129,7 @@ class TransportEquationSolver():
     # Functions for parameter definitions
     ## Residual saturations
     @property
-    def swr0(self):
+    def swr_0(self):
         return SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value
     _swr = None
     @property
@@ -161,7 +165,7 @@ class TransportEquationSolver():
         self._nsw = value
 
     @property
-    def sor0(self):
+    def sor_0(self):
         return SimulationConstants.Resid_Oleic_Phase_Saturation_Initial.value
     _sor = None
     @property
@@ -230,12 +234,12 @@ class TransportEquationSolver():
         self.nso = (w_sat_matrix - self.swr) / (1 - self.swr - self.sor)
         pass
 
-    def _derivative_residual_saturations(self, norm_nca, norm_nco): #FIXME: Will need to update function to work with autodiff (v2.0)
+    def _derivative_residual_saturations(self, sigma, norm_nca, norm_nco): #FIXME: Will need to update function to work with autodiff (v2.0)
         for j in range(self.n):
             for i in range(self.m):
                 if norm_nca >= self.critical_capillary_aqueous_initial:
                     self.dswr_dg[j, i] = -(
-                        swr_0
+                        self.swr_0
                         * 0.1534
                         * 10.001
                         * (
@@ -244,16 +248,16 @@ class TransportEquationSolver():
                         )
                     ) / (
                         (
-                            np.sqrt((self.pressure[j, i] ** 2) + (self.velcoity[j, i] ** 2))
-                            * self.water.viscosity_array[j, i]
+                            np.sqrt((self.pressure[j, i] ** 2) + (self.velocity[j, i] ** 2))
+                            * self.aqueous_viscosity[j, i]
                         )
                         ** (0.1534)
-                        * self.surfactant.eval_IFT[j, i] ** (0.8466)
-                        * (self.surfactant.concentration_matrix[j, i] + 1) ** 2
+                        * sigma[j, i] ** (0.8466)
+                        * (self.surfactant_concentration[j, i] + 1) ** 2
                     )
                 if norm_nco >= self.critical_capillary_oleic_initial:
                     self.dsor_dg[j, i] = -(
-                        sor_0
+                        self.sor_0
                         * 0.5213
                         * 10.001
                         * (
@@ -263,11 +267,11 @@ class TransportEquationSolver():
                     ) / (
                         (
                             np.sqrt((self.pressure[j, i] ** 2) + (self.velocity[j, i] ** 2))
-                            * self.water.viscosity_array[j, i]
+                            * self.aqueous_viscosity[j, i]
                         )
                         ** (0.5213)
-                        * self.surfactant.eval_IFT[j, i] ** (0.4787)
-                        * (self.surfactant.concentration_matrix[j, i] + 1) ** 2
+                        * sigma[j, i] ** (0.4787)
+                        * (self.surfactant_concentration[j, i] + 1) ** 2
                     )
     
     ## Mobilities
