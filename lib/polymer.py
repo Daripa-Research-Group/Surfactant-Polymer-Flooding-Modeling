@@ -306,8 +306,6 @@ class Polymer:
             wppm_0 = (w1_0 / (w1_0 + w2_0)) * (
                 10**6
             )  # from the wppm0 variable in MATLAB code
-            print(f"type w1_0: {np.shape(w1_0)}")
-            print(f"type w2_0: {np.shape(w2_0)}")
 
             ## Determining the epsilon and n coefficients for the power law equation
             epsilon_0 = np.zeros(
@@ -322,8 +320,6 @@ class Polymer:
                     np.size(self.concentration_matrix, 1),
                 )
             )
-            print(f"type epsilon_0: {np.shape(n_0)}")
-            print(f"type n_0: {np.shape(n_0)}")
             for r in range(np.size(self.concentration_matrix, 0)):
                 for c in range(np.size(self.concentration_matrix, 1)):
                     epsilon_0[r, c] = self.e_coeff[0] * wppm_0[r, c] ** self.e_coeff[1]
@@ -349,11 +345,6 @@ class Polymer:
                             self.viscosity_matrix[i, j] = epsilon_0[i, j] * (
                                 self.shear_rate[i, j] ** (n_0[i, j] - 1)
                             )
-                            print(f"epsilon_0:{epsilon_0[i,j]}")
-                            print(f"n_0:{n_0[i,j]}")
-                            print(f"shear_rate:{self.shear_rate[i,j]}")
-                            print(f"pi_D: {pi_D[i,j]}")
-                            print("")
                             if self.viscosity_matrix[i, j] < viscosity_water:
                                 self.viscosity_matrix[i, j] = viscosity_water
                             if self.viscosity_matrix[i, j] > 100:
