@@ -12,6 +12,7 @@ from water import Water
 from polymer import Polymer
 from grid import Grid
 from enumerations import *
+from Exceptions import *
 import numpy as np
 
 class TransportEquationSolver():
@@ -31,7 +32,14 @@ class TransportEquationSolver():
         """
         constructor for ``TransportEquationSolver``
         """
-        pass
+        self._water = water
+        self._grid = grid
+        self._surfactant = surfactant
+        self._polymer = polymer
+
+        self.pressure = pressure
+        self.velocity = velocity
+        self.total_flow = source_flow_magnitude
 
     #Dependent Properties
     ## Flows
@@ -48,6 +56,34 @@ class TransportEquationSolver():
     @property
     def surfactant_flow(self):
         return self._total_flow*self._surfactant.concentration
+    ## Water Saturation Matrix
+    @property
+    def water_saturation(self):
+        return self._water.water_saturation
+    ## Surfactant concentration matrix
+    @property
+    def surfactant_concentration(self):
+        return self._surfactant.concentration
+    ## Polymer concentration matrix
+    @property
+    def polymer_concentration(self):
+        return self._polymer.concentration_matrix
+    ## Elliptic pressure
+    _pressure = None
+    @property
+    def pressure(self):
+        return self._pressure
+    @pressure.setter
+    def pressure(self, value):
+        self._pressure = value
+    ## velocity
+    _velocity = None
+    @property
+    def velocity(self):
+        return self._velocity
+    @velocity.setter
+    def velocity(self, value):
+        self._velocity = velocity
     ## Grid properties
     @property
     def m(self):
@@ -88,14 +124,151 @@ class TransportEquationSolver():
     
     # Functions for parameter definitions
     ## Residual saturations
-    def _compute_residual_saturations(self):
+    @property
+    def swr0(self):
+        return SimulationConstants.Resid_Aqueous_Phase_Saturation_Initial.value
+    _swr = None
+    @property
+    def swr(self):
+        """
+        swr: aqueous residual saturation
+
+        Water that remains immobile after it has been displaced by a non-wetting phase (like oil or gas).
+        """
+        return self._swr
+    @swr.setter
+    def swr(self, value):
+        self._swr = value
+    _dswr_dg = None
+    @property
+    def dswr_dg(self):
+        """
+        derivative of the residual water saturation wrt surfactant concentration
+        """
+        return self._dswr_dg
+    @dswr_dg.setter
+    def dswr_dg(self, value):
+        self._dswr_dg = value
+    _nsw = None
+    @property
+    def nsw(self):
+        """
+        nsw: normalized aqueous saturation
+        """
+        return self._nsw
+    @nsw.setter
+    def nsw(self, value):
+        self._nsw = value
+
+    @property
+    def sor0(self):
+        return SimulationConstants.Resid_Oleic_Phase_Saturation_Initial.value
+    _sor = None
+    @property
+    def sor(self):
+        """
+        sor: oleic residual saturation
+
+        Oil that remains immobile after it has been displaced by a water-based phase 
+        (this could be waterflooding or SP flooding).
+
+        As the simulation is running, the residual oil saturation decreases as the interfacial tension (σ)
+        decreases between wetting (water) and non-wetting (oil) phases.
+        """
+        return self._sor
+    @sor.setter
+    def sor(self, value):
+        self._sor = value
+    _dsor_dg = None
+    @property
+    def dsor_dg(self):
+        """
+        derivative of the residual oil saturation wrt surfactant concentration
+        """
+        return self._dsor_dg
+    @dsor_dg.setter
+    def dsor_dg(self, value):
+        self._dsor_dg = value
+    _nso = None
+    @property
+    def nso(self):
+        """
+        nso: normalized oleic saturation
+        """
+        return self._nso
+    @nso.setter
+    def nso(self, value):
+        self._nso = value
+
+
+    
+    def _compute_residual_saturations(self, sigma: np.ndarray):
+        """
+        wrapper function for running the ``self.water.compute_residual_saturation()`` method
+        
+        Compute swr, sor based on capillary numbers (came from compres.m MATLAB file)
+
+        Args:
+        -----
+            sigma (np.ndarray): interfacial tension (IFT)
+
+            u (np.ndarray): global pressure matrix.
+
+            v (np.ndarray): velocity matrix.
+        """
+        [self.swr, self.sor] = self._water.compute_residual_saturation(sigma, self.pressure, self.velocity)
+        
+
+    def _compute_effective_saturations(
+            self, w_sat_matrix : np.ndarray 
+    ):
+        assert (self.swr is not None) and (self.sor is not None),SimulationCalcInputException("SimulationInputException: residual saturations not computed")
+ 
+        # effective water saturation
+        self.nsw = (w_sat_matrix - self.swr) / (1 - self.swr)
+        # effective oil saturation
+        self.nso = (w_sat_matrix - self.swr) / (1 - self.swr - self.sor)
         pass
 
-    def _normalized_residual_saturations(self):
-        pass
-
-    def _derivative_residual_saturations(self): #FIXME: Will need to update function to work with autodiff (v2.0)
-        pass
+    def _derivative_residual_saturations(self, norm_nca, norm_nco): #FIXME: Will need to update function to work with autodiff (v2.0)
+        for j in range(self.n):
+            for i in range(self.m):
+                if norm_nca >= self.critical_capillary_aqueous_initial:
+                    self.dswr_dg[j, i] = -(
+                        swr_0
+                        * 0.1534
+                        * 10.001
+                        * (
+                            self.critical_capillary_aqueous_initial
+                            ** 0.1534
+                        )
+                    ) / (
+                        (
+                            np.sqrt((self.pressure[j, i] ** 2) + (self.velcoity[j, i] ** 2))
+                            * self.water.viscosity_array[j, i]
+                        )
+                        ** (0.1534)
+                        * self.surfactant.eval_IFT[j, i] ** (0.8466)
+                        * (self.surfactant.concentration_matrix[j, i] + 1) ** 2
+                    )
+                if norm_nco >= self.critical_capillary_oleic_initial:
+                    self.dsor_dg[j, i] = -(
+                        sor_0
+                        * 0.5213
+                        * 10.001
+                        * (
+                            self.critical_capillary_aqueous_initial
+                            ** 0.5213
+                        )
+                    ) / (
+                        (
+                            np.sqrt((self.pressure[j, i] ** 2) + (self.velocity[j, i] ** 2))
+                            * self.water.viscosity_array[j, i]
+                        )
+                        ** (0.5213)
+                        * self.surfactant.eval_IFT[j, i] ** (0.4787)
+                        * (self.surfactant.concentration_matrix[j, i] + 1) ** 2
+                    )
     
     ## Mobilities
     def _compute_lambda_a(self):
