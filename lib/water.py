@@ -29,8 +29,8 @@ class Water:
     def __init__(
         self,
         init_water_saturation: float,
-        init_aqueous_saturation: float,
-        init_oleic_saturation: float,
+        init_residual_aqueous_saturation: float,
+        init_residual_oleic_saturation: float,
         miuw: float,
         miuo: float,
         phi: np.ndarray,
@@ -39,8 +39,8 @@ class Water:
         Constructor for the ``Water`` class
         """
         self.init_water_saturation = init_water_saturation
-        self.init_aqueous_saturation = init_aqueous_saturation
-        self.init_oleic_saturation = init_oleic_saturation
+        self.init_residual_aqueous_saturation = init_residual_aqueous_saturation
+        self.init_residual_oleic_saturation = init_residual_oleic_saturation
         self.miuw = miuw
         self.miuo = miuo
         self.water_saturation = None  # water saturation matrix
@@ -60,24 +60,24 @@ class Water:
 
     _init_aqueous_saturation = None
     @property
-    def init_aqueous_saturation(self):
+    def init_residual_aqueous_saturation(self):
         """
-        init_aqueous_saturation (float): initial residual aqueous phase saturation below critical capillary number (when σ = 0)
+        init_residual_aqueous_saturation (float): initial residual aqueous phase saturation below critical capillary number (when σ = 0)
         """
         return self._init_aqueous_saturation
-    @init_aqueous_saturation.setter
-    def init_aqueous_saturation(self, value):
+    @init_residual_aqueous_saturation.setter
+    def init_residual_aqueous_saturation(self, value):
         self._init_aqueous_saturation = value
 
     _init_oleic_saturation = None
     @property
-    def init_oleic_saturation(self):
+    def init_residual_oleic_saturation(self):
         """
-        init_oleic_saturation (float): initial residual oil phase saturation below the critical capillary number (when σ = 0)
+        init_residual_oleic_saturation (float): initial residual oil phase saturation below the critical capillary number (when σ = 0)
         """
         return self._init_oleic_saturation
-    @init_oleic_saturation.setter
-    def init_oleic_saturation(self, value):
+    @init_residual_oleic_saturation.setter
+    def init_residual_oleic_saturation(self, value):
         self._init_oleic_saturation = value
 
     _miuw = None
@@ -165,7 +165,7 @@ class Water:
         s0 = np.zeros((n + 1, m + 1))
         D = (self.phi > 1e-10) | (np.abs(self.phi) < 1e-10)
         s0 = np.logical_not(D).astype(float) + D.astype(float) * (
-            1 - self.init_water_saturation
+            self.init_water_saturation
         )
         self.water_saturation = s0
 
@@ -300,8 +300,8 @@ class Water:
         ---------------
             residual saturation for oil (index 1) and water (index 0) phases
         """
-        swr0 = self.init_aqueous_saturation
-        sor0 = self.init_oleic_saturation
+        swr0 = self.init_residual_aqueous_saturation
+        sor0 = self.init_residual_oleic_saturation
 
         Nco0 = 1.44e-4
         Nca0 = 1.44e-4
@@ -368,11 +368,11 @@ class Water:
             rel_permeability_formula.value
             == RelativePermeabilityFormula.CoreyTypeEquation.value
         ):
-            nsw0 = (s - self.init_aqueous_saturation) / (
-                1 - self.init_aqueous_saturation
+            nsw0 = (s - self.init_residual_aqueous_saturation) / (
+                1 - self.init_residual_aqueous_saturation
             )
-            nso0 = (s - self.init_aqueous_saturation) / (
-                1 - self.init_aqueous_saturation - self.init_oleic_saturation
+            nso0 = (s - self.init_residual_aqueous_saturation) / (
+                1 - self.init_residual_aqueous_saturation - self.init_residual_oleic_saturation
             )
             krw0 = nsw0**3.5
             kro0 = ((1 - nso0) ** 2) * (1 - nso0**1.5)
