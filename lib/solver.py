@@ -41,7 +41,7 @@ class TransportEquationSolver():
         self.velocity = velocity
         self.total_flow = source_flow_magnitude
 
-    #Dependent Properties
+    #Constant Parameter Definitions
     ## Flows
     _total_flow = None
     @property
@@ -275,10 +275,39 @@ class TransportEquationSolver():
                     )
     
     ## Mobilities
-    def _compute_lambda_a(self):
+    _lambda_a = None
+    @property
+    def lambda_a(self):
+        return self._lambda_a
+    @lambda_a.setter
+    def lambda_a(self, value):
+        self._lambda_a = value
+    _lambda_o = None
+    @property
+    def lambda_o(self):
+        return self._lambda_o
+    @lambda_o.setter
+    def lambda_o(self, value):
+        self._lambda_o = value
+    @property
+    def lambda_total(self):
+        return self.lambda_a + self.lambda_o
+    @property
+    def fractional_flow(self):
+        return self.lambda_a / self.lambda_total
+
+    def _compute_lambda_a(
+        self,
+        rel_permeability_formula: RelativePermeabilityFormula,
+        modified_water_saturation: np.ndarray | None = None,
+    ):
         pass
 
-    def _compute_lambda_o(self):
+    def _compute_lambda_o(
+        self,
+        rel_permeability_formula: RelativePermeabilityFormula,
+        modified_water_saturation: np.ndarray | None = None,
+    ):
         pass
 
     ## Capillary Number (ratio of viscous forces to surface tension forces)
