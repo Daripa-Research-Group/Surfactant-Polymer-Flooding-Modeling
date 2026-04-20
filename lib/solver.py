@@ -234,7 +234,9 @@ class TransportEquationSolver():
         self.nso = (w_sat_matrix - self.swr) / (1 - self.swr - self.sor)
         pass
 
-    def _derivative_residual_saturations(self, sigma, norm_nca, norm_nco): #FIXME: Will need to update function to work with autodiff (v2.0)
+    def _derivative_residual_saturations(
+            self, sigma, norm_nca, norm_nco
+    ): #FIXME: Will need to update function to work with autodiff (v2.0)
         for j in range(self.n):
             for i in range(self.m):
                 if norm_nca >= self.critical_capillary_aqueous_initial:
@@ -301,20 +303,54 @@ class TransportEquationSolver():
         rel_permeability_formula: RelativePermeabilityFormula,
         modified_water_saturation: np.ndarray | None = None,
     ):
-        pass
+        if(modified_water_saturation is not None):
+            self._water.compute_mobility(
+                self.polymer_concentration, 
+                self.sor, 
+                self.swr, 
+                True, 
+                RelativePermeabilityFormula.CoreyTypeEquation.value, 
+                modified_water_saturation
+                )
+        else:
+            self._water.compute_mobility(
+                self.polymer_concentration, 
+                self.sor, 
+                self.swr, 
+                True, 
+                RelativePermeabilityFormula.CoreyTypeEquation.value 
+                )
+
 
     def _compute_lambda_o(
         self,
         rel_permeability_formula: RelativePermeabilityFormula,
         modified_water_saturation: np.ndarray | None = None,
     ):
-        pass
+        if(modified_water_saturation is not None):
+            self._water.compute_mobility(
+                self.polymer_concentration, 
+                self.sor, 
+                self.swr, 
+                False, 
+                RelativePermeabilityFormula.CoreyTypeEquation.value, 
+                modified_water_saturation
+                )
+        else:
+            self._water.compute_mobility(
+                self.polymer_concentration, 
+                self.sor, 
+                self.swr, 
+                False, 
+                RelativePermeabilityFormula.CoreyTypeEquation.value 
+                )
 
     ## Capillary Number (ratio of viscous forces to surface tension forces)
     def _aqueous_capillary_number(self):
         pass
-    def _oleic_capillary_number(self):
 
+    def _oleic_capillary_number(self):
+        pass
     
 
 
