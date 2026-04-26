@@ -27,6 +27,7 @@ class TransportEquationSolver():
             polymer : Polymer,
             pressure : np.ndarray,
             velocity : np.ndarray,
+            permeability_matrix : np.ndarray,
             source_flow_magnitude: float
     ):
         """
@@ -39,6 +40,7 @@ class TransportEquationSolver():
 
         self.pressure = pressure
         self.velocity = velocity
+        self.permeability_matrix = permeability_matrix
         self.total_flow = source_flow_magnitude
 
     #Constant Parameter Definitions
@@ -88,6 +90,14 @@ class TransportEquationSolver():
     @velocity.setter
     def velocity(self, value):
         self._velocity = velocity
+    ## Permeability Matrix
+    _permeability_matrix
+    @property
+    def permeability_matrix(self):
+        return self._permeability_matrix
+    @permeability_matrix.setter
+    def permeability_matrix(self, value):
+        self._permeability_matrix = value
     ## Grid properties
     @property
     def m(self):
@@ -157,13 +167,20 @@ class TransportEquationSolver():
     @property
     def nsw(self):
         """
-        nsw: normalized aqueous saturation
+        nsw: effective aqueous saturation
         """
         return self._nsw
     @nsw.setter
     def nsw(self, value):
         self._nsw = value
-
+    _dnsw_dg = None
+    @property
+    def dnsw_dg(self):
+        return self._dnsw_dg
+    @dnsw_dg.setter
+    def dnsw_dg(self, value):
+        self._dnsw_dg = value
+    
     @property
     def sor_0(self):
         return SimulationConstants.Resid_Oleic_Phase_Saturation_Initial.value
@@ -197,15 +214,20 @@ class TransportEquationSolver():
     @property
     def nso(self):
         """
-        nso: normalized oleic saturation
+        nso: effective oleic saturation
         """
         return self._nso
     @nso.setter
     def nso(self, value):
         self._nso = value
+    _dnso_dg = None
+    @property
+    def dnso_dg(self):
+        return self._dnso_dg
+    @dnso_dg.setter
+    def dnso_dg(self, value):
+        self._dnso_dg = value
 
-
-    
     def _compute_residual_saturations(self, sigma: np.ndarray):
         """
         wrapper function for running the ``self.water.compute_residual_saturation()`` method
@@ -221,7 +243,6 @@ class TransportEquationSolver():
             v (np.ndarray): velocity matrix.
         """
         [self.swr, self.sor] = self._water.compute_residual_saturation(sigma, self.pressure, self.velocity)
-        
 
     def _compute_effective_saturations(
             self, w_sat_matrix : np.ndarray 
@@ -232,7 +253,10 @@ class TransportEquationSolver():
         self.nsw = (w_sat_matrix - self.swr) / (1 - self.swr)
         # effective oil saturation
         self.nso = (w_sat_matrix - self.swr) / (1 - self.swr - self.sor)
-        pass
+    
+    def _derivative_effective_saturations(self):
+        self.dnsw_dg = self.dswr_dg * (self.water_saturation - 1)/(1 - self.swr)**2
+        self.dnso_dg = (self.dswr_dg * (self.water_saturation + self.sor - 1) + self.dsor_dg * (self.water_saturation - self.swr))/(1-self.swr-self.sor)**2
 
     def _derivative_residual_saturations(
             self, sigma, norm_nca, norm_nco
@@ -297,6 +321,9 @@ class TransportEquationSolver():
     @property
     def fractional_flow(self):
         return self.lambda_a / self.lambda_total
+    @property
+    def D(self):
+        return self.permeability_matrix*self.lambda_o*self.fractional_flow
 
     def _compute_lambda_a(
         self,
@@ -346,11 +373,70 @@ class TransportEquationSolver():
                 )
 
     ## Capillary Number (ratio of viscous forces to surface tension forces)
-    def _aqueous_capillary_number(self):
-        pass
+    _nca = None
+    @property
+    def nca(self):
+        return self._nca
+    @nca.setter
+    def nca(self, value):
+        self._nca = value
+    @property
+    def norm_nca(self):
+        return np.linalg.norm(self.nca)
 
-    def _oleic_capillary_number(self):
-        pass
+    _nco = None
+    @property
+    def nco(self):
+        return self._nco
+    @nco.setter
+    def nco(self, value):
+        self._nco = value
+    @property
+    def norm_nco(self):
+        return np.linalg.norm(self.nco)
+    
+    def _aqueous_capillary_number(self, sigma):
+        self.nca = (
+            np.sqrt(np.matmul(self.pressure, self.pressure) + np.matmul(self.velocity, self.velocity), dtype=np.complex128)
+            * self.aqueous_viscosity.astype(np.complex128)
+            / sigma.astype(np.complex128)
+        )
+        
+    def _oleic_capillary_number(self, sigma):
+        self.nco = (
+            np.sqrt(np.matmul(self.pressure, self.pressure) + np.matmul(self.velocity, self.velocity), dtype=np.complex128)
+            * SimulationConstants.Oil_Viscosity.value
+            / sigma.astype(np.complex128)
+        )
+
+    ## Relative Permeability Derivatives wrt water saturation
+    _dkra_ds = None
+    @property
+    def dkra_ds(self):
+        return self._dkra_ds
+    @dkra_ds.setter
+    def dkra_ds(self, value):
+        self._dkra_ds = value
+    _dkro_ds = None
+    @property
+    def dkro_ds(self):
+        return self._dkra_ds
+    @dkro_ds.setter
+    def dkro_ds(self, value):
+        self._dkro_ds = value
+
+    def _derivative_relative_permeabilities(self):
+        self.dkra_ds = 2.5 * self.dswr_dg * (self.nsw**3 - self.nsw) \
+            + (self.water_saturation - 1) \
+            * (2.5 * self.swr * (3 * self.nsw**2 - 1) + 1) \
+            * self.dnsw_dg \
+            / (1 - self.swr) ** 2
+        self.dkro_ds = 1 \
+            - 5 * self.sor * self.nso \
+            + (1 - self.nso) * (1 - 5 * self.nso * self.dsor_dg) \
+            - (1 + 5 * self.sor - 10 * self.sor * self.nso) \
+            * self.dnso_dg
+
     
 
 

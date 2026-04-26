@@ -25,7 +25,7 @@ class SimulationConstants(Enum):
     Initial_Water_Saturation = 0.21
     
     #Initial residual saturations at or below critical capillary number
-    ## Basically the minimum trapped water & oil saturation in the reservoir
+    ## Basically the minimum trapped water & oil saturation in the reservoir that is a func of interfacial tension
     Resid_Aqueous_Phase_Saturation_Initial = 0.1  # wetting phase
     Resid_Oleic_Phase_Saturation_Initial = 0.3  # non-wetting phase
 
