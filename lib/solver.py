@@ -575,6 +575,119 @@ class TransportEquationSolver():
         """
         pass
 
+    def _characteristic_coordinates(
+        self,
+        flag,
+        old_water_saturation_matrix,
+        new_water_saturation_matrix,
+        const_parameters,
+        varying_parameters,
+    ):
+        """
+        (private method)
+
+        Compute redefined characteristic coordinates (xmod, ymod) according to Neumann boundary conditions.
+
+        will be a helper function to the ``self._transport_equation_solver()`` method.
+
+        Args:
+        ------
+            flag (int): scenario flag for the simulation the user wants to run
+
+            old_water_saturation_matrix (np.ndarray): water saturation matrix from previous iteration
+
+            new_water_saturation_matrix (np.ndarray): water saturation from current iteration
+
+            const_parameters (dict): constant parameters to help with calculations
+
+            varying_parameters (dict): parameters that vary but assist with calculations for water saturation, polymer concentration, and surfactant concentration
+
+        Returns: (tuple[np.ndarray, np.ndarray])
+        ---------------------------------------
+            This method returns ``xmod`` and ``ymod``, which are the modified characteristic coordinates according to the Neumann boundary conditions
+        """
+        assert self.water.water_saturation is not None, SimulationCalcInputException(
+            "SimulationCalcInputError:UnknownWaterSaturationMatrix"
+        )
+        assert (
+            self.surfactant.concentration_matrix is not None
+        ), SimulationCalcInputException(
+            "SimulationCalcInputError:UnknownSurfactantConcentrationMatrix"
+        )
+        x, y = (
+            const_parameters["FD_grid_constants"]["x"],
+            const_parameters["FD_grid_constants"]["y"],
+        )
+        dt_matrix = const_parameters["FD_grid_constants"]["dt_matrix"]
+        xjump = None
+        yjump = None
+        f = varying_parameters["fractional_flow_parameters"]["f"]
+        f_s = varying_parameters["fractional_flow_derivatives"]["df_ds"]
+        D = varying_parameters["fractional_flow_parameters"]["D"]
+        pc_s = varying_parameters["capillary_pressure_and_derivatives"]["dpc_ds"]
+        pc_g = varying_parameters["capillary_pressure_and_derivatives"]["dpc_dg"]
+        sold = old_water_saturation_matrix
+        snew = new_water_saturation_matrix
+
+        if flag == 1:
+            xjump = x - f_s * self.u * dt_matrix
+            yjump = y - f_s * self.v * dt_matrix
+        elif flag == 2:
+            # Calculate gradients
+            sx, sy = self._get_gradient(sold)
+            gx, gy = self._get_gradient(self.surfactant.concentration_matrix)
+
+            xjump = (
+                x
+                - (
+                    (f / snew) * self.u
+                    + (D * pc_s / snew) * sx
+                    + (D * pc_g / snew) * gx
+                )
+                * dt_matrix
+            )
+            yjump = (
+                y
+                - (
+                    (f / snew) * self.v
+                    + (D * pc_s / snew) * sy
+                    + (D * pc_g / snew) * gy
+                )
+                * dt_matrix
+            )
+        elif flag == 3:
+            sx, sy = self._get_gradient(sold)
+
+            xjump = x - ((f / snew) * self.u + (D * pc_s / snew) * sx) * dt_matrix
+            yjump = y - ((f / snew) * self.v + (D * pc_s / snew) * sy) * dt_matrix
+
+        # Apply Neumann reflection conditions
+        if xjump is None or yjump is None:
+            raise SimulationCalcInputException(
+                "SimulationInputException:UnknownXJumpYJumpMatrices"
+            )
+
+        xmod = np.copy(x)
+        ymod = np.copy(y)
+
+        for j in range(np.shape(y)[0]):
+            for i in range(np.shape(x)[1]):
+                if xjump[j, i] <= 1 and yjump[j, i] <= 1:
+                    xmod[j, i] = np.abs(xjump[j, i])
+                    ymod[j, i] = np.abs(yjump[j, i])
+                elif xjump[j, i] > 1 and yjump[j, i] <= 1:
+                    xmod[j, i] = 2 - xjump[j, i]
+                    ymod[j, i] = np.abs(yjump[j, i])
+                elif xjump[j, i] <= 1 and yjump[j, i] > 1:
+                    xmod[j, i] = np.abs(xjump[j, i])
+                    ymod[j, i] = 2 - yjump[j, i]
+                elif xjump[j, i] > 1 and yjump[j, i] > 1:
+                    xmod[j, i] = 2 - xjump[j, i]
+                    ymod[j, i] = 2 - yjump[j, i]
+
+        return xmod, ymod
+
+
 
 # class EllipticEquationSolver():
 #     """
