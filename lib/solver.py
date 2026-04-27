@@ -66,6 +66,10 @@ class TransportEquationSolver():
     @property
     def aqueous_viscosity(self):
         return self._water.viscosity_array
+    ## Oil Viscosity
+    @property
+    def oil_viscosity(self):
+        return self._water.miuo
     ## Surfactant concentration matrix
     @property
     def surfactant_concentration(self):
@@ -322,8 +326,42 @@ class TransportEquationSolver():
     def fractional_flow(self):
         return self.lambda_a / self.lambda_total
     @property
+    def df_ds(self):
+        return self.dkra_ds \
+            * self.lambda_o \
+            / (self.lambda_total**2 * self.aqueous_viscosity) \
+            - self.dkro_ds \
+            * self.lambda_a \
+            / (self.lambda_total**2 * self.oil_viscosity)
+    @property
+    def df_dc(self):
+        return (-1 * (self.lambda_o * self.lambda_a * self.oil_viscosity)) \
+            / ((self.lambda_total**2) * self.aqueous_viscosity)
+    @property
+    def df_dg(self):
+        return ( \
+                (\
+                    self.dkra_dg \
+                    * self.lambda_o \
+                )\
+                / ((self.lambda_total**2) * self.aqueous_viscosity) \
+            )\
+            - (\
+                (\
+                    self.dkro_dg \
+                    * self.lambda_a \
+                )\
+                / ((self.lambda_total**2) * self.aqueous_viscosity)\
+            )\
+    @property
     def D(self):
         return self.permeability_matrix*self.lambda_o*self.fractional_flow
+    @property
+    def dD_dg(self):
+        return self.D * self.dpc_dg
+    @property
+    def dD_ds(self):
+        return self.D * self.dpc_ds
 
     def _compute_lambda_a(
         self,
@@ -347,7 +385,6 @@ class TransportEquationSolver():
                 True, 
                 RelativePermeabilityFormula.CoreyTypeEquation.value 
                 )
-
 
     def _compute_lambda_o(
         self,
@@ -417,6 +454,13 @@ class TransportEquationSolver():
     @dkra_ds.setter
     def dkra_ds(self, value):
         self._dkra_ds = value
+    _dkra_dg = None
+    @property
+    def dkra_dg(self):
+        return self._dkra_dg
+    @dkra_dg.setter
+    def dkra_dg(self, value):
+        self._dkra_dg = value
     _dkro_ds = None
     @property
     def dkro_ds(self):
@@ -424,19 +468,54 @@ class TransportEquationSolver():
     @dkro_ds.setter
     def dkro_ds(self, value):
         self._dkro_ds = value
+    _dkro_dg = None
+    @property
+    def dkro_dg(self):
+        return self._dkro_dg
+    @dkro_dg.setter
+    def dkro_dg(self, value):
+        self._dkro_dg = value
 
     def _derivative_relative_permeabilities(self):
-        self.dkra_ds = 2.5 * self.dswr_dg * (self.nsw**3 - self.nsw) \
+        self.dkra_dg = 2.5 * self.dswr_dg * (self.nsw**3 - self.nsw) \
             + (self.water_saturation - 1) \
             * (2.5 * self.swr * (3 * self.nsw**2 - 1) + 1) \
             * self.dnsw_dg \
             / (1 - self.swr) ** 2
-        self.dkro_ds = 1 \
+        self.dkro_dg = 1 \
             - 5 * self.sor * self.nso \
             + (1 - self.nso) * (1 - 5 * self.nso * self.dsor_dg) \
             - (1 + 5 * self.sor - 10 * self.sor * self.nso) \
             * self.dnso_dg
+        self.dkra_ds = 2.5 * self.swr * (3 * (self.nsw) ** 2 - 1) + 1
+        self.dkro_ds = 10 * self.sor * self.nso - 5 * self.sor - 1
 
+    ## Capillary pressure and its derivatives
+    _pc = None
+    @property
+    def pc(self):
+        return self._pc
+    @pc.setter
+    def pc(self, value):
+        self._pc = value
+    _dpc_ds = None
+    @property
+    def dpc_ds(self):
+        return self._dpc_ds
+    @dpc_ds.setter
+    def dpc_ds(self, value):
+        self._dpc_ds = value
+    _dpc_dg = None
+    @property
+    def dpc_dg(self):
+        return self._dpc_dg
+    @dpc_dg.setter
+    def dpc_dg(self, value):
+        self._dpc_dg = value
+
+    def _derivative_capillary_pressure(self, sigma, dsigma_dg):
+        self.dpc_ds = self.pc / (self.omega[0]*(1-self.nso))
+        self.dpc_dg = (self.pc/sigma)*dsigma_dg + self.dpc_ds
 
     
 
