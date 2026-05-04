@@ -11,9 +11,21 @@ from surfactant import Surfactant
 from water import Water
 from polymer import Polymer
 from grid import Grid
-from enumerations import *
-from Exceptions import *
+from enumerations import (
+    ModelType,
+    PolymerList,
+    RelativePermeabilityFormula,
+    SurfactantList,
+    PermeabilityType,
+    ResevoirGeometry,
+    SimulationConstants,
+)
+from Exceptions import SimulationCalcInputException
 import numpy as np
+import scipy as sp
+from scipy.linalg import fractional_matrix_power
+from scipy.sparse.linalg import bicgstab
+
 
 class TransportEquationSolver():
     """
@@ -258,9 +270,13 @@ class TransportEquationSolver():
         # effective oil saturation
         self.nso = (w_sat_matrix - self.swr) / (1 - self.swr - self.sor)
     
-    def _derivative_effective_saturations(self):
-        self.dnsw_dg = self.dswr_dg * (self.water_saturation - 1)/(1 - self.swr)**2
-        self.dnso_dg = (self.dswr_dg * (self.water_saturation + self.sor - 1) + self.dsor_dg * (self.water_saturation - self.swr))/(1-self.swr-self.sor)**2
+    def _derivative_effective_saturations(self, modified_water_saturation: np.ndarray | None = None):
+        water_saturation_matrix = self.water_saturation
+        if modified_water_saturation is not None:
+            water_saturation_matrix = modified_water_saturation
+
+        self.dnsw_dg = self.dswr_dg * (water_saturation_matrix - 1)/(1 - self.swr)**2
+        self.dnso_dg = (self.dswr_dg * (water_saturation_matrix + self.sor - 1) + self.dsor_dg * (water_saturation_matrix - self.swr))/(1-self.swr-self.sor)**2
 
     def _derivative_residual_saturations(
             self, sigma, norm_nca, norm_nco
@@ -527,12 +543,6 @@ class TransportEquationSolver():
     def execute(self):
         pass
 
-    def _initialize_matrices(self):
-        """
-        initialize relevant matrices needed for computation
-        """
-        pass
-
     def _main_loop_computation(self):
         """
         primary loop that will run for computations
@@ -543,13 +553,36 @@ class TransportEquationSolver():
         """
         will conduct any preprocessing prior to computing the saturation matrix
         """
-        pass
+        # redefine coordinates
+        [xmod, ymod] = self._characteristic_coordinates(
+            1,
+            self.water_saturation,
+            self.water_saturation,
+        )
+        
+        #saving old water saturation matrix and modifying the current water saturation matrix for calcs
+        water_saturation_old = np.copy(self.water_saturation)
+        water_saturation_modified = self._matrix_reordering(np.copy(self.water_saturation), xmod, ymod)
+        
+        #computing the mobilities
+        self._compute_lambda_a(RelativePermeabilityFormula.CoreyTypeEquation, water_saturation_modified)
+        self._compute_lambda_o(RelativePermeabilityFormula.CoreyTypeEquation, water_saturation_modified)
+        
+        #computing derivatives of capillary pressure
+        self._derivative_capillary_pressure(self._surfactant.eval_IFT, self._surfactant.eval_dIFT_dGamma)
+
+        #initializing matrices
+        idx = 1
+        AAA = np.zeros((self.n * self.m, self.n * self.m))
+        DDD = np.zeros((self.n * self.m, 1))
+
+
 
     def _surfactant_concentration_matrix_preprocessing(self):
         """
         will conduct any preprocessing prior to computing the surfactant concentration matrix
         """
-        pass
+        
 
     def _polymer_concentration_matrix_preprocessing(self):
         """
@@ -575,13 +608,37 @@ class TransportEquationSolver():
         """
         pass
 
+    def _matrix_reordering(self, transport_matrix, xmod, ymod):
+        x1d = self.x[0, :]
+        y1d = self.y[:, 0]
+        x_sorted = np.all(np.diff(x1d) > 0)
+        y_sorted = np.all(np.diff(y1d) > 0)
+
+        # reorder Q if a dimension isn't sorted
+        if not x_sorted:
+            x_sort_idx = np.argsort(x1d)
+            x1d = x1d[x_sort_idx]
+            transport_matrix = transport_matrix[:, x_sort_idx]  # Sort columns of S
+        if not y_sorted:
+            y_sort_idx = np.argsort(y1d)
+            y1d = y1d[y_sort_idx]
+            transport_matrix = transport_matrix[y_sort_idx, :]  # Sort rows of Q
+
+        interp_func = sp.interpolate.RegularGridInterpolator(
+            (y1d, x1d), transport_matrix, method="linear", bounds_error=False, fill_value=None
+        )
+
+        query_points = np.stack([ymod.ravel(), xmod.ravel()], axis=-1)
+        transport_matrix_modified = interp_func(query_points).reshape(xmod.shape)
+
+        return transport_matrix_modified
+
+
     def _characteristic_coordinates(
         self,
         flag,
         old_water_saturation_matrix,
         new_water_saturation_matrix,
-        const_parameters,
-        varying_parameters,
     ):
         """
         (private method)
@@ -606,60 +663,51 @@ class TransportEquationSolver():
         ---------------------------------------
             This method returns ``xmod`` and ``ymod``, which are the modified characteristic coordinates according to the Neumann boundary conditions
         """
-        assert self.water.water_saturation is not None, SimulationCalcInputException(
+        assert self.water_saturation is not None, SimulationCalcInputException(
             "SimulationCalcInputError:UnknownWaterSaturationMatrix"
         )
         assert (
-            self.surfactant.concentration_matrix is not None
+            self.surfactant_concentration is not None
         ), SimulationCalcInputException(
             "SimulationCalcInputError:UnknownSurfactantConcentrationMatrix"
         )
-        x, y = (
-            const_parameters["FD_grid_constants"]["x"],
-            const_parameters["FD_grid_constants"]["y"],
-        )
-        dt_matrix = const_parameters["FD_grid_constants"]["dt_matrix"]
+
         xjump = None
         yjump = None
-        f = varying_parameters["fractional_flow_parameters"]["f"]
-        f_s = varying_parameters["fractional_flow_derivatives"]["df_ds"]
-        D = varying_parameters["fractional_flow_parameters"]["D"]
-        pc_s = varying_parameters["capillary_pressure_and_derivatives"]["dpc_ds"]
-        pc_g = varying_parameters["capillary_pressure_and_derivatives"]["dpc_dg"]
         sold = old_water_saturation_matrix
         snew = new_water_saturation_matrix
 
         if flag == 1:
-            xjump = x - f_s * self.u * dt_matrix
-            yjump = y - f_s * self.v * dt_matrix
+            xjump = self.x - self.df_ds * self.pressure * self.dt_array
+            yjump = self.y - self.df_ds * self.velocity * self.dt_array
         elif flag == 2:
             # Calculate gradients
             sx, sy = self._get_gradient(sold)
-            gx, gy = self._get_gradient(self.surfactant.concentration_matrix)
+            gx, gy = self._get_gradient(self.surfactant_concentration)
 
             xjump = (
-                x
+                self.x
                 - (
-                    (f / snew) * self.u
-                    + (D * pc_s / snew) * sx
-                    + (D * pc_g / snew) * gx
+                    (self.fractional_flow / snew) * self.pressure
+                    + (self.D * self.dpc_ds / snew) * sx
+                    + (self.D * self.dpc_dg / snew) * gx
                 )
-                * dt_matrix
+                * self.dt_array
             )
             yjump = (
-                y
+                self.y
                 - (
-                    (f / snew) * self.v
-                    + (D * pc_s / snew) * sy
-                    + (D * pc_g / snew) * gy
+                    (self.fractional_flow / snew) * self.velocity
+                    + (self.D * self.dpc_ds / snew) * sy
+                    + (self.D * self.dpc_dg / snew) * gy
                 )
-                * dt_matrix
+                * self.dt_array
             )
         elif flag == 3:
             sx, sy = self._get_gradient(sold)
 
-            xjump = x - ((f / snew) * self.u + (D * pc_s / snew) * sx) * dt_matrix
-            yjump = y - ((f / snew) * self.v + (D * pc_s / snew) * sy) * dt_matrix
+            xjump = self.x - ((self.fractional_flow / snew) * self.pressure + (self.D * self.dpc_ds / snew) * sx) * self.dt_array
+            yjump = self.y - ((self.fractional_flow / snew) * self.velocity + (self.D * self.dpc_ds / snew) * sy) * self.dt_array
 
         # Apply Neumann reflection conditions
         if xjump is None or yjump is None:
@@ -667,11 +715,11 @@ class TransportEquationSolver():
                 "SimulationInputException:UnknownXJumpYJumpMatrices"
             )
 
-        xmod = np.copy(x)
-        ymod = np.copy(y)
+        xmod = np.copy(self.x)
+        ymod = np.copy(self.y)
 
-        for j in range(np.shape(y)[0]):
-            for i in range(np.shape(x)[1]):
+        for j in range(np.shape(self.y)[0]):
+            for i in range(np.shape(self.x)[1]):
                 if xjump[j, i] <= 1 and yjump[j, i] <= 1:
                     xmod[j, i] = np.abs(xjump[j, i])
                     ymod[j, i] = np.abs(yjump[j, i])
@@ -687,6 +735,35 @@ class TransportEquationSolver():
 
         return xmod, ymod
 
+    def _get_gradient(self, vn):
+        """
+        (private method)
+
+        Helper function to determine the gradients with respect to x and y dimensions
+        
+        Returns: (tuple[_Array[tuple[int, int], float64], NDArray[float64]])
+        --------------------------------------------------------------------
+            Tuple with px py which are numpy matrices that hold the gradient wrt to x and y dimensions
+        """
+        px = np.zeros((self.n + 1, self.m + 1))
+        py = np.copy(px)
+
+        for i in range(self.m + 1):
+            for j in range(self.n + 1):
+                if i != 0:
+                    px[j, i] = (vn[j, i] - vn[j, i - 1]) / self.dx
+                if i != self.m:
+                    px[j, i] = (vn[j, i + 1] - vn[j, i]) / self.dx
+                if i != 0 and i != self.m:
+                    px[j, i] = (vn[j, i + 1] - vn[j, i - 1]) / (2 * self.dx)
+                if j != 0:
+                    py[j, i] = (vn[j, i] - vn[j - 1, i]) / self.dy
+                if j != self.n:
+                    py[j, i] = (vn[j + 1, i] - vn[j, i]) / self.dy
+                if j != 0 and j != self.n:
+                    py[j, i] = (vn[j + 1, i] - vn[j - 1, i]) / (2 * self.dy)
+
+        return px, py
 
 
 # class EllipticEquationSolver():
