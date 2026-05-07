@@ -105,7 +105,7 @@ class TransportEquationSolver():
         return self._velocity
     @velocity.setter
     def velocity(self, value):
-        self._velocity = velocity
+        self._velocity = value
     ## Permeability Matrix
     _permeability_matrix
     @property
@@ -547,7 +547,51 @@ class TransportEquationSolver():
         """
         primary loop that will run for computations
         """
-        pass
+        idx = 1
+        # setting matrices
+        AAA = np.zeros((self.n * self.m, self.n * self.m))
+        DDD = np.zeros((self.n * self.m, 1))
+
+        while (
+            idx <= self.m * (self.n - 1) + 1
+            and self.surfactant_concentration is not None
+            and self.polymer_concentration is not None
+        ):
+            cnt = (idx - 1) // self.m  # cnt = 0, 1, 2, ... for idx = 1, m+1, 2m+1, 3m+1, ...
+            BB = np.zeros((self.n, self.m))
+            AA = np.copy(BB)
+            CC = np.copy(BB)
+            DD = np.zeros((self.m, 1))
+
+            #'cnt+1' in matlab is 'cnt' in python as matlab indexes from 1 but python indexes from 0
+            for i in range(self.m):
+                for j in range(self.n):
+                    if i == j:
+                        if idx == 1: #bottom of column
+                            if i == 0:
+                                # first/left column
+                            elif i == self.m - 1:
+                                # last/rightmost column
+                            else:
+                                #interior of matrix
+                        elif idx == (self.m) * (self.n - 1) + 1: # topmost row of matrix
+                            if i == 0:
+                                #first/leftmost column
+                            elif i == self.m - 1:
+                                #last/rightmost column
+                            else:
+                                # interior of column
+                        else: #interior rows
+                            if i == 0:
+                                #first/leftmost column
+                            elif i == self.m - 1:
+                                #last/rightmost column
+                            else:
+                                #interior of matrix
+
+
+
+
 
     def _saturation_matrix_preprocessing(self):
         """
@@ -576,13 +620,16 @@ class TransportEquationSolver():
         AAA = np.zeros((self.n * self.m, self.n * self.m))
         DDD = np.zeros((self.n * self.m, 1))
 
+        #executing main loop function
+        self._main_loop_computation()
+
 
 
     def _surfactant_concentration_matrix_preprocessing(self):
         """
         will conduct any preprocessing prior to computing the surfactant concentration matrix
         """
-        
+        pass
 
     def _polymer_concentration_matrix_preprocessing(self):
         """
@@ -590,22 +637,97 @@ class TransportEquationSolver():
         """
         pass
 
-    def _bottom_grid_calculations(self):
+    def _leftmost_grid_calculations(self, row_index, flag):
         """
-        will conduct calculations related to the bottom of the grid
+        will conduct calculations related to the leftmost column of the grid at a particular row
         """
+        match flag:
+            case 1: #water saturaton matrix computations
+                if row_index == 1:
+                    pass
+                elif row_index == (self.m) * (self.n - 1) + 1:
+                    pass
+                else:
+                    pass
+                pass
+            case 2: # polymer concentration matrix computations
+                if row_index == 1:
+                    pass
+                elif row_index == (self.m) * (self.n - 1) + 1:
+                    pass
+                else:
+                    pass
+                pass
+            case 3: # surfactant concentration matrix computation
+                if row_index == 1:
+                    pass
+                elif row_index == (self.m) * (self.n - 1) + 1:
+                    pass
+                else:
+                    pass
+                pass
         pass
 
-    def _top_grid_calculations(self):
+    def _rightmost_calculations(self, row_index, flag):
         """
-        will conduct calculatons related to the top of the grid
+        will conduct calculatons related to the rightmost column of grid at a particular row
         """
+        match flag:
+            case 1: #water saturaton matrix computations
+                if row_index == 1:
+                    pass
+                elif row_index == (self.m) * (self.n - 1) + 1:
+                    pass
+                else:
+                    pass
+                pass
+            case 2: # polymer concentration matrix computations
+                if row_index == 1:
+                    pass
+                elif row_index == (self.m) * (self.n - 1) + 1:
+                    pass
+                else:
+                    pass
+                pass
+            case 3: # surfactant concentration matrix computation
+                if row_index == 1:
+                    pass
+                elif row_index == (self.m) * (self.n - 1) + 1:
+                    pass
+                else:
+                    pass
+                pass
         pass
 
-    def _interior_grid_calculations(self):
+    def _interior_grid_calculations(self, row_index, flag):
         """
-        will conduct calculations related to the interior of the grid
+        will conduct calculations related to the interior column of grid at a particular row
         """
+        match flag:
+            case 1: #water saturaton matrix computations
+                if row_index == 1:
+                    pass
+                elif row_index == (self.m) * (self.n - 1) + 1:
+                    pass
+                else:
+                    pass
+                pass
+            case 2: # polymer concentration matrix computations
+                if row_index == 1:
+                    pass
+                elif row_index == (self.m) * (self.n - 1) + 1:
+                    pass
+                else:
+                    pass
+                pass
+            case 3: # surfactant concentration matrix computation
+                if row_index == 1:
+                    pass
+                elif row_index == (self.m) * (self.n - 1) + 1:
+                    pass
+                else:
+                    pass
+                pass
         pass
 
     def _matrix_reordering(self, transport_matrix, xmod, ymod):
