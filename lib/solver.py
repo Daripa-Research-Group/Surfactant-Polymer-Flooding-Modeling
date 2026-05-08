@@ -588,6 +588,7 @@ class TransportEquationSolver():
                                 #last/rightmost column
                             else:
                                 #interior of matrix
+                                pass
 
 
 
@@ -637,14 +638,38 @@ class TransportEquationSolver():
         """
         pass
 
-    def _leftmost_grid_calculations(self, row_index, flag):
+    def _leftmost_grid_calculations(self, flag, row_index, cnt, i, j, AA, BB, CC, DD, TMM):
         """
         will conduct calculations related to the leftmost column of the grid at a particular row
         """
         match flag:
             case 1: #water saturaton matrix computations
                 if row_index == 1:
-                    pass
+                    DD[i] = (
+                        (TMM[cnt, i] / self.dt_array[cnt, i])
+                        + self.total_flow * (1 - self.fractional_flow[cnt, i])
+                        + (
+                            (self.dD_dg[cnt, i] + self.dD_dg[cnt, i + 1]) / (self.dx**2)
+                            + (self.dD_dg[cnt + 1, i] + self.dD_dg[cnt, i]) / (self.dy**2)
+                        )
+                        * self.surfactant_concentration[cnt, i]
+                        - (self.dD_dg[cnt, i] + self.dD_dg[cnt, i + 1])
+                        / (self.dx**2)
+                        * self.surfactant_concentration[cnt, i + 1]
+                        - (self.dD_dg[cnt, i] + self.dD_dg[cnt + 1, i])
+                        / (self.dy**2)
+                        * self.surfactant_concentration[cnt + 1, i]
+                    )
+
+                    CC[j, i] = (self.dD_ds[cnt, i] + self.dD_ds[cnt + 1, i]) / (self.dy**2)
+
+                    BB[j, i] = (
+                        1 / dt_array[cnt, i]
+                        - (self.dD_ds[cnt+1, i] + self.dD_ds[cnt, i + 1]) / (self.dx**2)
+                        - (self.dD_ds[cnt + 1, i] + self.dD_ds[cnt, i]) / (self.dy**2)
+                    )
+
+                    BB[j, i + 1] = (self.dD_ds[cnt, i] + self.dD_ds[cnt, i + 1]) * (self.dx**2)
                 elif row_index == (self.m) * (self.n - 1) + 1:
                     pass
                 else:
