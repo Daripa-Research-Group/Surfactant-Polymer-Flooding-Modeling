@@ -671,23 +671,116 @@ class TransportEquationSolver():
 
                     BB[j, i + 1] = (self.dD_ds[cnt, i] + self.dD_ds[cnt, i + 1]) * (self.dx**2)
                 elif row_index == (self.m) * (self.n - 1) + 1:
-                    pass
+                    DD[i] = (
+                        (TMM[cnt, i] / self.dt_array[cnt, i])
+                        + (
+                            (self.dD_dg[cnt, i] + self.dD_dg[cnt, i + 1]) / (self.dx**2)
+                            + (self.dD_dg[cnt - 1, i] + self.dD_dg[cnt, i]) / (self.dy**2)
+                        )
+                        * self.surfactant_concentration[cnt, i]
+                        - (self.dD_dg[cnt, i] + self.dD_dg[cnt, i + 1])
+                        / (self.dx**2)
+                        * self.surfactant_concentration[cnt, i + 1]
+                        - (self.dD_dg[cnt, i] + self.dD_dg[cnt - 1, i])
+                        / (self.dy**2)
+                        * self.surfactant_concentration[cnt - 1, i]
+                    )
+
+                    AA[j, i] = (self.dD_ds[cnt, i] + self.dD_ds[cnt - 1, i]) / (self.dy**2)
+
+                    BB[j, i] = (
+                        1 / self.dt_array[cnt, i]
+                        - (self.dD_ds[cnt, i] + self.dD_ds[cnt, i + 1]) / (self.dx**2)
+                        - (self.dD_ds[cnt - 1, i] + self.dD_ds[cnt, i]) / (self.dy**2)
+                    )
+
+                    BB[j, i + 1] = (self.dD_ds[cnt, i] + self.dD_ds[cnt, i + 1]) / (self.dx**2)
+
                 else:
-                    pass
-                pass
+                    DD[i] = (
+                        (TMM[cnt, i] / self.dt_array[cnt, i])
+                        - self.df_dc[cnt, i]
+                        * (
+                            self.velocity[cnt, i]
+                            * (
+                                self.polymer_concentration[cnt + 1, i]
+                                - self.polymer_concentration[cnt, i]
+                            )
+                            / (2 * self.dy)
+                        )
+                        - self.df_dg[cnt, i]
+                        * (
+                            self.velocity[cnt, i]
+                            * (
+                                self.surfactant_concentration[cnt + 1, i]
+                                - self.surfactant_concentration[cnt, i]
+                            )
+                            / (2 * self.dy)
+                        )
+                        + (
+                            (self.dD_dg[cnt, i] + self.dD_dg[cnt, i + 1]) / (self.dx**2)
+                            + (
+                                self.dD_dg[cnt - 1, i]
+                                + 2 * self.dD_dg[cnt, i]
+                                + self.dD_dg[cnt + 1, i]
+                                )
+                            / (2 * self.dy**2)
+                        )
+                        * self.surfactant_concentration[cnt, i]
+                        - (self.dD_dg[cnt, i] + self.dD_dg[cnt, i + 1])
+                        / (self.dx**2)
+                        * self.surfactant_concentration[cnt, i + 1]
+                        - (self.dD_dg[cnt, i] + self.dD_dg[cnt + 1, i])
+                        / (2 * self.dy**2)
+                        * self.surfactant_concentration[cnt + 1, i]
+                        - (self.dD_dg[cnt, i] + self.dD_dg[cnt - 1, i])
+                        / (2 * self.dy**2)
+                        * self.surfactant_concentration[cnt - 1, i]
+                    )
+
+                    AA[j, i] = (self.dD_ds[cnt, i] + self.dD_ds[cnt - 1, i]) / (2 * self.dy**2)
+
+                    BB[j, i] = (
+                        1 / self.dt_array[cnt, i]
+                        - (self.dD_ds[cnt, i] + self.dD_ds[cnt, i + 1]) / (self.dx**2)
+                        - (
+                            self.dD_ds[cnt - 1, i]
+                            + 2 * self.dD_ds[cnt, i]
+                            + self.dD_ds[cnt + 1, i]
+                            )
+                        / (2 * self.dy**2)
+                    )
+                    BB[j, i + 1] = (self.dD_ds[cnt, i] + self.dD_ds[cnt, i + 1]) / (self.dx**2)
+
+                    CC[j, i] = (self.dD_ds[cnt, i] + self.dD_ds[cnt + 1, i]) / (2 * self.dy**2)
             case 2: # polymer concentration matrix computations
-                if row_index == 1:
-                    pass
-                elif row_index == (self.m) * (self.n - 1) + 1:
-                    pass
-                else:
-                    pass
-                pass
+                if row_index == 1: #bottom of grid
+                    DD[i] = (
+                        self.polymer_flow / self.water_saturation[cnt, i] + TMM[cnt, i] / self.dt_array[cnt, i]
+                    )
+                    BB[j, i] = 1 / self.dt_array[cnt, i] + self.total_flow / self.water_saturation[cnt, i]
             case 3: # surfactant concentration matrix computation
+                F = self.D * self.dpc_dg / self.water_saturation
                 if row_index == 1:
-                    pass
+                    DD[i] = (
+                        self.surfactant_flow / self.water_saturation[cnt, i] + TMM[cnt, i] / self.dt_array[cnt, i]
+                    )
+                    CC[j, i] = 2 * F[cnt, i] / (self.dy**2)
+                    BB[j, i] = (
+                        1 / self.dt_array[cnt, i]
+                        - ((2 / (self.dx**2)) + (2 / (self.dy**2))) * F[cnt, i]
+                        + self.total_flow / self.water_saturation[cnt, i]
+                    )
+                    BB[j, i + 1] = 2 * F[cnt][i] / (self.dx**2)
                 elif row_index == (self.m) * (self.n - 1) + 1:
-                    pass
+                    DD[i] = TMM[cnt, i] / self.dt_array[cnt, i]
+                    AA[j, i] = 2 * F[cnt, i] / (self.dy**2)
+                    BB[j, i] = (
+                        1 / self.dt_array[cnt, i]
+                        - ((2 / (self.dx**2)) + (2 / (self.dy**2))) * F[cnt, i]
+                        + self.total_flow / self.water_saturation[cnt, i]
+                    )
+                    BB[j, i + 1] = 2 * F[cnt, i] / (self.dx**2)
                 else:
                     pass
                 pass
@@ -707,11 +800,7 @@ class TransportEquationSolver():
                     pass
                 pass
             case 2: # polymer concentration matrix computations
-                if row_index == 1:
-                    pass
-                elif row_index == (self.m) * (self.n - 1) + 1:
-                    pass
-                else:
+                if row_index == (self.m) * (self.n - 1) + 1:
                     pass
                 pass
             case 3: # surfactant concentration matrix computation
