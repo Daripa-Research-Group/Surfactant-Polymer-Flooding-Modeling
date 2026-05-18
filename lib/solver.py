@@ -946,7 +946,7 @@ class TransportEquationSolver():
                     BB[j, i - 1] = 2 * F[cnt, i] / (self.dx**2)
                     CC[j, i] = F[cnt, i] / (self.dy**2)
 
-    def _interior_grid_calculations(self, row_index, flag):
+    def _interior_grid_calculations(self, flag, row_index, cnt, i, j, AA, BB, CC, DD, TMM):
         """
         will conduct calculations related to the interior column of grid at a particular row
         """
