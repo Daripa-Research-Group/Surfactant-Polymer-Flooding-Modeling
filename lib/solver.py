@@ -152,7 +152,7 @@ class TransportEquationSolver():
     def critical_capillary_oleic_initial(self): #Nco0
         return SimulationConstants.Oleic_Phase_Critical_Capillary_Num.value
     
-    # Functions for parameter definitions
+    # Functions for parameter definitions (TODO: need to make sure that when current property value is None, respective calculations are automatically done when property is called)
     ## Residual saturations
     @property
     def swr_0(self):
@@ -533,13 +533,6 @@ class TransportEquationSolver():
         self.dpc_ds = self.pc / (self.omega[0]*(1-self.nso))
         self.dpc_dg = (self.pc/sigma)*dsigma_dg + self.dpc_ds
 
-    
-
-
-
-
-
-
     def execute(self):
         pass
 
@@ -587,12 +580,31 @@ class TransportEquationSolver():
                         handler = self._interior_grid_calculations
 
                     handler(flag, idx, cnt, i, j, AA, BB, CC, DD, field)
+            
+            if cnt == 0:
+                AAA[:self.n, : 2 * self.m] = np.hstack([BB, CC])
+            elif cnt == self.n - 1:
+                AAA[(self.m - 1) * self.n : self.m * self.n, (self.n - 2) * self.m : self.n * self.m] = np.hstack([AA, BB])
+            else:
+                AAA[cnt * self.n : (cnt + 1) * self.n, (cnt - 1) * self.m : (cnt + 2) * self.m] = np.hstack(
+                    [AA, BB, CC]
+                )
 
+            DDD[cnt * self.m : (cnt + 1) * self.m] = DD
+            idx += self.m
+        
+        TMM_flat, info = bicgstab(AAA, DDD, rtol=10 ** (-10), maxiter=600)
+        if info != 0:
+            import warnings
+            warnings.warn(f"BiCGSTAB: convergence issue (info={info}) in water saturation solver")
+        TMM_new = TMM_flat.reshape(self.m, self.n)
 
+        return TMM_new
+        
 
-    def _saturation_matrix_processing(self):
+    def _water_saturation_matrix_processing(self):
         """
-        will conduct any preprocessing prior to computing the saturation matrix
+        run through computations for water saturation matrix
         """
         # redefine coordinates
         [xmod, ymod] = self._characteristic_coordinates(
@@ -601,7 +613,7 @@ class TransportEquationSolver():
             self.water_saturation,
         )
         
-        #saving old water saturation matrix and modifying the current water saturation matrix for calcs
+        #saving water saturation matrix and then modifying the current water saturation matrix for calcs
         water_saturation_old = np.copy(self.water_saturation)
         water_saturation_modified = self._matrix_reordering(np.copy(self.water_saturation), xmod, ymod)
         
@@ -613,19 +625,30 @@ class TransportEquationSolver():
         self._derivative_capillary_pressure(self._surfactant.eval_IFT, self._surfactant.eval_dIFT_dGamma)
 
         #executing main loop function
-        self._main_loop_computation()
+        self._main_loop_computation(1)
 
 
+
+    def _polymer_concentration_matrix_processing(self, water_saturation_old):
+        """
+        run through computations for the polymer concentration matrix
+        """
+        [xmod, ymod] = self._characteristic_coordinates(
+            2,
+            water_saturation_old,
+            self.water_saturation,
+        )
+
+        #saving polymer matrix and then modifying the current polymer_concentration matrix for calcs
+        polymer_concentration_old = np.copy(self.polymer_concentration)
+        polymer_concentration_modified = self._matrix_reordering(np.copy(self.polymer_concentration), xmod, ymod)
+
+        # executing main loop functions
+        self._main_loop_computation(2)
 
     def _surfactant_concentration_matrix_processing(self):
         """
-        will conduct any preprocessing prior to computing the surfactant concentration matrix
-        """
-        pass
-
-    def _polymer_concentration_matrix_processing(self):
-        """
-        will conduct any preprocessing prior to computing the polymer concentration matrix
+        run through computations for the surfactant concentration matrix
         """
         pass
 
