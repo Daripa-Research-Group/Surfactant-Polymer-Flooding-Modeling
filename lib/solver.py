@@ -543,7 +543,7 @@ class TransportEquationSolver():
     def execute(self):
         pass
 
-    def _main_loop_computation(self):
+    def _main_loop_computation(self, flag):
         """
         primary loop that will run for computations
         """
@@ -551,6 +551,11 @@ class TransportEquationSolver():
         # setting matrices
         AAA = np.zeros((self.n * self.m, self.n * self.m))
         DDD = np.zeros((self.n * self.m, 1))
+        fields = {
+                1: self.water_saturation,
+                2: self.polymer_concentration,
+                3: self.surfactant_concentration
+        }
 
         while (
             idx <= self.m * (self.n - 1) + 1
@@ -563,38 +568,29 @@ class TransportEquationSolver():
             CC = np.copy(BB)
             DD = np.zeros((self.m, 1))
 
-            #'cnt+1' in matlab is 'cnt' in python as matlab indexes from 1 but python indexes from 0
+
             for i in range(self.m):
                 for j in range(self.n):
-                    if i == j:
-                        if idx == 1: #bottom of column
-                            if i == 0:
-                                # first/left column
-                            elif i == self.m - 1:
-                                # last/rightmost column
-                            else:
-                                #interior of matrix
-                        elif idx == (self.m) * (self.n - 1) + 1: # topmost row of matrix
-                            if i == 0:
-                                #first/leftmost column
-                            elif i == self.m - 1:
-                                #last/rightmost column
-                            else:
-                                # interior of column
-                        else: #interior rows
-                            if i == 0:
-                                #first/leftmost column
-                            elif i == self.m - 1:
-                                #last/rightmost column
-                            else:
-                                #interior of matrix
-                                pass
+                    if i != j:
+                        continue
+
+                    field = fields[flag]
+
+                    is_left = (i == 0)
+                    is_right = (i == self.m - 1)
+
+                    if is_left:
+                        handler = self._leftmost_grid_calculations
+                    elif is_right:
+                        handler = self._rightmost_grid_calculations
+                    else:
+                        handler = self._interior_grid_calculations
+
+                    handler(flag, idx, cnt, i, j, AA, BB, CC, DD, field)
 
 
 
-
-
-    def _saturation_matrix_preprocessing(self):
+    def _saturation_matrix_processing(self):
         """
         will conduct any preprocessing prior to computing the saturation matrix
         """
@@ -616,23 +612,18 @@ class TransportEquationSolver():
         #computing derivatives of capillary pressure
         self._derivative_capillary_pressure(self._surfactant.eval_IFT, self._surfactant.eval_dIFT_dGamma)
 
-        #initializing matrices
-        idx = 1
-        AAA = np.zeros((self.n * self.m, self.n * self.m))
-        DDD = np.zeros((self.n * self.m, 1))
-
         #executing main loop function
         self._main_loop_computation()
 
 
 
-    def _surfactant_concentration_matrix_preprocessing(self):
+    def _surfactant_concentration_matrix_processing(self):
         """
         will conduct any preprocessing prior to computing the surfactant concentration matrix
         """
         pass
 
-    def _polymer_concentration_matrix_preprocessing(self):
+    def _polymer_concentration_matrix_processing(self):
         """
         will conduct any preprocessing prior to computing the polymer concentration matrix
         """
@@ -790,8 +781,6 @@ class TransportEquationSolver():
                     )
                     BB[j, i + 1] = 2 * F[cnt, i] / (self.dx**2)
                     CC[j, i] = F[cnt, i] / (self.dy**2)
-                pass
-        pass
 
     def _rightmost_calculations(self, flag, row_index, cnt, i, j, AA, BB, CC, DD, TMM):
         """
