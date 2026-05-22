@@ -66,30 +66,14 @@ class TransportEquationSolver():
         self._total_flow = value
     @property
     def polymer_flow(self):
-        return self._total_flow*self._water.concetration_scalar
+        return self.total_flow*self._water.concetration_scalar
     @property
     def surfactant_flow(self):
-        return self._total_flow*self._surfactant.concentration
-    ## Water Saturation Matrix
-    @property
-    def water_saturation(self):
-        return self._water.water_saturation
-    ## Aqueous Viscosity
-    @property
-    def aqueous_viscosity(self):
-        return self._water.viscosity_array
+        return self.total_flow*self._surfactant.concentration
     ## Oil Viscosity
     @property
     def oil_viscosity(self):
         return self._water.miuo
-    ## Surfactant concentration matrix
-    @property
-    def surfactant_concentration(self):
-        return self._surfactant.concentration
-    ## Polymer concentration matrix
-    @property
-    def polymer_concentration(self):
-        return self._polymer.concentration_matrix
     ## Elliptic pressure
     _pressure = None
     @property
@@ -107,7 +91,7 @@ class TransportEquationSolver():
     def velocity(self, value):
         self._velocity = value
     ## Permeability Matrix
-    _permeability_matrix
+    _permeability_matrix = None
     @property
     def permeability_matrix(self):
         return self._permeability_matrix
@@ -153,6 +137,31 @@ class TransportEquationSolver():
         return SimulationConstants.Oleic_Phase_Critical_Capillary_Num.value
     
     # Functions for parameter definitions (TODO: need to make sure that when current property value is None, respective calculations are automatically done when property is called)
+    ## Surfactant concentration matrix
+    @property
+    def surfactant_concentration(self):
+        return self._surfactant.concentration_matrix
+    @surfactant_concentration.setter
+    def surfactant_concentration(self, value):
+        self._surfactant.concentration_matrix = value
+    ## Polymer concentration matrix
+    @property
+    def polymer_concentration(self):
+        return self._polymer.concentration_matrix
+    @polymer_concentration.setter
+    def polymer_concentration(self, value):
+        self._polymer.concentration_matrix = value
+    ## Water Saturation Matrix
+    @property
+    def water_saturation(self):
+        return self._water.water_saturation
+    @water_saturation.setter
+    def water_saturation(self, value):
+        self._water.water_saturation = value
+    ## Aqueous Viscosity
+    @property
+    def aqueous_viscosity(self):
+        return self._water.viscosity_array
     ## Residual saturations
     @property
     def swr_0(self):
@@ -385,7 +394,7 @@ class TransportEquationSolver():
         modified_water_saturation: np.ndarray | None = None,
     ):
         if(modified_water_saturation is not None):
-            self._water.compute_mobility(
+            self.lambda_a = self._water.compute_mobility(
                 self.polymer_concentration, 
                 self.sor, 
                 self.swr, 
@@ -394,7 +403,7 @@ class TransportEquationSolver():
                 modified_water_saturation
                 )
         else:
-            self._water.compute_mobility(
+            self.lambda_a = self._water.compute_mobility(
                 self.polymer_concentration, 
                 self.sor, 
                 self.swr, 
@@ -408,7 +417,7 @@ class TransportEquationSolver():
         modified_water_saturation: np.ndarray | None = None,
     ):
         if(modified_water_saturation is not None):
-            self._water.compute_mobility(
+            self.lambda_o = self._water.compute_mobility(
                 self.polymer_concentration, 
                 self.sor, 
                 self.swr, 
@@ -417,7 +426,7 @@ class TransportEquationSolver():
                 modified_water_saturation
                 )
         else:
-            self._water.compute_mobility(
+            self.lambda_o = self._water.compute_mobility(
                 self.polymer_concentration, 
                 self.sor, 
                 self.swr, 
@@ -529,11 +538,43 @@ class TransportEquationSolver():
     def dpc_dg(self, value):
         self._dpc_dg = value
 
+    def _compute_capillary_pressure(self, sigma):
+        self.pc = (
+            sigma
+            * self.omega[1]
+            * np.sqrt(self.porosity)
+        ) / (
+            np.matmul(
+                self.permeability_matrix ** (0.5),
+                fractional_matrix_power(
+                    1 - self.nso, 1 / self.omega[0]
+                ),
+            )
+        )
+
     def _derivative_capillary_pressure(self, sigma, dsigma_dg):
         self.dpc_ds = self.pc / (self.omega[0]*(1-self.nso))
         self.dpc_dg = (self.pc/sigma)*dsigma_dg + self.dpc_ds
 
     def execute(self):
+        """
+        Primary function to execute Transport Equation calculations
+        """
+        
+        # Initialize Parameters
+
+
+        # Water Saturation Computations
+
+
+        # Polymer Concentration Computations
+
+
+        # Surfactant Concentration Computation
+
+        
+        # Calculations for ROIP
+
         pass
 
     def _main_loop_computation(self, flag):
@@ -625,9 +666,9 @@ class TransportEquationSolver():
         self._derivative_capillary_pressure(self._surfactant.eval_IFT, self._surfactant.eval_dIFT_dGamma)
 
         #executing main loop function
-        self._main_loop_computation(1)
+        self.water_saturation = self._main_loop_computation(1)
 
-
+        return water_saturation_old, self.water_saturation #[old matrix, new matrix]
 
     def _polymer_concentration_matrix_processing(self, water_saturation_old):
         """
@@ -644,13 +685,46 @@ class TransportEquationSolver():
         polymer_concentration_modified = self._matrix_reordering(np.copy(self.polymer_concentration), xmod, ymod)
 
         # executing main loop functions
-        self._main_loop_computation(2)
+        self.polymer_concentration = self._main_loop_computation(2)
 
-    def _surfactant_concentration_matrix_processing(self):
+        return polymer_concentration_old, self.polymer_concentration # [old matrix, new matrix]
+
+    def _surfactant_concentration_matrix_processing(self, water_saturation_old, water_saturation_modified):
         """
         run through computations for the surfactant concentration matrix
         """
-        pass
+        # redefine coordinates
+        [xmod, ymod] = self._characteristic_coordinates(
+            3,
+            water_saturation_old,
+            self.water_saturation,
+        )
+
+        #saving old surfactant concentration matrix and then modifying the current surfactant concentration matrix for calculations
+        surfactant_concentration_old = np.copy(self.surfactant_concentration)
+        surfactant_concentration_modified = self._matrix_reordering(np.copy(self.surfactant_concentration), xmod, ymod)
+
+        #updating relevant coefficients using interpolated surfactant concentration matrix
+        
+        ##interfacial tension calculations
+        sigma_modified = self._surfactant.eval_IFT(surfactant_concentration_modified)
+        dsigma_dg_modified = self._surfactant.eval_dIFT_dGamma(surfactant_concentration_modified)
+
+        ##compute residual saturations
+        [swr, sor] = self._water.compute_residual_saturations(sigma_modified, self.pressure, self.velocity)
+        self._compute_effective_saturations(water_saturation_modified)
+
+        ##compute mobilities
+        self._compute_lambda_a(RelativePermeabilityFormula.CoreyTypeEquation, water_saturation_modified)
+        self._compute_lambda_o(RelativePermeabilityFormula.CoreyTypeEquation, water_saturation_modified)
+        
+        ##compute capillary pressues derivatives
+        self._derivative_capillary_pressure(sigma_modified, dsigma_dg_modified)
+        
+        # running main loop functions
+        self.surfactant_concentration = self._main_loop_computation(3)
+
+        return surfactant_concentration_old, self.surfactant_concentration # [old matrix, new matrix]
 
     def _leftmost_grid_calculations(self, flag, row_index, cnt, i, j, AA, BB, CC, DD, TMM):
         """
