@@ -23,6 +23,7 @@ from enumerations import (
 from Exceptions import SimulationCalcInputException, UserInputException
 from polymer import Polymer
 from surfactant import Surfactant
+from solver import TransportEquationSolver
 import numpy as np
 import scipy as sp
 from water import Water
@@ -1466,8 +1467,18 @@ class Simulation:
                 )
 
                 ## STEP 2.5: Solving Transport Equations
-                ocut, wcut, ROIP = self._transport_equation_solver(dt)
-                # self._transport_equation_solver(dt)
+                solver_object = TransportEquationSolver(
+                                    grid= self.mesh,
+                                    water= self.water,
+                                    surfactant= self.surfactant,
+                                    polymer= self.polymer,
+                                    pressure= self.u,
+                                    velocity= self.v,
+                                    permeability_matrix= self.KK,
+                                    source_flow_magnitude= self.source_flow_magnitude
+                                )
+                ocut, wcut, ROIP = solver_object.execute()
+
                 ## Step 2.6: MFW post processing (excluding QFS)
                 if (self.scenario_flag != 3): # FIXME: compute_MFW currently operates for rectilinear geometries. Implement MFW computation for QFS
                     interface, MFW_val, _ = self._compute_MFW(self.water.water_saturation)

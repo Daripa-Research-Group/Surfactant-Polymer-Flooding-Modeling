@@ -600,9 +600,6 @@ class TransportEquationSolver():
         
         return ocut, wcut, ROIP
 
-
-        pass
-
     def _main_loop_computation(self, flag):
         """
         primary loop that will run for computations
