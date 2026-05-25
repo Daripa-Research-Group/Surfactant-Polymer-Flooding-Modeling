@@ -1376,10 +1376,11 @@ class Simulation:
             ## STEP 2: Initiating the primary 'while' loop that will keep running until water shows up in production well
             while(t < t_stop and self.water.water_saturation[self.mesh.n, self.mesh.m] <= 0.70):
                 print(f'{t},{self.water.water_saturation[self.mesh.n, self.mesh.m]}')
-                # while t < 1:
+                
                 ## STEP 2.1: Increment time and amount of feed used:
                 self.integrated_inlet_flow += self.source_flow_magnitude
                 t += dt
+                
                 ## STEP 2.2: Compute viscosities:
                 if (
                     self.model_type.value == ModelType.No_Shear_Thinning.value
@@ -1413,6 +1414,7 @@ class Simulation:
                         u=self.u,
                         v=self.v,
                     )
+
                 ## STEP 2.2: Computing Residual Saturation:
                 assert (
                     self.surfactant.IFT_conc_equ is not None
@@ -1427,6 +1429,7 @@ class Simulation:
                         sigma=interfacial_tension_matrix, u=self.u, v=self.v
                     )
                 )
+
                 ## STEP 2.3: Compute mobilities:
                 assert (
                     self.polymer.concentration_matrix is not None
