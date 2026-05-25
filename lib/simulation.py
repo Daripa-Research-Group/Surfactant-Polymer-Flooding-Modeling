@@ -195,7 +195,7 @@ class Simulation:
         self.MFW = []
         self.integrated_inlet_flow = 0  # "src_total" in the MATLAB version of the code
 
-    # Property of Simulation Class
+    # Dependent Properties of Simulation Class (for documentation purposes)
     _grid_size = None
     @property
     def grid_size(self):
@@ -328,6 +328,28 @@ class Simulation:
     def water(self, value):
         self._water = value
 
+    _u = None
+    @property
+    def u(self):
+        """
+        pressure (np.ndarray): Holds the pressure matrix
+        """
+        return self._u
+    @u.setter
+    def u(self, value):
+        self._u = value
+    
+    _v = None
+    @property
+    def v(self):
+        """
+        velocity (np.ndarray): Holds the velocity matrix
+        """
+        return self._v
+    @v.setter
+    def v(self, value):
+        self._v = value
+    
     _COC = None
     @property
     def COC(self):
