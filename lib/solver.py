@@ -562,18 +562,44 @@ class TransportEquationSolver():
         """
         
         # Initialize Parameters
+        
+        ## calculating interfacial tension
+        sigma = self._surfactant.eval_IFT(self.surfactant_concentration)
+        dsigma_dg = self._surfactant.eval_dIFT_dGamma(self.surfactant_concentration)
+        
+        ## calculating the residual saturations
+        self._compute_residual_saturations(sigma)
+        
+        ## effective saturations
+        self._compute_effective_saturations(self.water_saturation)
+        
+        ## mobility calculations 
+        self._compute_lambda_a(RelativePermeabilityFormula.CoreyTypeEquation)
+        self._compute_lambda_o(RelativePermeabilityFormula.CoreyTypeEquation)
 
+        ## capillary number
+        self._aqueous_capillary_number(sigma)
+        self._oleic_capillary_number(sigma)
 
         # Water Saturation Computations
-
+        wsat_old, wsat_modified, wsat_new = self._water_saturation_matrix_processing()
+        self.water_saturation = wsat_new
 
         # Polymer Concentration Computations
+        pconc_old, pconc_modified, pconc_new = self._polymer_concentration_matrix_processing(wsat_old)
+        self.polymer_concentration = pconc_new
 
 
         # Surfactant Concentration Computation
-
+        sconc_old, sconc_modified, sconc_new = self._surfactant_concentration_matrix_processing(wsat_old, wsat_modified)
         
         # Calculations for ROIP
+        ocut = self.lambda_o[self.n-1, self.m-1] * self.total_flow / self.lambda_total[self.n-1,self.m-1]
+        wcut = self.lambda_a[self.n-1, self.m-1] * self.total_flow / self.lambda_total[self.n-1,self.m-1]
+        ROIP = 100*(np.sum(np.sum(1 - self.water_saturation)))/np.sum(np.ones((self.n*self.m,1)))
+        
+        return ocut, wcut, ROIP
+
 
         pass
 
@@ -666,9 +692,9 @@ class TransportEquationSolver():
         self._derivative_capillary_pressure(self._surfactant.eval_IFT, self._surfactant.eval_dIFT_dGamma)
 
         #executing main loop function
-        self.water_saturation = self._main_loop_computation(1)
+        water_saturation_new = self._main_loop_computation(1)
 
-        return water_saturation_old, self.water_saturation #[old matrix, new matrix]
+        return water_saturation_old, water_saturation_modified, water_saturation_new #[old matrix, modified matrix, new matrix]
 
     def _polymer_concentration_matrix_processing(self, water_saturation_old):
         """
@@ -685,9 +711,9 @@ class TransportEquationSolver():
         polymer_concentration_modified = self._matrix_reordering(np.copy(self.polymer_concentration), xmod, ymod)
 
         # executing main loop functions
-        self.polymer_concentration = self._main_loop_computation(2)
+        polymer_concentration_new = self._main_loop_computation(2)
 
-        return polymer_concentration_old, self.polymer_concentration # [old matrix, new matrix]
+        return polymer_concentration_old, polymer_concentration_modified, polymer_concentration_new # [old matrix, modified matrix, new matrix]
 
     def _surfactant_concentration_matrix_processing(self, water_saturation_old, water_saturation_modified):
         """
@@ -722,9 +748,9 @@ class TransportEquationSolver():
         self._derivative_capillary_pressure(sigma_modified, dsigma_dg_modified)
         
         # running main loop functions
-        self.surfactant_concentration = self._main_loop_computation(3)
+        surfactant_concentration_new = self._main_loop_computation(3)
 
-        return surfactant_concentration_old, self.surfactant_concentration # [old matrix, new matrix]
+        return surfactant_concentration_old, surfactant_concentration_modified, surfactant_concentration_new # [old matrix, new matrix]
 
     def _leftmost_grid_calculations(self, flag, row_index, cnt, i, j, AA, BB, CC, DD, TMM):
         """
