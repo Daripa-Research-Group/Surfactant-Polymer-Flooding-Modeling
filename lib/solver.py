@@ -267,7 +267,7 @@ class TransportEquationSolver():
 
             v (np.ndarray): velocity matrix.
         """
-        [self.swr, self.sor] = self._water.compute_residual_saturation(sigma, self.pressure, self.velocity)
+        [self.swr, self.sor] = self._water.compute_residual_saturations(sigma, self.pressure, self.velocity)
 
     def _compute_effective_saturations(
             self, w_sat_matrix : np.ndarray 
@@ -287,12 +287,12 @@ class TransportEquationSolver():
         self.dnsw_dg = self.dswr_dg * (water_saturation_matrix - 1)/(1 - self.swr)**2
         self.dnso_dg = (self.dswr_dg * (water_saturation_matrix + self.sor - 1) + self.dsor_dg * (water_saturation_matrix - self.swr))/(1-self.swr-self.sor)**2
 
-    def _derivative_residual_saturations(
-            self, sigma, norm_nca, norm_nco
-    ): #FIXME: Will need to update function to work with autodiff (v2.0)
+    def _derivative_residual_saturations(self, sigma): #FIXME: Will need to update function to work with autodiff (v2.0)
+        self.dsor_dg = np.zeros((self.n+1, self.m+1))
+        self.dswr_dg = np.zeros((self.n+1, self.m+1))
         for j in range(self.n):
             for i in range(self.m):
-                if norm_nca >= self.critical_capillary_aqueous_initial:
+                if self.norm_nca >= self.critical_capillary_aqueous_initial:
                     self.dswr_dg[j, i] = -(
                         self.swr_0
                         * 0.1534
@@ -310,7 +310,7 @@ class TransportEquationSolver():
                         * sigma[j, i] ** (0.8466)
                         * (self.surfactant_concentration[j, i] + 1) ** 2
                     )
-                if norm_nco >= self.critical_capillary_oleic_initial:
+                if self.norm_nco >= self.critical_capillary_oleic_initial:
                     self.dsor_dg[j, i] = -(
                         self.sor_0
                         * 0.5213
@@ -399,7 +399,7 @@ class TransportEquationSolver():
                 self.sor, 
                 self.swr, 
                 True, 
-                RelativePermeabilityFormula.CoreyTypeEquation.value, 
+                RelativePermeabilityFormula.CoreyTypeEquation, 
                 modified_water_saturation
                 )
         else:
@@ -408,7 +408,7 @@ class TransportEquationSolver():
                 self.sor, 
                 self.swr, 
                 True, 
-                RelativePermeabilityFormula.CoreyTypeEquation.value 
+                RelativePermeabilityFormula.CoreyTypeEquation
                 )
 
     def _compute_lambda_o(
@@ -422,7 +422,7 @@ class TransportEquationSolver():
                 self.sor, 
                 self.swr, 
                 False, 
-                RelativePermeabilityFormula.CoreyTypeEquation.value, 
+                RelativePermeabilityFormula.CoreyTypeEquation, 
                 modified_water_saturation
                 )
         else:
@@ -431,7 +431,7 @@ class TransportEquationSolver():
                 self.sor, 
                 self.swr, 
                 False, 
-                RelativePermeabilityFormula.CoreyTypeEquation.value 
+                RelativePermeabilityFormula.CoreyTypeEquation 
                 )
 
     ## Capillary Number (ratio of viscous forces to surface tension forces)
@@ -564,8 +564,8 @@ class TransportEquationSolver():
         # Initialize Parameters
         
         ## calculating interfacial tension
-        sigma = self._surfactant.eval_IFT(self.surfactant_concentration)
-        dsigma_dg = self._surfactant.eval_dIFT_dGamma(self.surfactant_concentration)
+        sigma = self._surfactant.eval_IFT
+        dsigma_dg = self._surfactant.eval_dIFT_dGamma
         
         ## calculating the residual saturations
         self._compute_residual_saturations(sigma)
@@ -576,13 +576,18 @@ class TransportEquationSolver():
         ## mobility calculations 
         self._compute_lambda_a(RelativePermeabilityFormula.CoreyTypeEquation)
         self._compute_lambda_o(RelativePermeabilityFormula.CoreyTypeEquation)
-
+        
         ## capillary number
         self._aqueous_capillary_number(sigma)
         self._oleic_capillary_number(sigma)
 
+        ## calculate derivatives
+        self._derivative_residual_saturations(sigma)
+        self._derivative_effective_saturations()
+        self._derivative_relative_permeabilities()
+
         # Water Saturation Computations
-        wsat_old, wsat_modified, wsat_new = self._water_saturation_matrix_processing()
+        wsat_old, wsat_modified, wsat_new = self._water_saturation_matrix_processing(sigma, dsigma_dg)
         self.water_saturation = wsat_new
 
         # Polymer Concentration Computations
@@ -666,7 +671,7 @@ class TransportEquationSolver():
         return TMM_new
         
 
-    def _water_saturation_matrix_processing(self):
+    def _water_saturation_matrix_processing(self, sigma, dsigma_dg):
         """
         run through computations for water saturation matrix
         """
@@ -676,7 +681,6 @@ class TransportEquationSolver():
             self.water_saturation,
             self.water_saturation,
         )
-        
         #saving water saturation matrix and then modifying the current water saturation matrix for calcs
         water_saturation_old = np.copy(self.water_saturation)
         water_saturation_modified = self._matrix_reordering(np.copy(self.water_saturation), xmod, ymod)
@@ -686,7 +690,7 @@ class TransportEquationSolver():
         self._compute_lambda_o(RelativePermeabilityFormula.CoreyTypeEquation, water_saturation_modified)
         
         #computing derivatives of capillary pressure
-        self._derivative_capillary_pressure(self._surfactant.eval_IFT, self._surfactant.eval_dIFT_dGamma)
+        self._derivative_capillary_pressure(sigma, dsigma_dg)
 
         #executing main loop function
         water_saturation_new = self._main_loop_computation(1)
@@ -730,8 +734,8 @@ class TransportEquationSolver():
         #updating relevant coefficients using interpolated surfactant concentration matrix
         
         ##interfacial tension calculations
-        sigma_modified = self._surfactant.eval_IFT(surfactant_concentration_modified)
-        dsigma_dg_modified = self._surfactant.eval_dIFT_dGamma(surfactant_concentration_modified)
+        sigma_modified = self._surfactant.IFT_conc_equ(surfactant_concentration_modified)
+        dsigma_dg_modified = self._surfactant.derivative_IFT_conc_equ(surfactant_concentration_modified)
 
         ##compute residual saturations
         [swr, sor] = self._water.compute_residual_saturations(sigma_modified, self.pressure, self.velocity)

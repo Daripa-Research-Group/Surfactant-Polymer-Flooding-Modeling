@@ -1492,7 +1492,8 @@ class Simulation:
                 )
 
                 ## STEP 2.5: Solving Transport Equations
-                solver_object = TransportEquationSolver(
+                # ocut, wcut, ROIP = self._transport_equation_solver(dt)
+                solver_object = TransportEquationSolver( # FIXME: GETTING ERROR THAT NUMPY.NDARRAY IS NOT CALLABLE!!!
                                     grid= self.mesh,
                                     water= self.water,
                                     surfactant= self.surfactant,
