@@ -1501,7 +1501,8 @@ class Simulation:
                                     pressure= self.u,
                                     velocity= self.v,
                                     permeability_matrix= self.KK,
-                                    source_flow_magnitude= self.source_flow_magnitude
+                                    source_flow_magnitude= self.source_flow_magnitude,
+                                    dt= dt
                                 )
                 ocut, wcut, ROIP = solver_object.execute()
 

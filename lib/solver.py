@@ -40,7 +40,8 @@ class TransportEquationSolver():
             pressure : np.ndarray,
             velocity : np.ndarray,
             permeability_matrix : np.ndarray,
-            source_flow_magnitude: float
+            source_flow_magnitude: float,
+            dt : float
     ):
         """
         constructor for ``TransportEquationSolver``
@@ -54,6 +55,8 @@ class TransportEquationSolver():
         self.velocity = velocity
         self.permeability_matrix = permeability_matrix
         self.total_flow = source_flow_magnitude
+
+        self._dt = dt
 
     #Constant Parameter Definitions
     ## Flows
@@ -101,10 +104,10 @@ class TransportEquationSolver():
     ## Grid properties
     @property
     def m(self):
-        return self._grid.m
+        return self._grid.m + 1
     @property
     def n(self):
-        return self._grid.n
+        return self._grid.n + 1
     @property
     def dx(self):
         return self._grid.dx
@@ -119,7 +122,7 @@ class TransportEquationSolver():
         return self._grid.y
     @property
     def dt_array(self):
-        pass
+        return self._dt * np.ones((self.n, self.m)) 
     ## Porosity
     @property
     def porosity(self):
@@ -288,8 +291,8 @@ class TransportEquationSolver():
         self.dnso_dg = (self.dswr_dg * (water_saturation_matrix + self.sor - 1) + self.dsor_dg * (water_saturation_matrix - self.swr))/(1-self.swr-self.sor)**2
 
     def _derivative_residual_saturations(self, sigma): #FIXME: Will need to update function to work with autodiff (v2.0)
-        self.dsor_dg = np.zeros((self.n+1, self.m+1))
-        self.dswr_dg = np.zeros((self.n+1, self.m+1))
+        self.dsor_dg = np.zeros((self.n, self.m))
+        self.dswr_dg = np.zeros((self.n, self.m))
         for j in range(self.n):
             for i in range(self.m):
                 if self.norm_nca >= self.critical_capillary_aqueous_initial:
@@ -377,7 +380,7 @@ class TransportEquationSolver():
                     * self.lambda_a \
                 )\
                 / ((self.lambda_total**2) * self.aqueous_viscosity)\
-            )\
+            )
     @property
     def D(self):
         return self.permeability_matrix*self.lambda_o*self.fractional_flow
@@ -581,10 +584,14 @@ class TransportEquationSolver():
         self._aqueous_capillary_number(sigma)
         self._oleic_capillary_number(sigma)
 
+        ## capillary pressure
+        self._compute_capillary_pressure(sigma)
+
         ## calculate derivatives
         self._derivative_residual_saturations(sigma)
         self._derivative_effective_saturations()
         self._derivative_relative_permeabilities()
+        self._derivative_capillary_pressure(sigma, dsigma_dg)
 
         # Water Saturation Computations
         wsat_old, wsat_modified, wsat_new = self._water_saturation_matrix_processing(sigma, dsigma_dg)
@@ -629,13 +636,12 @@ class TransportEquationSolver():
             AA = np.copy(BB)
             CC = np.copy(BB)
             DD = np.zeros((self.m, 1))
-
+            
 
             for i in range(self.m):
                 for j in range(self.n):
                     if i != j:
                         continue
-
                     field = fields[flag]
 
                     is_left = (i == 0)
@@ -647,7 +653,6 @@ class TransportEquationSolver():
                         handler = self._rightmost_grid_calculations
                     else:
                         handler = self._interior_grid_calculations
-
                     handler(flag, idx, cnt, i, j, AA, BB, CC, DD, field)
             
             if cnt == 0:
@@ -779,7 +784,7 @@ class TransportEquationSolver():
                     CC[j, i] = (self.dD_ds[cnt, i] + self.dD_ds[cnt + 1, i]) / (self.dy**2)
 
                     BB[j, i] = (
-                        1 / dt_array[cnt, i]
+                        1 / self.dt_array[cnt, i]
                         - (self.dD_ds[cnt+1, i] + self.dD_ds[cnt, i + 1]) / (self.dx**2)
                         - (self.dD_ds[cnt + 1, i] + self.dD_ds[cnt, i]) / (self.dy**2)
                     )
@@ -906,7 +911,7 @@ class TransportEquationSolver():
                     BB[j, i + 1] = 2 * F[cnt, i] / (self.dx**2)
                     CC[j, i] = F[cnt, i] / (self.dy**2)
 
-    def _rightmost_calculations(self, flag, row_index, cnt, i, j, AA, BB, CC, DD, TMM):
+    def _rightmost_grid_calculations(self, flag, row_index, cnt, i, j, AA, BB, CC, DD, TMM):
         """
         will conduct calculatons related to the rightmost column of grid at a particular row
         """
@@ -931,7 +936,7 @@ class TransportEquationSolver():
                     BB[j, i - 1] = (self.dD_ds[cnt, i] + self.dD_ds[cnt, i - 1]) / (self.dx**2)
 
                     BB[j, i] = (
-                        1 / dt_array[cnt, i]
+                        1 / self.dt_array[cnt, i]
                         - (self.dD_ds[cnt, i] + self.dD_ds[cnt, i - 1]) / (self.dx**2)
                         - (self.dD_ds[cnt + 1, i] + self.dD_ds[cnt, i]) / (self.dy**2)
                     )
@@ -1448,7 +1453,7 @@ class TransportEquationSolver():
         --------------------------------------------------------------------
             Tuple with px py which are numpy matrices that hold the gradient wrt to x and y dimensions
         """
-        px = np.zeros((self.n + 1, self.m + 1))
+        px = np.zeros((self.n, self.m))
         py = np.copy(px)
 
         for i in range(self.m + 1):
