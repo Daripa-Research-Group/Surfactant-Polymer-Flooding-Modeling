@@ -69,7 +69,7 @@ class TransportEquationSolver():
         self._total_flow = value
     @property
     def polymer_flow(self):
-        return self.total_flow*self._water.concetration_scalar
+        return self.total_flow*self._polymer.concetration_scalar
     @property
     def surfactant_flow(self):
         return self.total_flow*self._surfactant.concentration
@@ -1392,7 +1392,6 @@ class TransportEquationSolver():
             # Calculate gradients
             sx, sy = self._get_gradient(sold)
             gx, gy = self._get_gradient(self.surfactant_concentration)
-
             xjump = (
                 self.x
                 - (
@@ -1455,22 +1454,21 @@ class TransportEquationSolver():
         """
         px = np.zeros((self.n, self.m))
         py = np.copy(px)
-
-        for i in range(self.m + 1):
-            for j in range(self.n + 1):
+        for i in range(self.m):
+            for j in range(self.n):
                 if i != 0:
                     px[j, i] = (vn[j, i] - vn[j, i - 1]) / self.dx
-                if i != self.m:
+                if i != self.m - 1:
                     px[j, i] = (vn[j, i + 1] - vn[j, i]) / self.dx
-                if i != 0 and i != self.m:
+                if i != 0 and i != self.m-1:
                     px[j, i] = (vn[j, i + 1] - vn[j, i - 1]) / (2 * self.dx)
                 if j != 0:
                     py[j, i] = (vn[j, i] - vn[j - 1, i]) / self.dy
-                if j != self.n:
+                if j != self.n-1:
                     py[j, i] = (vn[j + 1, i] - vn[j, i]) / self.dy
-                if j != 0 and j != self.n:
+                if j != 0 and j != self.n-1:
                     py[j, i] = (vn[j + 1, i] - vn[j - 1, i]) / (2 * self.dy)
-
+        
         return px, py
 
 
