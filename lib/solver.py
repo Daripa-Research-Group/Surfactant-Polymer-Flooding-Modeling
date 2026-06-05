@@ -1044,14 +1044,14 @@ class TransportEquationSolver():
                     BB[j, i - 1] = 2 * F[cnt, i] / (self.dx**2)
                 elif row_index == (self.m) * (self.n - 1) + 1:
                     DD[i] = TMM[cnt, i] / self.dt_array[cnt, i]
-                    AA[j, i] = 2 * F[cnt, i] / (dy**2)
+                    AA[j, i] = 2 * F[cnt, i] / (self.dy**2)
                     BB[j, i] = (
                         1 / self.dt_array[cnt, i]
                         - ((2 / (self.dx**2)) + (2 / (self.dy**2))) * F[cnt, i]
                         - ((self.total_flow * self.lambda_a[cnt][i]) / (self.lambda_total[cnt, i]))
                         / self.water_saturation[cnt, i]
-                        + ((self.surfactant_flow * self.lambda_a[cnt][i]) / (self.lambda_total[cnt][i]))
-                        / (self.water_saturation[cnt][i] * self.surfactant_concentration)
+                        + ((self.surfactant_flow * self.lambda_a[cnt, i]) / (self.lambda_total[cnt, i]))
+                        / (self.water_saturation[cnt, i] * self._surfactant.concentration)
                     )
                     BB[j, i - 1] = 2 * F[cnt, i] / (self.dx**2)
                 else:
