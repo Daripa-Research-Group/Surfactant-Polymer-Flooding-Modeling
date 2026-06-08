@@ -758,7 +758,7 @@ class TransportEquationSolver():
 
         return surfactant_concentration_old, surfactant_concentration_modified, surfactant_concentration_new # [old matrix, new matrix]
 
-    def _leftmost_grid_calculations(self, flag, row_index, cnt, i, j, AA, BB, CC, DD, TMM):
+    def _leftmost_grid_calculations(self, flag, row_index, cnt, i, j, AA, BB, CC, DD, TMM): # i = 1 in the MATLAB code
         """
         will conduct calculations related to the leftmost column of the grid at a particular row
         """
@@ -911,7 +911,7 @@ class TransportEquationSolver():
                     BB[j, i + 1] = 2 * F[cnt, i] / (self.dx**2)
                     CC[j, i] = F[cnt, i] / (self.dy**2)
 
-    def _rightmost_grid_calculations(self, flag, row_index, cnt, i, j, AA, BB, CC, DD, TMM):
+    def _rightmost_grid_calculations(self, flag, row_index, cnt, i, j, AA, BB, CC, DD, TMM): # i = m in MATLAB
         """
         will conduct calculatons related to the rightmost column of grid at a particular row
         """
@@ -1064,7 +1064,7 @@ class TransportEquationSolver():
                     BB[j, i - 1] = 2 * F[cnt, i] / (self.dx**2)
                     CC[j, i] = F[cnt, i] / (self.dy**2)
 
-    def _interior_grid_calculations(self, flag, row_index, cnt, i, j, AA, BB, CC, DD, TMM):
+    def _interior_grid_calculations(self, flag, row_index, cnt, i, j, AA, BB, CC, DD, TMM): # inner else for MATLAB
         """
         will conduct calculations related to the interior column of grid at a particular row
         """
@@ -1084,7 +1084,7 @@ class TransportEquationSolver():
                         )
                         - self.df_dg[cnt, i]
                         * (
-                            self.velocity[cnt, i]
+                            self.pressure[cnt, i]
                             * (
                                 self.surfactant_concentration[cnt, i + 1]
                                 - self.surfactant_concentration[cnt, i - 1]
@@ -1236,29 +1236,31 @@ class TransportEquationSolver():
                                 self.surfactant_concentration[cnt, i - 1]
                                 - self.surfactant_concentration[cnt, i]
                             )
-                            + self.dD_dg[cnt, i - 1]
+                            + self.dD_dg[cnt, i]
                             / (2 * self.dx**2)
                             * (
                                 self.surfactant_concentration[cnt, i - 1]
-                                - self.surfactant_concentration[cnt, i + 1]
+                                + self.surfactant_concentration[cnt, i + 1]
+                                - 2*self.surfactant_concentration[cnt, i]
                             )
                             + self.dD_dg[cnt + 1, i]
-                            / (2 * self.dx**2)
+                            / (2 * self.dy**2)
                             * (
                                 self.surfactant_concentration[cnt + 1, i]
                                 - self.surfactant_concentration[cnt, i]
                             )
                             + self.dD_dg[cnt - 1, i]
-                            / (2 * self.dx**2)
+                            / (2 * self.dy**2)
                             * (
                                 self.surfactant_concentration[cnt - 1, i]
                                 - self.surfactant_concentration[cnt, i]
                             )
                             + self.dD_dg[cnt, i]
-                            / (2 * self.dx**2)
+                            / (2 * self.dy**2)
                             * (
                                 self.surfactant_concentration[cnt + 1, i]
-                                - self.surfactant_concentration[cnt, i]
+                                + self.surfactant_concentration[cnt-1, i]
+                                - 2*self.surfactant_concentration[cnt, i]
                             )
                         )
                     )
@@ -1268,7 +1270,11 @@ class TransportEquationSolver():
 
                     BB[j, i] = 1 / self.dt_array[cnt, i] - (
                         (1 / (2 * self.dx**2))
-                        * (self.dD_ds[cnt, i] + 2 * self.dD_ds[cnt, i] + self.dD_ds[cnt, i + 1])
+                        * (
+                            self.dD_ds[cnt, i - 1] 
+                            + 2 * self.dD_ds[cnt, i] 
+                            + self.dD_ds[cnt, i + 1]
+                        )
                         + (1 / (2 * self.dy**2))
                         * (
                             self.dD_ds[cnt - 1, i]
@@ -1283,7 +1289,7 @@ class TransportEquationSolver():
                         2 * self.dx**2
                     )
             case 2: # polymer concentration matrix computations
-                DD[i] = TMM[cnt][i] / self.dt_array[cnt, i]
+                DD[i] = TMM[cnt, i] / self.dt_array[cnt, i]
                 BB[j, i] = 1 / self.dt_array[cnt, i]
             case 3: # surfactant concentration matrix computation
                 F = self.D * self.dpc_dg / self.water_saturation
