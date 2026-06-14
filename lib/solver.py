@@ -921,7 +921,7 @@ class TransportEquationSolver():
                     DD[i] = (
                         TMM[cnt, i] / self.dt_array[cnt, i]
                         + (
-                            (self.dD_dg[cnt, i] + self.dD_dg[cnt][i - 1]) / (self.dx**2)
+                            (self.dD_dg[cnt, i] + self.dD_dg[cnt, i - 1]) / (self.dx**2)
                             + (self.dD_dg[cnt + 1, i] + self.dD_dg[cnt, i]) / (self.dy**2)
                         )
                         * self.surfactant_concentration[cnt, i]
@@ -947,8 +947,8 @@ class TransportEquationSolver():
                     DD[i] = (
                         (TMM[cnt, i] / self.dt_array[cnt, i])
                         + (
-                            (self.dD_dg[cnt][i] + self.dD_dg[cnt][i - 1]) / (self.dx**2)
-                            + (self.dD_dg[cnt - 1][i] + self.dD_dg[cnt][i]) / (self.dy**2)
+                            (self.dD_dg[cnt, i] + self.dD_dg[cnt, i - 1]) / (self.dx**2)
+                            + (self.dD_dg[cnt - 1, i] + self.dD_dg[cnt, i]) / (self.dy**2)
                         )
                         * self.surfactant_concentration[cnt, i]
                         - (self.dD_dg[cnt, i] + self.dD_dg[cnt, i - 1])
@@ -976,7 +976,7 @@ class TransportEquationSolver():
                             self.velocity[cnt, i]
                             * (
                                 self.polymer_concentration[cnt + 1, i]
-                                - self.polymer_concentration[cnt, i]
+                                - self.polymer_concentration[cnt - 1, i]
                             )
                             / (2 * self.dy)
                         )
@@ -985,7 +985,7 @@ class TransportEquationSolver():
                             self.velocity[cnt, i]
                             * (
                                 self.surfactant_concentration[cnt + 1, i]
-                                - self.surfactant_concentration[cnt, i]
+                                - self.surfactant_concentration[cnt - 1, i]
                             )
                             / (2 * self.dy)
                         )
