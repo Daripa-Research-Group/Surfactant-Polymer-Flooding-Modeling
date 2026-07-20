@@ -596,6 +596,7 @@ class TransportEquationSolver():
         # Water Saturation Computations
         wsat_old, wsat_modified, wsat_new = self._water_saturation_matrix_processing(sigma, dsigma_dg)
         self.water_saturation = wsat_new
+        breakpoint()
 
         # Polymer Concentration Computations
         pconc_old, pconc_modified, pconc_new = self._polymer_concentration_matrix_processing(wsat_old)
@@ -612,7 +613,7 @@ class TransportEquationSolver():
         
         return ocut, wcut, ROIP
 
-    def _main_loop_computation(self, flag):
+    def _main_loop_computation(self, flag, modified_matrix):
         """
         primary loop that will run for computations
         """
@@ -620,11 +621,11 @@ class TransportEquationSolver():
         # setting matrices
         AAA = np.zeros((self.n * self.m, self.n * self.m))
         DDD = np.zeros((self.n * self.m, 1))
-        fields = {
-                1: self.water_saturation,
-                2: self.polymer_concentration,
-                3: self.surfactant_concentration
-        }
+        # fields = {
+        #         1: self.water_saturation,
+        #         2: self.polymer_concentration,
+        #         3: self.surfactant_concentration
+        # }
 
         while (
             idx <= self.m * (self.n - 1) + 1
@@ -642,7 +643,7 @@ class TransportEquationSolver():
                 for j in range(self.n):
                     if i != j:
                         continue
-                    field = fields[flag]
+                    # field = fields[flag]
 
                     is_left = (i == 0)
                     is_right = (i == self.m - 1)
@@ -653,8 +654,9 @@ class TransportEquationSolver():
                         handler = self._rightmost_grid_calculations
                     else:
                         handler = self._interior_grid_calculations
-                    handler(flag, idx, cnt, i, j, AA, BB, CC, DD, field)
-            
+                    handler(flag, idx, cnt, i, j, AA, BB, CC, DD, modified_matrix)
+                    # breakpoint()
+            # breakpoint()
             if cnt == 0:
                 AAA[:self.n, : 2 * self.m] = np.hstack([BB, CC])
             elif cnt == self.n - 1:
@@ -672,7 +674,9 @@ class TransportEquationSolver():
             import warnings
             warnings.warn(f"BiCGSTAB: convergence issue (info={info}) in water saturation solver")
         TMM_new = TMM_flat.reshape(self.m, self.n)
-
+        print(f'[DEBUG] New Matrix determined! flag = {flag}')
+        if flag == 1:
+            breakpoint()
         return TMM_new
         
 
@@ -698,7 +702,9 @@ class TransportEquationSolver():
         self._derivative_capillary_pressure(sigma, dsigma_dg)
 
         #executing main loop function
-        water_saturation_new = self._main_loop_computation(1)
+        water_saturation_new = self._main_loop_computation(1, water_saturation_modified)
+        water_saturation_new[water_saturation_new > 1] = 1
+        breakpoint()
 
         return water_saturation_old, water_saturation_modified, water_saturation_new #[old matrix, modified matrix, new matrix]
 
@@ -717,7 +723,7 @@ class TransportEquationSolver():
         polymer_concentration_modified = self._matrix_reordering(np.copy(self.polymer_concentration), xmod, ymod)
 
         # executing main loop functions
-        polymer_concentration_new = self._main_loop_computation(2)
+        polymer_concentration_new = self._main_loop_computation(2, polymer_concentration_modified)
 
         return polymer_concentration_old, polymer_concentration_modified, polymer_concentration_new # [old matrix, modified matrix, new matrix]
 
@@ -754,7 +760,7 @@ class TransportEquationSolver():
         self._derivative_capillary_pressure(sigma_modified, dsigma_dg_modified)
         
         # running main loop functions
-        surfactant_concentration_new = self._main_loop_computation(3)
+        surfactant_concentration_new = self._main_loop_computation(3, surfactant_concentration_modified)
 
         return surfactant_concentration_old, surfactant_concentration_modified, surfactant_concentration_new # [old matrix, new matrix]
 
@@ -789,7 +795,7 @@ class TransportEquationSolver():
                         - (self.dD_ds[cnt + 1, i] + self.dD_ds[cnt, i]) / (self.dy**2)
                     )
 
-                    BB[j, i + 1] = (self.dD_ds[cnt, i] + self.dD_ds[cnt, i + 1]) * (self.dx**2)
+                    BB[j, i + 1] = (self.dD_ds[cnt, i] + self.dD_ds[cnt, i + 1]) / (self.dx**2)
                 elif row_index == (self.m) * (self.n - 1) + 1:
                     DD[i] = (
                         (TMM[cnt, i] / self.dt_array[cnt, i])
@@ -910,6 +916,7 @@ class TransportEquationSolver():
                     )
                     BB[j, i + 1] = 2 * F[cnt, i] / (self.dx**2)
                     CC[j, i] = F[cnt, i] / (self.dy**2)
+        # breakpoint()
 
     def _rightmost_grid_calculations(self, flag, row_index, cnt, i, j, AA, BB, CC, DD, TMM): # i = m in MATLAB
         """
@@ -1063,6 +1070,7 @@ class TransportEquationSolver():
                     )
                     BB[j, i - 1] = 2 * F[cnt, i] / (self.dx**2)
                     CC[j, i] = F[cnt, i] / (self.dy**2)
+        # breakpoint()
 
     def _interior_grid_calculations(self, flag, row_index, cnt, i, j, AA, BB, CC, DD, TMM): # inner else for MATLAB
         """
@@ -1321,6 +1329,7 @@ class TransportEquationSolver():
                     BB[j, i - 1] = F[cnt, i] / (self.dx**2)
                     BB[j, i + 1] = F[cnt, i] / (self.dx**2)
                     CC[j, i] = F[cnt, i] / (self.dy**2)
+        # breakpoint()
 
     def _matrix_reordering(self, transport_matrix, xmod, ymod):
         x1d = self.x[0, :]
